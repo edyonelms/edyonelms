@@ -103,6 +103,7 @@ COPY . ${APP_HOME}
 # Drop in vendor + built assets from earlier stages
 COPY --from=vendor /app/vendor ${APP_HOME}/vendor
 COPY --from=assets /app/public/build ${APP_HOME}/public/build
+COPY --from=assets /app/public/build /opt/app-public-build
 
 # Re-run scripts now that the full app is present, then optimize the autoloader
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative

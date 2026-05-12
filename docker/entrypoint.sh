@@ -5,6 +5,7 @@ cd /var/www/html
 
 # Ensure writable directories exist with correct ownership when a host volume is mounted
 mkdir -p \
+    public/build \
     storage/app/public \
     storage/framework/cache/data \
     storage/framework/sessions \
@@ -14,6 +15,12 @@ mkdir -p \
     bootstrap/cache
 
 chown -R www-data:www-data storage bootstrap/cache || true
+
+# Seed the shared nginx asset volume with the Vite build generated in the image.
+if [ -d /opt/app-public-build ] && [ ! -f public/build/manifest.json ]; then
+    cp -R /opt/app-public-build/. public/build/
+    chown -R www-data:www-data public/build || true
+fi
 
 # Generate APP_KEY if it's missing — useful for fresh deploys
 if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
