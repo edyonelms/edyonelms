@@ -17,7 +17,8 @@ mkdir -p \
 chown -R www-data:www-data storage bootstrap/cache || true
 
 # Seed the shared nginx asset volume with the Vite build generated in the image.
-if [ -d /opt/app-public-build ] && [ ! -f public/build/manifest.json ]; then
+# Always re-seed so a fresh image overwrites stale assets on the host bind mount.
+if [ -d /opt/app-public-build ]; then
     cp -R /opt/app-public-build/. public/build/
     chown -R www-data:www-data public/build || true
 fi
