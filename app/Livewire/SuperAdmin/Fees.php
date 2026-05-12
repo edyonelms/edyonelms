@@ -1,0 +1,486 @@
+<?php
+
+namespace App\Livewire\SuperAdmin;
+
+use App\Models\Organization;
+use App\Models\Student\Section;
+use App\Models\Student\Standard;
+use App\Models\Student\StudentDetail;
+use App\Models\SuperAdmin\SuperAdminFeePayment;
+use App\Models\SuperAdmin\SuperAdminFeeStructure;
+use App\Models\Teacher\TeacherDetail;
+use Livewire\Component;
+use WireUi\Traits\WireUiActions;
+
+class Fees extends Component
+{
+    use WireUiActions;
+
+    // ─── View State ───────────────────────────────────────────────────────────
+    public string $activeView     = 'list';
+    public        $selectedSchool = null;
+    public string $activeTab      = 'add_fee';
+
+    // ─── Academic Year ────────────────────────────────────────────────────────
+    public string $academicYear = '';
+
+    // ─── Global Analytics ─────────────────────────────────────────────────────
+    public int   $totalStudentsAll  = 0;
+    public float $totalFeeToCollect = 0;
+    public float $totalFeeCollected = 0;
+    public float $totalFeeRemaining = 0;
+    public float $avgFeePerStudent  = 0;
+
+    // ─── Schools ──────────────────────────────────────────────────────────────
+    public        $schools = [];
+    public string $search  = '';
+
+    // ─── School Stats ─────────────────────────────────────────────────────────
+    public array $schoolStats = [];
+
+    // ─── Fee Structure Form ───────────────────────────────────────────────────
+    public        $standards = [];
+    public array  $feeInputs = [];
+
+    // ─── Edit Fee Modal ───────────────────────────────────────────────────────
+    public bool   $showEditModal = false;
+    public        $editFeeId     = null;
+    public        $editAmount    = '';
+    public string $editLabel     = '';
+
+    // ─── Update Tab ───────────────────────────────────────────────────────────
+    public string $updateStandardId = '';
+    public string $updateSectionId  = '';
+    public        $updateSections   = [];
+    public array  $studentFeeList   = [];
+
+    // ─── Mark Paid / Edit Payment Modal ──────────────────────────────────────
+    public bool   $showPayModal    = false;
+    public        $payStudentId    = null;
+    public        $payStructureId  = null;
+    public        $payAmount       = '';
+    public string $payMode         = 'cash';
+    public string $payDate         = '';
+    public string $payRemark       = '';
+    public        $payExistingId   = null;
+    public bool   $isEditPayment   = false;   // true = editing existing payment
+
+    public function mount(): void
+    {
+        $this->academicYear = now()->year . '-' . (now()->year + 1);
+        $this->payDate      = now()->format('Y-m-d');
+        $this->loadGlobalStats();
+        $this->loadSchools();
+    }
+
+    public function loadGlobalStats(): void
+    {
+        $this->totalStudentsAll = StudentDetail::count();
+
+        $structures = SuperAdminFeeStructure::with('standard')
+            ->active()
+            ->forYear($this->academicYear)
+            ->get();
+
+        $expected = 0;
+        foreach ($structures as $fs) {
+            $count     = StudentDetail::where('organization_id', $fs->organization_id)
+                ->where('standard_id', $fs->standard_id)
+                ->count();
+            $expected += $fs->amount * $count;
+        }
+
+        $this->totalFeeToCollect = $expected;
+        $this->totalFeeCollected = (float) SuperAdminFeePayment::forYear($this->academicYear)->paid()->sum('amount');
+        $this->totalFeeRemaining = max(0, $this->totalFeeToCollect - $this->totalFeeCollected);
+        $this->avgFeePerStudent  = $this->totalStudentsAll > 0
+            ? round($this->totalFeeToCollect / $this->totalStudentsAll)
+            : 0;
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->loadSchools();
+    }
+
+    public function loadSchools(): void
+    {
+        $this->schools = Organization::withCount([
+            'students as total_students',
+            'teachers as total_teachers',
+        ])
+            ->when($this->search, fn($q) => $q->where(
+                fn($q) => $q
+                    ->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('school_code', 'like', "%{$this->search}%")
+            ))
+            ->latest()
+            ->get();
+    }
+
+    public function selectSchool($id): void
+    {
+        $this->selectedSchool = Organization::withCount([
+            'students as total_students',
+            'teachers as total_teachers',
+        ])->find($id);
+
+        if (!$this->selectedSchool) return;
+
+        $this->standards        = Standard::where('organization_id', $id)->orderBy('name')->get();
+        $this->updateStandardId = '';
+        $this->updateSectionId  = '';
+        $this->updateSections   = [];
+        $this->studentFeeList   = [];
+
+        $this->loadFeeInputs();
+        $this->loadSchoolStats();
+        $this->activeTab  = 'add_fee';
+        $this->activeView = 'school';
+    }
+
+    public function backToList(): void
+    {
+        $this->activeView     = 'list';
+        $this->selectedSchool = null;
+        $this->feeInputs      = [];
+        $this->standards      = [];
+        $this->studentFeeList = [];
+        $this->schoolStats    = [];
+        $this->search         = '';
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->activeTab = $tab;
+        if ($tab === 'update') {
+            $this->updateStandardId = '';
+            $this->updateSectionId  = '';
+            $this->studentFeeList   = [];
+            $this->updateSections   = [];
+        }
+    }
+
+    // ─── Fee Structure ────────────────────────────────────────────────────────
+
+    private function loadFeeInputs(): void
+    {
+        $this->feeInputs = [];
+        foreach ($this->standards as $standard) {
+            $existing = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+                ->where('standard_id', $standard->id)
+                ->where('academic_year', $this->academicYear)
+                ->first();
+
+            $this->feeInputs[$standard->id] = [
+                'amount'    => $existing?->amount ?? '',
+                'label'     => $existing?->fee_label ?? 'Annual Platform Fee',
+                'exists'    => $existing ? true : false,
+                'struct_id' => $existing?->id,
+            ];
+        }
+    }
+
+    private function loadSchoolStats(): void
+    {
+        $orgId         = $this->selectedSchool->id;
+        $totalStudents = StudentDetail::where('organization_id', $orgId)->count();
+
+        $structures = SuperAdminFeeStructure::where('organization_id', $orgId)
+            ->where('academic_year', $this->academicYear)
+            ->active()
+            ->get();
+
+        $expected = 0;
+        foreach ($structures as $fs) {
+            $count     = StudentDetail::where('organization_id', $orgId)
+                ->where('standard_id', $fs->standard_id)
+                ->count();
+            $expected += $fs->amount * $count;
+        }
+
+        $collected = (float) SuperAdminFeePayment::forOrg($orgId)
+            ->forYear($this->academicYear)
+            ->paid()
+            ->sum('amount');
+
+        $pct = $expected > 0 ? round(($collected / $expected) * 100) : 0;
+
+        // FY April 2026 → March 2027
+        $fyChart = SuperAdminFeePayment::forOrg($orgId)
+            ->paid()
+            ->where(function ($q) {
+                $q->where(function ($q) {
+                    $q->whereYear('payment_date', 2026)
+                        ->whereMonth('payment_date', '>=', 4);
+                })->orWhere(function ($q) {
+                    $q->whereYear('payment_date', 2027)
+                        ->whereMonth('payment_date', '<=', 3);
+                });
+            })
+            ->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
+            ->groupBy('month', 'year')
+            ->get()
+            ->mapWithKeys(fn($row) => ["{$row->year}-{$row->month}" => (float) $row->total])
+            ->toArray();
+
+        $this->schoolStats = [
+            'total_students'   => $totalStudents,
+            'total_to_collect' => $expected,
+            'collected'        => $collected,
+            'remaining'        => max(0, $expected - $collected),
+            'avg_per_student'  => $totalStudents > 0 ? round($expected / $totalStudents) : 0,
+            'collection_pct'   => $pct,
+            'fy_monthly_chart' => $fyChart,
+        ];
+    }
+
+    public function saveFeeStructures(): void
+    {
+        foreach ($this->feeInputs as $standardId => $data) {
+            $amount = $data['amount'] ?? '';
+            if ($amount === '' || $amount === null) continue;
+
+            SuperAdminFeeStructure::updateOrCreate(
+                [
+                    'organization_id' => $this->selectedSchool->id,
+                    'standard_id'     => $standardId,
+                    'academic_year'   => $this->academicYear,
+                ],
+                [
+                    'amount'    => $amount,
+                    'fee_label' => $data['label'] ?? 'Annual Platform Fee',
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        $this->loadFeeInputs();
+        $this->loadSchoolStats();
+        $this->loadGlobalStats();
+        $this->notification()->success('Fee structure saved successfully!');
+    }
+
+    public function openEditFee($id): void
+    {
+        $fee = SuperAdminFeeStructure::find($id);
+        if (!$fee) return;
+
+        $this->editFeeId     = $id;
+        $this->editAmount    = $fee->amount;
+        $this->editLabel     = $fee->fee_label ?? '';
+        $this->showEditModal = true;
+    }
+
+    public function saveEditFee(): void
+    {
+        $this->validate([
+            'editAmount' => 'required|numeric|min:0',
+            'editLabel'  => 'required|string|max:100',
+        ]);
+
+        SuperAdminFeeStructure::where('id', $this->editFeeId)->update([
+            'amount'    => $this->editAmount,
+            'fee_label' => $this->editLabel,
+        ]);
+
+        $this->showEditModal = false;
+        $this->loadFeeInputs();
+        $this->loadSchoolStats();
+        $this->notification()->success('Fee updated!');
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->reset(['editFeeId', 'editAmount', 'editLabel']);
+    }
+
+    public function deleteFee($id): void
+    {
+        $this->dialog()->confirm([
+            'title'       => 'Delete Fee?',
+            'description' => 'This will remove the fee structure for this class.',
+            'icon'        => 'exclamation-circle',
+            'iconColor'   => 'text-red-500',
+            'accept'      => ['label' => 'Yes, delete', 'method' => 'doDeleteFee', 'params' => $id, 'color' => 'negative'],
+            'reject'      => ['label' => 'No'],
+        ]);
+    }
+
+    public function doDeleteFee($id): void
+    {
+        SuperAdminFeeStructure::find($id)?->delete();
+        $this->loadFeeInputs();
+        $this->loadSchoolStats();
+        $this->notification()->success('Fee deleted!');
+    }
+
+    public function updatedUpdateStandardId(): void
+    {
+        $this->updateSectionId = '';
+        $this->studentFeeList  = [];
+        $this->updateSections  = $this->updateStandardId
+            ? Section::where('standard_id', $this->updateStandardId)->get()
+            : [];
+    }
+
+    public function loadStudentFeeList(): void
+    {
+        if (!$this->updateStandardId) {
+            $this->notification()->error('Please select a class.');
+            return;
+        }
+
+        $structure = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+            ->where('standard_id', $this->updateStandardId)
+            ->where('academic_year', $this->academicYear)
+            ->active()
+            ->first();
+
+        $students = StudentDetail::with(['user', 'section'])
+            ->where('organization_id', $this->selectedSchool->id)
+            ->where('standard_id', $this->updateStandardId)
+            ->when($this->updateSectionId, fn($q) => $q->where('section_id', $this->updateSectionId))
+            ->get();
+
+        $this->studentFeeList = $students->map(function ($s, $i) use ($structure) {
+            $feeAmount = $structure?->amount ?? 0;
+
+            $payment = $structure
+                ? SuperAdminFeePayment::where('student_detail_id', $s->id)
+                ->where('super_admin_fee_structure_id', $structure->id)
+                ->first()
+                : null;
+
+            $collected = $payment?->is_paid ? (float) $payment->amount : 0;
+
+            return [
+                'serial'        => $i + 1,
+                'id'            => $s->id,
+                'name'          => $s->full_name ?? $s->user?->name ?? '—',
+                'admission_no'  => $s->admission_no ?? '—',
+                'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
+                'email'         => $s->user?->email ?? '—',
+                'section'       => $s->section?->name ?? '—',
+                'total_fee'     => $feeAmount,
+                'collected'     => $collected,
+                'remaining'     => max(0, $feeAmount - $collected),
+                'is_paid'       => $payment?->is_paid ?? false,
+                'payment_id'    => $payment?->id,
+                'structure_id'  => $structure?->id,
+                'payment_date'  => $payment?->payment_date?->format('d M Y') ?? '—',
+                'payment_mode'  => $payment?->payment_mode ?? '—',
+            ];
+        })->toArray();
+    }
+
+    // ─── Pay / Edit Payment Modal ─────────────────────────────────────────────
+
+    public function openPayModal($studentId, $structureId, $amount, $paymentId = null): void
+    {
+        $this->payStudentId    = $studentId;
+        $this->payStructureId  = $structureId;
+        $this->payAmount       = $amount;
+        $this->payExistingId   = $paymentId;
+        $this->isEditPayment   = false;
+        $this->payDate         = now()->format('Y-m-d');
+        $this->payMode         = 'cash';
+        $this->payRemark       = '';
+        $this->showPayModal    = true;
+    }
+
+    public function openEditPayModal($paymentId): void
+    {
+        $payment = SuperAdminFeePayment::find($paymentId);
+        if (!$payment) return;
+
+        $this->payStudentId   = $payment->student_detail_id;
+        $this->payStructureId = $payment->super_admin_fee_structure_id;
+        $this->payAmount      = $payment->amount;
+        $this->payExistingId  = $paymentId;
+        $this->payMode        = $payment->payment_mode ?? 'cash';
+        $this->payDate        = $payment->payment_date?->format('Y-m-d') ?? now()->format('Y-m-d');
+        $this->payRemark      = $payment->remark ?? '';
+        $this->isEditPayment  = true;
+        $this->showPayModal   = true;
+    }
+
+    public function closePayModal(): void
+    {
+        $this->showPayModal = false;
+        $this->reset(['payStudentId', 'payStructureId', 'payAmount', 'payMode', 'payRemark', 'payExistingId', 'isEditPayment']);
+        $this->payDate = now()->format('Y-m-d');
+    }
+
+    public function savePayment(): void
+    {
+        $this->validate([
+            'payAmount' => 'required|numeric|min:0',
+            'payMode'   => 'required|string',
+            'payDate'   => 'required|date',
+        ]);
+
+        $structure = SuperAdminFeeStructure::find($this->payStructureId);
+        $student   = StudentDetail::find($this->payStudentId);
+
+        if (!$structure || !$student) {
+            $this->notification()->error('Invalid data.');
+            return;
+        }
+
+        SuperAdminFeePayment::updateOrCreate(
+            [
+                'student_detail_id'            => $this->payStudentId,
+                'super_admin_fee_structure_id' => $this->payStructureId,
+            ],
+            [
+                'organization_id' => $this->selectedSchool->id,
+                'standard_id'     => $structure->standard_id,
+                'section_id'      => $student->section_id,
+                'amount'          => $this->payAmount,
+                'academic_year'   => $this->academicYear,
+                'payment_mode'    => $this->payMode,
+                'payment_date'    => $this->payDate,
+                'remark'          => $this->payRemark,
+                'is_paid'         => true,
+            ]
+        );
+
+        $this->closePayModal();
+        $this->loadStudentFeeList();
+        $this->loadSchoolStats();
+        $this->loadGlobalStats();
+        $this->notification()->success($this->isEditPayment ? 'Payment updated!' : 'Payment recorded!');
+    }
+
+    public function togglePaid($studentId, $structureId): void
+    {
+        $payment = SuperAdminFeePayment::where('student_detail_id', $studentId)
+            ->where('super_admin_fee_structure_id', $structureId)
+            ->first();
+
+        if ($payment) {
+            $payment->update(['is_paid' => !$payment->is_paid]);
+        }
+
+        $this->loadStudentFeeList();
+        $this->loadSchoolStats();
+        $this->loadGlobalStats();
+    }
+
+    public function render()
+    {
+        $feeStructures = collect();
+
+        if ($this->activeView === 'school' && $this->selectedSchool) {
+            $feeStructures = SuperAdminFeeStructure::with('standard')
+                ->where('organization_id', $this->selectedSchool->id)
+                ->where('academic_year', $this->academicYear)
+                ->orderBy('standard_id')
+                ->get();
+        }
+
+        return view('livewire.super-admin.fees', compact('feeStructures'));
+    }
+}

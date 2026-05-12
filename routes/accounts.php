@@ -1,0 +1,64 @@
+<?php
+
+use App\Livewire\Accounts\Login;
+use App\Livewire\Accounts\ResetPassword;
+use App\Livewire\Accounts\VerifyOtp;
+use App\Livewire\Accounts\Dashboard;
+use App\Livewire\Accounts\Payroll;
+use App\Livewire\Accounts\Credit;
+use App\Livewire\Accounts\Admissions;
+use App\Livewire\Accounts\FeeSubmission;
+use App\Livewire\Accounts\ViewFee;
+use App\Livewire\Accounts\FeeStructure;
+use App\Livewire\Accounts\Payments;
+use App\Livewire\Accounts\Penalties;
+use App\Livewire\Accounts\FeeCycles;
+use App\Livewire\Accounts\Attendance;
+use App\Livewire\Accounts\Transport;
+use App\Livewire\Accounts\Calendar;
+use App\Livewire\Accounts\IdCard;
+use App\Livewire\Accounts\AdmitCard;
+use App\Livewire\Accounts\ReportCard;
+use App\Livewire\Accounts\TcCertificate;
+use App\Livewire\Accounts\Profile;
+use App\Livewire\Accounts\Notification;
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('accounts')->group(function () {
+
+    // Guest routes
+    Route::middleware(['guest:web'])->group(function () {
+        Route::get('/', Login::class)->name('accounts.login');
+        Route::get('/reset-password', ResetPassword::class)->name('accounts.reset-password');
+    });
+
+    // OTP verification (auth but not fully verified)
+    Route::middleware(['auth:web'])->group(function () {
+        Route::get('/verify-otp', VerifyOtp::class)->name('accounts.verify-otp');
+    });
+
+    // Protected routes
+    Route::middleware(['auth:web', 'accounts'])->group(function () {
+        Route::prefix('/{organization}')->group(function () {
+            Route::get('/dashboard', Dashboard::class)->name('accounts.dashboard');
+            Route::get('/payroll', Payroll::class)->name('accounts.payroll');
+            Route::get('/credit', Credit::class)->name('accounts.credit');
+            Route::get('/admissions', Admissions::class)->name('accounts.admissions');
+            Route::get('/fee-submission', FeeSubmission::class)->name('accounts.fee-submission');
+            Route::get('/view-fee', ViewFee::class)->name('accounts.view-fee');
+            Route::get('/fee-structure', FeeStructure::class)->name('accounts.fee-structure');
+            Route::get('/payments', Payments::class)->name('accounts.payments');
+            Route::get('/penalties', Penalties::class)->name('accounts.penalties');
+            Route::get('/fee-cycles', FeeCycles::class)->name('accounts.fee-cycles');
+            Route::get('/attendance', Attendance::class)->name('accounts.attendance');
+            Route::get('/transport', Transport::class)->name('accounts.transport');
+            Route::get('/calendar', Calendar::class)->name('accounts.calendar');
+            Route::get('/id-card', IdCard::class)->name('accounts.id-card');
+            Route::get('/admit-card', AdmitCard::class)->name('accounts.admit-card');
+            Route::get('/report-card', ReportCard::class)->name('accounts.report-card');
+            Route::get('/tc-certificate', TcCertificate::class)->name('accounts.tc-certificate');
+            Route::get('/profile', Profile::class)->name('accounts.profile');
+            Route::get('/notification', Notification::class)->name('accounts.notification');
+        });
+    });
+});
