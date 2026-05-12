@@ -28,6 +28,8 @@ fi
 # Run migrations on boot unless opted out
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force --no-interaction || true
+    # Apply schema patches not covered by regular migrations (idempotent via Schema::hasColumn checks)
+    php artisan lms:migrate --no-interaction || true
 fi
 
 # Cache config/routes/views for production

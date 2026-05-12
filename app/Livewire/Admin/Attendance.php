@@ -717,6 +717,7 @@ class Attendance extends Component
         $teacherAttendanceData = [];
         $teacherAttendanceList = [];
         $studentAttendanceList = [];
+        $assignments = collect();
 
         // Load data based on active tab and sub tab
         if ($this->activeTab === 'teacher_attendance') {
@@ -752,6 +753,11 @@ class Attendance extends Component
                     ->latest()
                     ->paginate(20);
             }
+        } elseif ($this->activeTab === 'assign_teacher_class' && $this->subTab === 'assign_teacher') {
+            $assignments = AssignTeacherStandard::with(['teacher.user', 'standard', 'section'])
+                ->where('organization_id', Auth::user()->organization_id)
+                ->latest()
+                ->get();
         }
 
         // Dashboard data
@@ -775,7 +781,8 @@ class Attendance extends Component
             'studentTrendData',
             'studentStatusData',
             'classWiseData',
-            'recentActivities'
+            'recentActivities',
+            'assignments'
         ));
     }
 }
