@@ -38,4 +38,3 @@ zoho-mail-setup.md
 Dockerfile
 docker-compose*.yml
 .dockerignore
-docker
