@@ -1,0 +1,62 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        
+
+concurrency:
+  group: deploy-ec2-prod
+  cancel-in-progress: false  
+
+jobs:
+  deploy:
+    name: SSH into EC2 and redeploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            echo "==> git pull"
+            git pull --ff-only
+
+            # Build the new app image while the old container keeps serving traffic.
+            # Compose only recreates services whose image/config changed — nginx,
+            # mysql, redis stay untouched (no DB/cache downtime).
+            echo "==> docker compose build app"
+            docker compose build app
+
+            # Swap to the new app container. The old one is stopped only after
+            # the new image is built — total app downtime is just the php-fpm
+            # boot + entrypoint migration window (typically 5–15s).
+            echo "==> docker compose up -d (recreate changed services only)"
+            docker compose up -d --remove-orphans
+
+            echo "==> waiting for app container to be healthy"
+            for i in $(seq 1 30); do
+              if docker compose ps app | grep -q "Up"; then
+                echo "app is running"
+                break
+              fi
+              sleep 2
+            done
+
+            echo "==> docker compose ps"
+            docker compose ps
+
+            echo "==> tail of app logs"
+            docker compose logs --tail=30 app
+
+            echo "==> prune dangling images"
+            docker image prune -f
