@@ -7,6 +7,7 @@ use App\Http\Middleware\VerifyOrganizationAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +23,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'accounts' => EnsureIsAccounts::class,
             'verify.organization' => VerifyOrganizationAccess::class,
         ]);
+
+        // Trust the upstream proxy (host nginx) so Laravel knows the original request was HTTPS.
+        // This makes asset() / url() generate https:// URLs and fixes mixed-content blocks.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO
+                | Request::HEADER_X_FORWARDED_AWS_ELB,
+        );
+
         // $middleware->web(append: [
         //     \App\Http\Middleware\SecureInput::class,
         // ]);
@@ -29,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // $middleware->api(append: [
         //     \App\Http\Middleware\SecureInput::class,
         // ]);
+
         $middleware->redirectGuestsTo('/api/unauthenticate');
     })
     ->withExceptions(function (Exceptions $exceptions) {
