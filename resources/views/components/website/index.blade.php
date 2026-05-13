@@ -2388,7 +2388,7 @@
                 <h1 class="hero-title">
                     Engaging, Accessible &amp;
                     <span class="highlight">Affordable</span>
-                    Learning Management System
+                    Learning Management System.
                 </h1>
 
                 <p class="hero-desc">
