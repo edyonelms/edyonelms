@@ -15,6 +15,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     volumes:
+      - ./:/var/www/html
       - ./storage:/var/www/html/storage
       - ./bootstrap/cache:/var/www/html/bootstrap/cache
       - ./public/build:/var/www/html/public/build
@@ -58,7 +59,15 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-${DB_PASSWORD:-rootsecret}}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-p${DB_ROOT_PASSWORD:-${DB_PASSWORD:-rootsecret}}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
