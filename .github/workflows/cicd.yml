@@ -1,0 +1,239 @@
+name: CI / CD
+
+# Pull requests + pushes run the `validate` job — fast, no secrets, no infra.
+# Only pushes to main, with `validate` green, proceed to the `deploy` job.
+# This is the gate: a red validate cancels the deploy automatically.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────
+  # JOB 1 — VALIDATE
+  # Catches every class of deploy-blocking bug we know about, before the
+  # workflow ever touches the EC2 box. If any step fails here, `deploy`
+  # is skipped automatically.
+  # ──────────────────────────────────────────────────────────────────────
+  validate:
+    name: Validate (autoload, routes, views, migrations, assets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      # Real MySQL so migrations + lms:migrate execute against a Server,
+      # not just SQLite. Catches MySQL-specific schema bugs.
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootsecret
+          MYSQL_DATABASE: lms_edyone
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -prootsecret"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────────────────────────
+      # PHP setup — match production (8.3, same extensions as Dockerfile)
+      # ─────────────────────────────────────────────────────────────────
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, exif, gd, intl, mbstring, pdo_mysql, redis, zip, pcntl
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node 20 (matches Dockerfile assets stage)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ─────────────────────────────────────────────────────────────────
+      # CHECK 1 — Syntax lint every PHP file.
+      # Catches typos that wouldn't parse. Fast (parallel via xargs).
+      # ─────────────────────────────────────────────────────────────────
+      - name: PHP syntax lint (php -l)
+        run: |
+          set -e
+          find app bootstrap config database routes tests -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /tmp/lint.log 2>&1 \
+            || (grep -v 'No syntax errors' /tmp/lint.log; exit 1)
+          echo "All PHP files lint clean."
+
+      # ─────────────────────────────────────────────────────────────────
+      # CHECK 2 — No .php file under app/ is missing a class/interface/
+      # trait/enum declaration. Catches the Profile.php "Blade dumped
+      # into the PHP class file" class of bug.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Guard against PHP files without class declarations
+        run: |
+          set -e
+          missing=$(
+            find app -type f -name '*.php' \
+              -print0 \
+              | xargs -0 -I{} sh -c '
+                  if ! grep -qE "^\s*(class|interface|trait|enum|abstract class|final class)\s" "$1"; then
+                    echo "$1"
+                  fi
+                ' _ {}
+          )
+          if [ -n "$missing" ]; then
+            echo "::error::These files under app/ have no class/interface/trait/enum declaration:"
+            echo "$missing"
+            echo
+            echo "If a file is a Blade view, move it to resources/views/ with .blade.php extension."
+            exit 1
+          fi
+          echo "All files under app/ declare a class-like symbol."
+
+      # ─────────────────────────────────────────────────────────────────
+      # CHECK 3 — Composer install in prod mode (no-dev), then strict
+      # PSR-4. Catches filename/classname mismatches like
+      # FirebaseNotification.php vs class FirebasePushNotification.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Composer install (no-dev, prod-like)
+        run: |
+          composer install \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-scripts
+
+      - name: Strict PSR-4 + classmap-authoritative (mirrors Dockerfile)
+        run: |
+          set -e
+          composer dump-autoload \
+            --optimize \
+            --classmap-authoritative \
+            --strict-psr \
+            --no-scripts
+
+      # ─────────────────────────────────────────────────────────────────
+      # CHECK 4 — Asset build. Catches Vite/Tailwind compile errors
+      # before the Dockerfile assets stage fails on EC2.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Build front-end assets (npm ci + vite build)
+        run: |
+          npm ci
+          npm run build
+          test -f public/build/manifest.json
+          echo "Vite manifest produced."
+
+      # ─────────────────────────────────────────────────────────────────
+      # CHECK 5 — Boot Laravel against the prepared MySQL service,
+      # then run all the artisan steps that run inside docker/entrypoint.sh
+      # at container boot. Catches:
+      #   - missing config keys
+      #   - blade view compile errors (view:cache)
+      #   - cached-config env() bugs (config:cache)
+      #   - migration failures
+      #   - lms:migrate schema-drift command failures
+      #   - route resolution failures including Livewire components
+      # ─────────────────────────────────────────────────────────────────
+      - name: Prepare .env for CI run
+        run: |
+          cp .env.example .env
+          # Override DB to point at the GitHub services MySQL.
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=lms_edyone/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=rootsecret/' .env
+          # Use file/array drivers — CI doesn't have Redis.
+          sed -i 's/^CACHE_STORE=.*/CACHE_STORE=file/' .env
+          sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
+          sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=sync/' .env
+          # S3 stays unconfigured in CI — that's fine; nothing here uploads.
+          php artisan key:generate --force --no-interaction
+
+      - name: artisan config:cache (catches env() usage outside config files)
+        run: php artisan config:cache
+
+      - name: artisan view:cache (catches Blade compile errors)
+        run: php artisan view:cache
+
+      - name: artisan migrate (catches migration SQL errors against real MySQL)
+        run: php artisan migrate --force --no-interaction
+
+      - name: artisan lms:migrate (catches schema-drift command errors)
+        run: php artisan lms:migrate --no-interaction
+
+      - name: artisan route:list (catches "Invalid route action" bugs)
+        run: |
+          php artisan route:list --no-ansi >/dev/null
+          echo "All routes resolved their actions successfully."
+
+  # ──────────────────────────────────────────────────────────────────────
+  # JOB 2 — DEPLOY
+  # Only runs when:
+  #   • validate passed
+  #   • event is a push to main (NOT a pull_request — PRs validate but
+  #     don't deploy)
+  # ──────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production    # optional: tie to a GitHub Environment for approvals/secrets scoping
+
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            echo "==> git pull"
+            git pull --ff-only
+
+            # Build new app image while old container keeps serving traffic.
+            # Compose only recreates services whose image/config changed —
+            # nginx, mysql, redis stay untouched (no DB/cache downtime).
+            echo "==> docker compose build app"
+            docker compose build app
+
+            echo "==> docker compose up -d (recreate changed services only)"
+            docker compose up -d --remove-orphans
+
+            echo "==> waiting for app container to be healthy"
+            for i in $(seq 1 30); do
+              if docker compose ps app | grep -q "Up"; then
+                echo "app is running"
+                break
+              fi
+              sleep 2
+            done
+
+            echo "==> docker compose ps"
+            docker compose ps
+
+            echo "==> tail of app logs"
+            docker compose logs --tail=30 app
+
+            echo "==> prune dangling images"
+            docker image prune -f
