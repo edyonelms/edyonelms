@@ -190,7 +190,13 @@ jobs:
   deploy:
     name: Deploy to EC2
     needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Deploy when:
+    #   • commit is pushed to main, OR
+    #   • the workflow is dispatched manually from the Actions tab.
+    # PRs are intentionally excluded (they validate but don't deploy).
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production    # optional: tie to a GitHub Environment for approvals/secrets scoping
