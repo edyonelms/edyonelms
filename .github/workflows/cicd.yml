@@ -204,6 +204,13 @@ jobs:
     steps:
       - name: SSH and redeploy
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ZEPTOMAIL_API_TOKEN: ${{ secrets.ZEPTOMAIL_API_TOKEN }}
+          ZEPTOMAIL_OTP_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_OTP_TEMPLATE_KEY }}
+          ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY }}
+          ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY }}
+          ZEPTOMAIL_FROM_EMAIL: ${{ secrets.ZEPTOMAIL_FROM_EMAIL }}
+          ZEPTOMAIL_FROM_NAME: ${{ secrets.ZEPTOMAIL_FROM_NAME }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
