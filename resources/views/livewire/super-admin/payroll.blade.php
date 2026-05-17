@@ -758,71 +758,141 @@
     </div>
 
     {{-- ══════════════════════════════════════════════
-         ADD / EDIT EMPLOYEE MODAL
+         ADD / EDIT EMPLOYEE SLIDE-IN PANEL
     ══════════════════════════════════════════════ --}}
-    <x-modal-form
-        show="{{ $showEmpModal }}"
-        title="{{ $editEmpId ? 'Edit Employee' : 'Add Employee' }}"
-        submitAction="saveEmployee"
-        submitButton="{{ $editEmpId ? 'Update Employee' : 'Add Employee' }}"
-        closeAction="closeEmpModal"
-        maxWidth="max-w-2xl">
+    @if ($showEmpModal)
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm"
+            wire:click.self="closeEmpModal">
+            <div class="relative w-full max-w-2xl h-screen bg-white shadow-2xl flex flex-col"
+                x-data x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full opacity-0"
+                x-transition:enter-end="translate-x-0 opacity-100">
 
-        {{-- Photo --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-            @if ($editEmpId && $empExistingPhoto && !$empPhoto)
-                <div class="flex items-center gap-3 mb-2">
-                    <img src="{{ $empExistingPhoto }}"
-                        class="w-14 h-14 rounded-full object-cover border border-gray-200">
-                    <span class="text-xs text-gray-400">Current photo</span>
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl {{ $editEmpId ? 'bg-amber-100' : 'bg-blue-100' }} flex items-center justify-center flex-shrink-0">
+                            @if ($editEmpId)
+                                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            @else
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                </svg>
+                            @endif
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-gray-900">{{ $editEmpId ? 'Edit Employee' : 'Add Employee' }}</h2>
+                            <p class="text-xs text-gray-400">{{ $editEmpId ? 'Update employee details' : 'Fill in the details below' }}</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeEmpModal"
+                        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
-            @endif
-            <input type="file" wire:model="empPhoto" accept="image/*"
-                class="block w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
-                       file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100">
-            @error('empPhoto')
-                <span class="text-red-500 text-xs mt-0.5 block">{{ $message }}</span>
-            @enderror
-        </div>
 
-        {{-- Basic Info --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <x-input wire:model.defer="empName"        label="Name"        placeholder="Full name"       required />
-            <x-input wire:model.defer="empEmail"       label="Email"       placeholder="Email address"   />
-            <x-input wire:model.defer="empMobile"      label="Mobile"      placeholder="Mobile number"   />
-            <x-input wire:model.defer="empDesignation" label="Designation" placeholder="e.g. Manager"    />
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-            <x-native-select label="Type" wire:model.defer="empType" required>
-                <option value="user">User</option>
-                <option value="counsellor">Counsellor</option>
-                <option value="team">Team</option>
-                <option value="management">Management</option>
-                <option value="other">Other</option>
-            </x-native-select>
+                    {{-- Photo --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Photo</label>
+                        <div class="flex items-center gap-4">
+                            @if ($editEmpId && $empExistingPhoto && !$empPhoto)
+                                <img src="{{ $empExistingPhoto }}"
+                                    class="w-14 h-14 rounded-full object-cover border-2 border-gray-200 shadow-sm flex-shrink-0">
+                            @else
+                                <div class="w-14 h-14 rounded-full bg-gray-100 border-2 border-dashed border-gray-300
+                                            flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <input type="file" wire:model="empPhoto" accept="image/*"
+                                    class="block w-full text-sm text-gray-500
+                                           file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                                           file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700
+                                           hover:file:bg-blue-100 cursor-pointer">
+                                @error('empPhoto')
+                                    <span class="text-red-500 text-xs mt-0.5 block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
 
-            <x-input wire:model.defer="empSalary"      label="Salary (₹)"   placeholder="Monthly salary" required />
-            <x-input wire:model.defer="empJoiningDate" label="Joining Date" type="date" />
-            <x-input wire:model.defer="empAddress"     label="Address"      placeholder="Address" />
-        </div>
+                    {{-- Basic Info --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Basic Information</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <x-input wire:model.defer="empName"        label="Name *"        placeholder="Full name" />
+                            <x-input wire:model.defer="empEmail"       label="Email"         placeholder="Email address" />
+                            <x-input wire:model.defer="empMobile"      label="Mobile"        placeholder="Mobile number" />
+                            <x-input wire:model.defer="empDesignation" label="Designation"   placeholder="e.g. Manager" />
 
-        {{-- Bank Details --}}
-        <div>
-            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Bank Details</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-input wire:model.defer="empBankName"    label="Bank Name"       placeholder="Bank name" />
-                <x-input wire:model.defer="empHolderName"  label="Account Holder"  placeholder="Account holder name" />
-                <x-input wire:model.defer="empAccountNo"   label="Account Number"  placeholder="Account number" />
-                <x-input wire:model.defer="empIfsc"        label="IFSC Code"       placeholder="IFSC code" />
-                <div class="sm:col-span-2">
-                    <x-input wire:model.defer="empBranch"  label="Branch"          placeholder="Branch name" />
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Type *</label>
+                                <select wire:model.defer="empType"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                           focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <option value="user">User</option>
+                                    <option value="counsellor">Counsellor</option>
+                                    <option value="team">Team</option>
+                                    <option value="management">Management</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <x-input wire:model.defer="empSalary"      label="Salary (₹) *" placeholder="Monthly salary" />
+                            <x-input wire:model.defer="empJoiningDate" label="Joining Date" type="date" />
+                            <x-input wire:model.defer="empAddress"     label="Address"      placeholder="Address" />
+                        </div>
+                    </div>
+
+                    {{-- Bank Details --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Bank Details</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <x-input wire:model.defer="empBankName"   label="Bank Name"      placeholder="Bank name" />
+                            <x-input wire:model.defer="empHolderName" label="Account Holder" placeholder="Account holder name" />
+                            <x-input wire:model.defer="empAccountNo"  label="Account Number" placeholder="Account number" />
+                            <x-input wire:model.defer="empIfsc"       label="IFSC Code"      placeholder="IFSC code" />
+                            <div class="sm:col-span-2">
+                                <x-input wire:model.defer="empBranch" label="Branch"         placeholder="Branch name" />
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+
+                {{-- Footer --}}
+                <div class="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex items-center gap-3">
+                    <button wire:click="saveEmployee"
+                        class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2
+                               {{ $editEmpId ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ $editEmpId ? 'Update Employee' : 'Add Employee' }}
+                    </button>
+                    <button wire:click="closeEmpModal"
+                        class="flex-1 py-2.5 bg-white hover:bg-gray-100 text-gray-600 text-sm font-medium
+                               rounded-lg border border-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+
             </div>
         </div>
-
-    </x-modal-form>
+    @endif
 
     {{-- ══════════════════════════════════════════════
          EMPLOYEE DETAIL MODAL (minimal)
