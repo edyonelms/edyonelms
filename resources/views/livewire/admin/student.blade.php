@@ -507,97 +507,432 @@
     {{-- ══════════════════════════════════════════════════
          ADD / EDIT MODAL
     ══════════════════════════════════════════════════ --}}
-    <x-modal-form show="{{ $open }}" title="{{ $editId ? 'Edit Student' : 'Add Student' }}"
-        submitAction="onSave" submitButton="{{ $editId ? 'Update' : 'Create' }}" closeAction="closeModal">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
-            <div class="sm:col-span-3">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Student Profile Image</label>
-                        @if ($editId && !$studentImage)
-                            @php $user = \App\Models\User::find($editId) @endphp
-                            @if ($user?->image)
-                                <div class="flex items-center gap-2 mb-2">
-                                    <img src="{{ $user->image }}" class="h-16 w-16 rounded-full object-cover">
-                                    <button wire:click="$set('studentImage', null)" type="button"
-                                        class="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                </div>
-                            @endif
-                        @endif
-                        <input type="file" wire:model="studentImage"
-                            class="block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
-                                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                                hover:file:bg-blue-100">
-                        @error('studentImage')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
+    @if ($open)
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm pt-0">
+            <div class="relative w-full max-w-3xl h-screen bg-white shadow-2xl flex flex-col">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">
+                                {{ $editId ? 'Edit Student' : 'Add New Student' }}</h2>
+                            <p class="text-xs text-gray-500">Fill in the student details below</p>
+                        </div>
                     </div>
+                    <button wire:click="closeModal" type="button"
+                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+
+                {{-- Form Body (scrollable) --}}
+                <form wire:submit.prevent="onSave" class="flex-1 overflow-y-auto">
+                    <div class="p-6 space-y-6">
+
+                        {{-- Profile Image --}}
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Photo</p>
+                            <div class="flex items-center gap-4">
+                                @if ($editId && !$studentImage && $studentImageUrl)
+                                    <img src="{{ $studentImageUrl }}"
+                                        class="w-16 h-16 rounded-full object-cover border-2 border-white shadow">
+                                @else
+                                    <div
+                                        class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white shadow">
+                                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div class="flex-1">
+                                    <input type="file" wire:model="studentImage" accept="image/*"
+                                        class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3
+                                               file:rounded-lg file:border-0 file:text-xs file:font-semibold
+                                               file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                    <p class="text-xs text-gray-400 mt-1">JPG, PNG up to 2MB</p>
+                                    @error('studentImage')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Personal Information --}}
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <span class="w-5 h-0.5 bg-blue-500 rounded"></span>
+                                Personal Information
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                                {{-- Full Name --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Full Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="studentsName" type="text" placeholder="Enter full name"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('studentsName') border-red-400 @enderror">
+                                    @error('studentsName')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Email --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Email <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="studentsEmail" type="email" placeholder="student@example.com"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('studentsEmail') border-red-400 @enderror">
+                                    @error('studentsEmail')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Mobile --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Mobile Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="studentsMobile" type="tel" placeholder="10-digit mobile"
+                                        maxlength="10"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('studentsMobile') border-red-400 @enderror">
+                                    @error('studentsMobile')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Gender --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Gender <span class="text-red-500">*</span>
+                                    </label>
+                                    <select wire:model="studentsGender"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                               @error('studentsGender') border-red-400 @enderror">
+                                        <option value="">Select Gender</option>
+                                        @foreach (App\Helpers\Constants::GENDER as $gender)
+                                            <option value="{{ $gender }}">{{ ucfirst($gender) }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('studentsGender')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Date of Birth --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Date of Birth <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="dob" type="date"
+                                        max="{{ now()->subDay()->format('Y-m-d') }}"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('dob') border-red-400 @enderror">
+                                    @error('dob')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Date of Admission --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Date of Admission <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="dateOfAdmission" type="date"
+                                        max="{{ now()->format('Y-m-d') }}"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('dateOfAdmission') border-red-400 @enderror">
+                                    @error('dateOfAdmission')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Religion --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Religion</label>
+                                    <input wire:model="religion" type="text" placeholder="e.g. Hindu, Muslim"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+
+                                {{-- Aadhar --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Aadhar Number</label>
+                                    <input wire:model="aadharNo" type="text" placeholder="12-digit Aadhar no."
+                                        maxlength="12"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('aadharNo') border-red-400 @enderror">
+                                    @error('aadharNo')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Parents Information --}}
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <span class="w-5 h-0.5 bg-purple-500 rounded"></span>
+                                Parents Information
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Father's Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="fatherName" type="text" placeholder="Father's full name"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('fatherName') border-red-400 @enderror">
+                                    @error('fatherName')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Mother's Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input wire:model="motherName" type="text" placeholder="Mother's full name"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('motherName') border-red-400 @enderror">
+                                    @error('motherName')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Academic Information --}}
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <span class="w-5 h-0.5 bg-emerald-500 rounded"></span>
+                                Academic Information
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                                {{-- Board --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Board <span class="text-red-500">*</span>
+                                    </label>
+                                    <select wire:model="studentsBoard"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                               @error('studentsBoard') border-red-400 @enderror">
+                                        <option value="">Select Board</option>
+                                        @foreach (App\Helpers\Constants::BOARD as $board)
+                                            <option value="{{ $board }}">{{ $board }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('studentsBoard')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Class --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                                    <select wire:model.live="studentsClass"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors">
+                                        <option value="">Select Class</option>
+                                        @foreach ($standards as $standard)
+                                            <option value="{{ $standard->id }}">{{ $standard->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Section --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                                    <select wire:model="studentsSection"
+                                        @disabled(!$studentsClass)
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <option value="">Select Section</option>
+                                        @foreach ($sections as $section)
+                                            <option value="{{ $section->id }}">{{ $section->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Appar ID --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Apaar ID</label>
+                                    <input wire:model="apparId" type="text" placeholder="Apaar ID"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+
+                                {{-- Registration Number --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Registration
+                                        Number</label>
+                                    <input wire:model="registrationNumber" type="text"
+                                        placeholder="Registration number"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Address --}}
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <span class="w-5 h-0.5 bg-orange-500 rounded"></span>
+                                Address Details
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                                {{-- State --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                                    <select wire:model.live="selectedState"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors">
+                                        <option value="">Select State</option>
+                                        @foreach ($states as $state)
+                                            <option value="{{ $state }}">{{ $state }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- City --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                    <select wire:model="selectedCity"
+                                        @disabled(!$selectedState)
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <option value="">Select City</option>
+                                        @foreach ($cities as $city)
+                                            <option value="{{ $city['name'] }}">{{ $city['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Pincode --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+                                    <input wire:model="pincode" type="text" placeholder="6-digit pincode"
+                                        maxlength="6"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                               @error('pincode') border-red-400 @enderror">
+                                    @error('pincode')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                {{-- Local Address --}}
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local Address</label>
+                                    <textarea wire:model="localAddress" rows="2" placeholder="Current/local address"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"></textarea>
+                                </div>
+
+                                {{-- Permanent Address --}}
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Permanent
+                                        Address</label>
+                                    <textarea wire:model="permanentAddress" rows="2"
+                                        placeholder="Permanent address (if different)"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Settings --}}
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Settings</p>
+                            <div class="flex flex-wrap gap-6">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <div class="relative">
+                                        <input type="checkbox" wire:model="transportationRequired" class="sr-only peer">
+                                        <div
+                                            class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-500 transition-colors">
+                                        </div>
+                                        <div
+                                            class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5">
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Transportation Required</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <div class="relative">
+                                        <input type="checkbox" wire:model="studentsActive" class="sr-only peer">
+                                        <div
+                                            class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-emerald-500 transition-colors">
+                                        </div>
+                                        <div
+                                            class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5">
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Active</span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>{{-- /p-6 --}}
+                </form>
+
+                {{-- Footer --}}
+                <div
+                    class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button type="button" wire:click="closeModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300
+                               rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" form="student-form"
+                        wire:click="onSave"
+                        wire:loading.attr="disabled"
+                        class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700
+                               rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                               flex items-center gap-2">
+                        <span wire:loading wire:target="onSave">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h4z"></path>
+                            </svg>
+                        </span>
+                        {{ $editId ? 'Update Student' : 'Add Student' }}
+                    </button>
+                </div>
+
             </div>
-
-            <x-input wire:model.defer="studentsName" label="Full Name" required />
-            <x-input wire:model.defer="studentsEmail" label="Email" required />
-            <x-input wire:model.defer="fatherName" label="Father's Name" required />
-            <x-input wire:model.defer="motherName" label="Mother's Name" required />
-            <x-datetime-picker label="Date Of Birth" without-time required wire:model.defer="dob" />
-            <x-datetime-picker label="Date Of Admission" without-time required wire:model.defer="dateOfAdmission"
-                :min="null" :max="null" />
-            <x-input wire:model.defer="studentsMobile" label="Mobile Number" required />
-            <x-input wire:model.defer="aadharNo" label="Aadhar Number" />
-            <x-input wire:model.defer="apparId" label="Apaar Id" />
-            <x-input wire:model.defer="registrationNumber" label="Registration Number" />
-
-            <x-native-select label="Gender" wire:model.defer="studentsGender" required>
-                <option value="">Select Gender</option>
-                @foreach (App\Helpers\Constants::GENDER as $gender)
-                    <option value="{{ $gender }}">{{ $gender }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="Board" wire:model.defer="studentsBoard" required>
-                <option value="">Select Board</option>
-                @foreach (App\Helpers\Constants::BOARD as $board)
-                    <option value="{{ $board }}">{{ $board }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="Class" wire:model.live="studentsClass">
-                <option value="">Select Class</option>
-                @foreach ($standards as $standard)
-                    <option value="{{ $standard->id }}">{{ $standard->name }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="Section" wire:model.defer="studentsSection">
-                <option value="">Select Section</option>
-                @foreach ($sections as $section)
-                    <option value="{{ $section->id }}">{{ $section->name }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="State" wire:model.live="selectedState">
-                <option value="">Select State</option>
-                @foreach ($states as $state)
-                    <option value="{{ $state }}">{{ $state }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="City" wire:model.live="selectedCity">
-                <option value="">Select City</option>
-                @foreach ($cities as $city)
-                    <option value="{{ $city['name'] }}">{{ $city['name'] }}</option>
-                @endforeach
-            </x-native-select>
         </div>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-            <x-input wire:model.defer="pincode" label="Pincode" />
-            <x-input wire:model.defer="religion" label="Religion" />
-            <x-textarea wire:model.defer="localAddress" label="Local Address" />
-            <x-textarea wire:model.defer="permanentAddress" label="Permanent Address" />
-        </div>
-
-        <div class="flex gap-4 py-4">
-            <x-toggle label="Transportation Required" wire:model.defer="transportationRequired" />
-            <x-toggle label="Active" wire:model.defer="studentsActive" />
-        </div>
-    </x-modal-form>
+    @endif
 
     {{-- ══════════════════════════════════════════════════
          VIEW MODAL (Simple)

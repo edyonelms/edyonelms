@@ -2862,9 +2862,8 @@
                     <div class="app-card-desc">Edyone is a comprehensive edtech platform offering academic and
                         competitive exam courses, interactive lessons, practice tests, performance tracking, and smart
                         learning tools for students.</div>
-                    <a href="https://play.google.com/store/apps/details?id=com.edyoneapp&pcampaignid=web_share"
                         target="_blank" rel="noopener noreferrer" class="app-dl-btn app-dl-btn-primary">
-                        <span style="font-size:16px;">▶</span> Get it on Google Play
+                        <span style="font-size:16px;">▶</span> Coming Soon
                     </a>
                 </div>
 
@@ -2910,17 +2909,6 @@
                         class="app-dl-btn app-dl-btn-primary">
                         <span style="font-size:16px;">🚀</span> Coming Soon.
                     </a>
-                    <a href="https://edyonesafe.in" target="_blank" rel="noopener noreferrer"
-                        class="app-dl-btn app-dl-btn-secondary">📖 View Documentation</a>
-                </div>
-            </div>
-
-            <div class="reveal" style="text-align:center;margin-top:36px;">
-                <div
-                    style="display:inline-flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;color:var(--text3);">
-                    <span style="font-size:20px;">📱</span>
-                    <span>All apps are <strong style="color:var(--text);">100% free to download</strong> — Edyone safe
-                        is included with your school plan at no extra cost.</span>
                 </div>
             </div>
         </div>
