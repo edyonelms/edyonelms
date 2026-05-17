@@ -21,8 +21,8 @@
     <meta name="twitter:image" content="{{ asset('website-image/Group 11525.png') }}" />
     <script type="application/ld+json">
     {
-      "@context": "https://schema.org",
-      "@type": "Organization",
+      "@@context": "https://schema.org",
+      "@@type": "Organization",
       "name": "EDYONE LMS",
       "url": "https://edyonelms.in",
       "logo": "{{ asset('website-image/Group 11525.png') }}",
