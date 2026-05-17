@@ -264,10 +264,17 @@ jobs:
             docker compose ps
 
             echo "==> tail of app logs"
-            docker compose logs --tail=30 app
+            docker compose logs --tail=50 app
+
+            echo "==> Laravel error log"
+            docker compose exec -T app tail -n 80 storage/logs/laravel.log 2>/dev/null || echo "no laravel log"
 
             echo "==> recache config (picks up new env vars)"
-            docker compose exec -T app php artisan config:cache || true
+            docker compose exec -T app php artisan config:cache
+
+            echo "==> restart app to reload config"
+            docker compose restart app
+            sleep 5
 
             echo "==> prune dangling images"
             docker image prune -f
