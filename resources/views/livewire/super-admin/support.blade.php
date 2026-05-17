@@ -307,174 +307,284 @@
         </div>
     </div>
 
-    {{-- ══════════ VIEW MODAL ══════════ --}}
-    <x-view-modal :show="$showDetailModal && $selectedSupport !== null" title="Support Details" closeAction="closeDetailModal" maxWidth="max-w-lg">
+    {{-- ══════════ VIEW QUERY PANEL ══════════ --}}
+    @if ($showDetailModal && $selectedSupport)
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm"
+            wire:click.self="closeDetailModal">
+            <div class="relative w-full max-w-lg h-screen bg-white shadow-2xl flex flex-col"
+                x-data x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full opacity-0"
+                x-transition:enter-end="translate-x-0 opacity-100">
 
-        @if ($selectedSupport)
-            {{-- Header Info --}}
-            <div class="flex items-center gap-3 mb-4">
-                @if ($selectedSupport->organization?->logo)
-                    <img src="{{ $selectedSupport->organization->logo }}"
-                        class="w-9 h-9 rounded-full object-cover border border-gray-200" alt="">
-                @else
-                    <div
-                        class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold">
-                        {{ strtoupper(substr($selectedSupport->organization?->name ?? 'S', 0, 1)) }}
+                {{-- Sticky Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-gray-900">Support Query</h2>
+                            <p class="text-xs text-gray-400">{{ $selectedSupport->organization?->name ?? '—' }}</p>
+                        </div>
+                        @if ($selectedSupport->super_admin_reply)
+                            <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold bg-green-100 text-green-700 border border-green-200">
+                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>Replied
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                                <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>Pending
+                            </span>
+                        @endif
                     </div>
-                @endif
-                <div>
-                    <p class="text-sm font-bold text-gray-800">{{ $selectedSupport->organization?->name ?? '—' }}</p>
-                    <p class="text-xs text-gray-400">{{ $selectedSupport->user?->name ?? '—' }}</p>
-                </div>
-                @if ($selectedSupport->super_admin_reply)
-                    <span
-                        class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Replied</span>
-                @else
-                    <span
-                        class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Pending</span>
-                @endif
-            </div>
-
-            {{-- Submitted By / Date --}}
-            <div class="grid grid-cols-2 gap-3 text-xs mb-4">
-                <div class="bg-gray-50 rounded-xl p-3">
-                    <p class="text-gray-400 font-medium mb-1">Submitted By</p>
-                    <p class="text-gray-800 font-semibold">{{ $selectedSupport->user?->name ?? '—' }}</p>
-                    <p class="text-gray-500 break-all">{{ $selectedSupport->user?->email ?? '—' }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-xl p-3">
-                    <p class="text-gray-400 font-medium mb-1">Date</p>
-                    <p class="text-gray-800 font-semibold">{{ $selectedSupport->created_at->format('d M Y') }}</p>
-                    <p class="text-gray-500">{{ $selectedSupport->created_at->diffForHumans() }}</p>
-                </div>
-            </div>
-
-            {{-- Topic --}}
-            <div class="mb-4">
-                <p class="text-xs text-gray-400 font-medium mb-1">Topic</p>
-                <p class="text-sm font-semibold text-gray-800">{{ $selectedSupport->topic }}</p>
-            </div>
-
-            {{-- Message --}}
-            <div class="mb-4">
-                <p class="text-xs text-gray-400 font-medium mb-1">Message</p>
-                <div class="text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50 rounded-xl p-3">
-                    {{ $selectedSupport->admin_query }}
-                </div>
-            </div>
-
-            {{-- Attachment --}}
-            @if ($selectedSupport->image)
-                @php
-                    $attUrl = $selectedSupport->image;
-                    $attExt = strtolower(pathinfo(parse_url($attUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
-                @endphp
-                <div class="mb-4">
-                    <p class="text-xs text-gray-400 font-medium mb-1">Attachment</p>
-                    @if (in_array($attExt, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
-                        <img src="{{ $attUrl }}" class="max-w-full rounded-xl border border-gray-200"
-                            alt="">
-                        <a href="{{ $attUrl }}" target="_blank"
-                            class="text-xs text-blue-600 mt-1 inline-block">↗ Open full size</a>
-                    @elseif ($attExt === 'pdf')
-                        <a href="{{ $attUrl }}" target="_blank" class="text-sm text-blue-600">↗ Open /
-                            Download PDF</a>
-                    @else
-                        <a href="{{ $attUrl }}" target="_blank" class="text-sm text-blue-600">↗ View
-                            Attachment</a>
-                    @endif
-                </div>
-            @endif
-
-            {{-- Reply Status --}}
-            @if ($selectedSupport->super_admin_reply)
-                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="text-xs font-bold text-blue-700">Super Admin Reply</p>
-                        <p class="text-xs text-blue-400">{{ $selectedSupport->updated_at->format('d M Y') }}</p>
-                    </div>
-                    <p class="text-sm text-blue-800 whitespace-pre-line leading-relaxed">
-                        {{ $selectedSupport->super_admin_text }}</p>
-                </div>
-            @else
-                <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
-                    Awaiting reply from Super Admin.
-                </div>
-            @endif
-        @endif
-
-        <x-slot:footer>
-            <button wire:click="openReplyModal({{ $selectedSupport?->id }})"
-                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                {{ $selectedSupport?->super_admin_reply ? 'Update Reply' : 'Reply' }}
-            </button>
-            <button wire:click="closeDetailModal"
-                class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Close
-            </button>
-        </x-slot:footer>
-
-    </x-view-modal>
-
-
-    {{-- ══════════ REPLY MODAL ══════════ --}}
-    <x-view-modal :show="$showReplyModal && $selectedSupport !== null" title="{{ $selectedSupport?->super_admin_reply ? 'Update Reply' : 'Send Reply' }}"
-        closeAction="closeReplyModal" maxWidth="max-w-lg">
-
-        @if ($selectedSupport)
-            {{-- Original Query Summary --}}
-            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 mb-4">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Original Query</p>
-                <p class="text-xs font-semibold text-gray-700">{{ $selectedSupport->topic }}</p>
-                <p class="text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed text-justify">
-                    {{ $selectedSupport->admin_query }}
-                </p>
-                @if ($selectedSupport->image)
-                    <a href="{{ $selectedSupport->image }}" target="_blank"
-                        class="flex items-center gap-1 text-xs text-purple-600 hover:underline mt-1.5">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    <button wire:click="closeDetailModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        View Attachment
-                    </a>
-                @endif
+                    </button>
+                </div>
+
+                {{-- Scrollable Body --}}
+                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+                    {{-- School Card --}}
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        @if ($selectedSupport->organization?->logo)
+                            <img src="{{ $selectedSupport->organization->logo }}"
+                                class="w-14 h-14 rounded-2xl object-cover border border-gray-200 flex-shrink-0" alt="">
+                        @else
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                <span class="text-xl font-bold text-indigo-600">
+                                    {{ strtoupper(substr($selectedSupport->organization?->name ?? 'S', 0, 1)) }}
+                                </span>
+                            </div>
+                        @endif
+                        <div class="min-w-0">
+                            <p class="text-base font-bold text-gray-900 truncate">{{ $selectedSupport->organization?->name ?? '—' }}</p>
+                            <p class="text-sm text-gray-500 truncate">{{ $selectedSupport->user?->name ?? '—' }}</p>
+                            <p class="text-xs text-gray-400 truncate">{{ $selectedSupport->user?->email ?? '—' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Date Grid --}}
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                            <p class="text-gray-400 font-medium mb-1">Submitted</p>
+                            <p class="text-gray-800 font-semibold">{{ $selectedSupport->created_at->format('d M Y') }}</p>
+                            <p class="text-gray-500">{{ $selectedSupport->created_at->format('h:i A') }}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                            <p class="text-gray-400 font-medium mb-1">Time Ago</p>
+                            <p class="text-gray-800 font-semibold">{{ $selectedSupport->created_at->diffForHumans() }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Topic --}}
+                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                        <p class="text-xs text-blue-400 font-semibold uppercase tracking-wide mb-1">Topic</p>
+                        <p class="text-sm font-bold text-blue-900">{{ $selectedSupport->topic }}</p>
+                    </div>
+
+                    {{-- Message --}}
+                    <div>
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Message</p>
+                        <div class="text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            {{ $selectedSupport->admin_query }}
+                        </div>
+                    </div>
+
+                    {{-- Attachment --}}
+                    @if ($selectedSupport->image)
+                        @php
+                            $attUrl = $selectedSupport->image;
+                            $attExt = strtolower(pathinfo(parse_url($attUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+                        @endphp
+                        <div>
+                            <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Attachment</p>
+                            @if (in_array($attExt, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                                <img src="{{ $attUrl }}" class="w-full rounded-xl border border-gray-200" alt="">
+                                <a href="{{ $attUrl }}" target="_blank"
+                                    class="text-xs text-blue-600 mt-1.5 inline-flex items-center gap-1 hover:underline">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                    </svg>
+                                    Open full size
+                                </a>
+                            @elseif ($attExt === 'pdf')
+                                <a href="{{ $attUrl }}" target="_blank"
+                                    class="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 hover:bg-blue-100 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    Open / Download PDF
+                                </a>
+                            @else
+                                <a href="{{ $attUrl }}" target="_blank"
+                                    class="flex items-center gap-2 text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 hover:bg-purple-100 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                    View Attachment
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Reply Section --}}
+                    @if ($selectedSupport->super_admin_reply)
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs font-bold text-emerald-800">Super Admin Reply</p>
+                                </div>
+                                <p class="text-xs text-emerald-500">{{ $selectedSupport->updated_at->format('d M Y') }}</p>
+                            </div>
+                            <p class="text-sm text-emerald-900 whitespace-pre-line leading-relaxed">
+                                {{ $selectedSupport->super_admin_text }}
+                            </p>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                            <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-sm text-amber-700">Awaiting reply from Super Admin.</p>
+                        </div>
+                    @endif
+
+                </div>
+
+                {{-- Sticky Footer --}}
+                <div class="px-6 py-4 border-t border-gray-200 bg-white flex gap-3 flex-shrink-0">
+                    <button wire:click="openReplyModal({{ $selectedSupport->id }})"
+                        class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                        </svg>
+                        {{ $selectedSupport->super_admin_reply ? 'Update Reply' : 'Send Reply' }}
+                    </button>
+                    <button wire:click="closeDetailModal"
+                        class="px-5 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0">
+                        Close
+                    </button>
+                </div>
+
             </div>
+        </div>
+    @endif
 
-            {{-- Reply Textarea --}}
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Your Reply <span class="text-red-500">*</span>
-                </label>
-                <textarea wire:model.defer="superAdminReply" rows="6" placeholder="Type your reply to the school admin here..."
-                    class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm
-                       focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                       resize-none leading-relaxed">
-            </textarea>
-                @error('superAdminReply')
-                    <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                @enderror
+
+    {{-- ══════════ SEND REPLY PANEL ══════════ --}}
+    @if ($showReplyModal && $selectedSupport)
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm"
+            wire:click.self="closeReplyModal">
+            <div class="relative w-full max-w-lg h-screen bg-white shadow-2xl flex flex-col"
+                x-data x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full opacity-0"
+                x-transition:enter-end="translate-x-0 opacity-100">
+
+                {{-- Sticky Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-gray-900">
+                                {{ $selectedSupport->super_admin_reply ? 'Update Reply' : 'Send Reply' }}
+                            </h2>
+                            <p class="text-xs text-gray-400">{{ $selectedSupport->organization?->name ?? '—' }}</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeReplyModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Scrollable Body --}}
+                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+                    {{-- Original Query Summary --}}
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Original Query</p>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-800 mb-1">{{ $selectedSupport->topic }}</p>
+                        <p class="text-xs text-gray-500 line-clamp-4 leading-relaxed">{{ $selectedSupport->admin_query }}</p>
+                        @if ($selectedSupport->image)
+                            <a href="{{ $selectedSupport->image }}" target="_blank"
+                                class="flex items-center gap-1 text-xs text-purple-600 hover:underline mt-2">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                View Attachment
+                            </a>
+                        @endif
+                    </div>
+
+                    {{-- Previous Reply (if updating) --}}
+                    @if ($selectedSupport->super_admin_reply)
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">Previous Reply</p>
+                            <p class="text-sm text-blue-800 leading-relaxed line-clamp-4">{{ $selectedSupport->super_admin_text }}</p>
+                        </div>
+                    @endif
+
+                    {{-- Reply Textarea --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-2">
+                            Your Reply <span class="text-red-500">*</span>
+                        </label>
+                        <textarea wire:model.defer="superAdminReply" rows="8"
+                            placeholder="Type your reply to the school admin here..."
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm
+                                   focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                                   resize-none leading-relaxed transition-colors"></textarea>
+                        @error('superAdminReply')
+                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                </div>
+
+                {{-- Sticky Footer --}}
+                <div class="px-6 py-4 border-t border-gray-200 bg-white flex gap-3 flex-shrink-0">
+                    <button wire:click="sendReply"
+                        class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        {{ $selectedSupport->super_admin_reply ? 'Update Reply' : 'Send Reply' }}
+                    </button>
+                    <button wire:click="closeReplyModal"
+                        class="px-5 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0">
+                        Cancel
+                    </button>
+                </div>
+
             </div>
-        @endif
-
-        <x-slot:footer>
-            <button wire:click="sendReply"
-                class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm
-                   font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                {{ $selectedSupport?->super_admin_reply ? 'Update Reply' : 'Send Reply' }}
-            </button>
-            <button wire:click="closeReplyModal"
-                class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm
-                   font-medium rounded-lg transition-colors">
-                Cancel
-            </button>
-        </x-slot:footer>
-
-    </x-view-modal>
+        </div>
+    @endif
 
     {{-- ══════════ FIX 1: DELETE CONFIRMATION POPUP ══════════ --}}
     @if ($confirmDeleteId)
