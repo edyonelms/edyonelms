@@ -31,7 +31,7 @@ require __DIR__.'/../vendor/autoload.php';
             if ($missing || !is_string($value) || !str_contains($value, '\\')) {
                 return;
             }
-            if (!class_exists($value, false) && !interface_exists($value, false)) {
+            if (!class_exists($value) && !interface_exists($value)) {
                 $missing = true;
             }
         });
