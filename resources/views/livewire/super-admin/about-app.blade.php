@@ -47,19 +47,10 @@
                 <div class="max-w-5xl mx-auto px-6 py-10">
                     <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                         <div class="flex-shrink-0">
-                            @if ($aboutApp->logo)
-                                <img src="{{ $aboutApp->logo }}" alt="App Logo"
-                                    class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
-                            @else
-                                <div
-                                    class="w-24 h-24 rounded-2xl bg-indigo-100 flex items-center justify-center shadow-sm">
-                                    <svg class="w-12 h-12 text-indigo-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                            @endif
+                            <img src="{{ $aboutApp->logo ?: asset('website-image/Group 11525.png') }}"
+                                alt="App Logo"
+                                class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2"
+                                onerror="this.src='{{ asset('website-image/Group 11525.png') }}'">
                         </div>
                         <div class="text-center sm:text-left flex-1">
                             <h1 class="text-3xl font-bold text-gray-900">{{ $aboutApp->heading ?? 'About App' }}</h1>
@@ -842,99 +833,145 @@
         </div>
     @endif
 
-    {{-- ══════════ TEAM MODAL ══════════ --}}
+    {{-- ══════════ TEAM SLIDE-IN PANEL ══════════ --}}
     @if ($showTeamModal)
-        <div
-            class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[9999] px-4 py-8 overflow-y-auto">
-            <div class="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full my-auto">
-                <div class="flex items-center gap-3 mb-5">
-                    <div class="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-sm font-semibold text-gray-900">
-                        {{ $editTeamIndex !== null ? 'Edit Team Member' : 'Add Team Member' }}
-                    </h3>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Name *</label>
-                        <input type="text" wire:model.defer="newTeamMember.name" placeholder="Full name"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                   focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                        @error('newTeamMember.name')
-                            <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Position *</label>
-                        <input type="text" wire:model.defer="newTeamMember.position"
-                            placeholder="e.g. CEO, Developer"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                   focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                        @error('newTeamMember.position')
-                            <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                        <textarea wire:model.defer="newTeamMember.description" rows="2" placeholder="Brief description..."
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                   focus:ring-2 focus:ring-amber-400 focus:border-amber-400"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Profile Link</label>
-                        <input type="url" wire:model.defer="newTeamMember.link" placeholder="https://..."
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                   focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                        @error('newTeamMember.link')
-                            <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">
-                            Profile Image {{ $editTeamIndex !== null ? '(leave empty to keep current)' : '' }}
-                        </label>
-                        @if ($editTeamIndex !== null && !empty($core_team[$editTeamIndex]['image']))
-                            <div class="flex items-center gap-3 mb-2">
-                                <img src="{{ $core_team[$editTeamIndex]['image'] }}"
-                                    class="w-10 h-10 rounded-full object-cover border border-gray-200">
-                                <span class="text-xs text-gray-400">Current image</span>
-                            </div>
-                        @endif
-                        <input type="file" wire:model="newTeamMemberImage" accept="image/*"
-                            class="block w-full text-sm text-gray-500
-                                   file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
-                                   file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700
-                                   hover:file:bg-amber-100 transition-colors">
-                        <div wire:loading wire:target="newTeamMemberImage"
-                            class="flex items-center gap-1.5 text-xs text-blue-600 mt-1">
-                            <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10"
-                                    stroke="currentColor" stroke-width="4" />
-                                <path class="opacity-75" fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm">
+            <div class="relative w-full max-w-lg h-screen bg-white shadow-2xl flex flex-col">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            Uploading...
                         </div>
-                        @error('newTeamMemberImage')
-                            <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                        @enderror
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">
+                                {{ $editTeamIndex !== null ? 'Edit Team Member' : 'Add Team Member' }}
+                            </h2>
+                            <p class="text-xs text-gray-500">Fill in the member details below</p>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center gap-2 mt-5">
-                    <button wire:click="saveTeamMember"
-                        class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors">
-                        {{ $editTeamIndex !== null ? 'Update Member' : 'Add Member' }}
+                    <button wire:click="closeTeamModal" type="button"
+                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
-                    <button wire:click="closeTeamModal"
-                        class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">
+                </div>
+
+                {{-- Form Body (scrollable) --}}
+                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+                    {{-- Profile Photo --}}
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Photo</p>
+                        <div class="flex items-center gap-4">
+                            @if ($editTeamIndex !== null && !empty($core_team[$editTeamIndex]['image']))
+                                <img src="{{ $core_team[$editTeamIndex]['image'] }}"
+                                    class="w-16 h-16 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
+                            @else
+                                <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center border-2 border-white shadow flex-shrink-0">
+                                    <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <input type="file" wire:model="newTeamMemberImage" accept="image/*"
+                                    class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3
+                                           file:rounded-lg file:border-0 file:text-xs file:font-semibold
+                                           file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                                <p class="text-xs text-gray-400 mt-1">
+                                    {{ $editTeamIndex !== null ? 'Leave empty to keep current photo' : 'JPG, PNG up to 2MB' }}
+                                </p>
+                                <div wire:loading wire:target="newTeamMemberImage"
+                                    class="flex items-center gap-1.5 text-xs text-amber-600 mt-1">
+                                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                    </svg>
+                                    Uploading…
+                                </div>
+                                @error('newTeamMemberImage')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Basic Info --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Basic Information</p>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Full Name <span class="text-red-500">*</span></label>
+                            <input type="text" wire:model="newTeamMember.name" placeholder="e.g. Annant Dagur"
+                                class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400
+                                       @error('newTeamMember.name') border-red-400 bg-red-50 @else border-gray-300 @enderror">
+                            @error('newTeamMember.name')
+                                <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Position / Role <span class="text-red-500">*</span></label>
+                            <input type="text" wire:model="newTeamMember.position" placeholder="e.g. CEO, Lead Developer"
+                                class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400
+                                       @error('newTeamMember.position') border-red-400 bg-red-50 @else border-gray-300 @enderror">
+                            @error('newTeamMember.position')
+                                <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                            <textarea wire:model="newTeamMember.description" rows="3"
+                                placeholder="Brief bio or description..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400 resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    {{-- Social / Link --}}
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Link</p>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Profile / Social URL</label>
+                            <input type="url" wire:model="newTeamMember.link" placeholder="https://instagram.com/..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                            @error('newTeamMember.link')
+                                <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- Footer --}}
+                <div class="px-6 py-4 border-t border-gray-200 bg-white flex-shrink-0 flex items-center gap-3">
+                    <button wire:click="saveTeamMember" wire:loading.attr="disabled"
+                        class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600
+                               text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                        <span wire:loading.remove wire:target="saveTeamMember">
+                            {{ $editTeamIndex !== null ? 'Update Member' : 'Add Member' }}
+                        </span>
+                        <span wire:loading wire:target="saveTeamMember" class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Saving…
+                        </span>
+                    </button>
+                    <button wire:click="closeTeamModal" type="button"
+                        class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors">
                         Cancel
                     </button>
                 </div>
+
             </div>
         </div>
     @endif
