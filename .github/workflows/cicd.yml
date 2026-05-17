@@ -226,12 +226,11 @@ jobs:
             ENV_FILE=".env"
             inject_env() {
               local key="$1" val="$2"
-              if [ -z "$val" ]; then return; fi
-              if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-                sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
-              else
-                echo "${key}=${val}" >> "$ENV_FILE"
-              fi
+              [ -z "$val" ] && return 0
+              # Remove existing line then append — avoids sed special-char issues
+              grep -v "^${key}=" "$ENV_FILE" > /tmp/.env_tmp 2>/dev/null || true
+              printf '%s=%s\n' "$key" "$val" >> /tmp/.env_tmp
+              mv /tmp/.env_tmp "$ENV_FILE"
             }
             inject_env "ZEPTOMAIL_API_TOKEN"                     "$ZEPTOMAIL_API_TOKEN"
             inject_env "ZEPTOMAIL_OTP_TEMPLATE_KEY"              "$ZEPTOMAIL_OTP_TEMPLATE_KEY"
