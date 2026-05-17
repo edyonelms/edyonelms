@@ -232,12 +232,12 @@ jobs:
               printf '%s=%s\n' "$key" "$val" >> /tmp/.env_tmp
               mv /tmp/.env_tmp "$ENV_FILE"
             }
-            inject_env "ZEPTOMAIL_API_TOKEN"                     "$ZEPTOMAIL_API_TOKEN"
-            inject_env "ZEPTOMAIL_OTP_TEMPLATE_KEY"              "$ZEPTOMAIL_OTP_TEMPLATE_KEY"
-            inject_env "ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY" "$ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY"
-            inject_env "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY" "$ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY"
-            inject_env "ZEPTOMAIL_FROM_EMAIL"                    "$ZEPTOMAIL_FROM_EMAIL"
-            inject_env "ZEPTOMAIL_FROM_NAME"                     "$ZEPTOMAIL_FROM_NAME"
+            inject_env "ZEPTOMAIL_API_TOKEN"                     "${ZEPTOMAIL_API_TOKEN:-}"
+            inject_env "ZEPTOMAIL_OTP_TEMPLATE_KEY"              "${ZEPTOMAIL_OTP_TEMPLATE_KEY:-}"
+            inject_env "ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY" "${ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY:-}"
+            inject_env "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY" "${ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY:-}"
+            inject_env "ZEPTOMAIL_FROM_EMAIL"                    "${ZEPTOMAIL_FROM_EMAIL:-}"
+            inject_env "ZEPTOMAIL_FROM_NAME"                     "${ZEPTOMAIL_FROM_NAME:-}"
 
             echo "==> git pull"
             git pull --ff-only
