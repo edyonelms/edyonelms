@@ -268,19 +268,22 @@ class Teacher extends Component
             // Send password email only on creation
             if (!$isEdit) {
                 try {
-                    $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
-                    \App\Services\ZeptoMailService::sendTemplate(
-                        config('services.zeptomail.teacher_password_template_key'),
-                        $teacher->email,
-                        $teacher->name,
-                        [
-                            'password'      => $plainPassword,
-                            'email_address' => $teacher->email,
-                            'school_name'   => $schoolName,
-                            'username'      => $teacher->name,
-                        ]
-                    );
-                } catch (\Exception $e) {
+                    $teacherTemplateKey = config('services.zeptomail.teacher_password_template_key');
+                    if ($teacherTemplateKey) {
+                        $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
+                        \App\Services\ZeptoMailService::sendTemplate(
+                            $teacherTemplateKey,
+                            $teacher->email,
+                            $teacher->name,
+                            [
+                                'password'      => $plainPassword,
+                                'email_address' => $teacher->email,
+                                'school_name'   => $schoolName,
+                                'username'      => $teacher->name,
+                            ]
+                        );
+                    }
+                } catch (\Throwable $e) {
                     logger()->error('Teacher password email failed: ' . $e->getMessage());
                 }
             }

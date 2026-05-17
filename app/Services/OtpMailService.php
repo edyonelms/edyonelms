@@ -20,6 +20,10 @@ class OtpMailService
 
         $templateKey = config('services.zeptomail.otp_template_key');
 
+        if (!$templateKey) {
+            throw new \RuntimeException('ZEPTOMAIL_OTP_TEMPLATE_KEY is not configured.');
+        }
+
         ZeptoMailService::sendTemplate($templateKey, $user->email, $user->name, [
             'OTP' => $otp,
             'name' => $user->name,
