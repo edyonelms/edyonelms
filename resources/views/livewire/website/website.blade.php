@@ -61,16 +61,23 @@
                    <div class="transition-all duration-700 ease-in-out space-y-6" x-ref="track">
                        <template x-for="(item, index) in visibleTestimonials" :key="index">
                            <div class="testimonial bg-white rounded-xl p-6 shadow-md border border-gray-200">
-                               <h3 class="text-xl font-bold text-black mb-2" x-text="item.feedbackTitle"></h3>
                                <p class="text-gray-600 mb-4" x-text="item.feedback"></p>
                                <div class="flex items-center gap-4">
-                                   {{-- <img :src="item.image" class="w-10 h-10 rounded-full object-cover" /> --}}
+                                   <!-- School Logo: show image if available, else show initials avatar -->
+                                   <template x-if="item.logo">
+                                       <img :src="item.logo" :alt="item.school_name"
+                                           class="w-12 h-12 rounded-full object-cover border border-gray-200 flex-shrink-0" />
+                                   </template>
+                                   <template x-if="!item.logo">
+                                       <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                           <span class="text-indigo-600 font-bold text-sm" x-text="item.initials"></span>
+                                       </div>
+                                   </template>
                                    <div>
-                                       <p class="font-semibold text-black" x-text="item.name"></p>
-                                       <p class="text-sm text-gray-500" x-text="item.role"></p>
+                                       <p class="font-semibold text-black" x-text="item.school_name"></p>
+                                       <div class="text-yellow-400 text-sm mt-1" x-html="getStars(item.rating)"></div>
                                    </div>
                                </div>
-                               <div class="mt-2 text-yellow-400 text-sm" x-html="getStars(item.rating)"></div>
                            </div>
                        </template>
                    </div>
@@ -99,67 +106,32 @@
        <script>
            function testimonialSlider() {
                return {
-                   testimonials: [{
-                           name: "Ritika Sharma",
-                           role: "Principal, Delhi Public Academy",
-                           image: "https://randomuser.me/api/portraits/women/44.jpg",
-                           rating: 5,
-                           feedbackTitle: "⭐⭐⭐⭐⭐",
-                           feedback: `“Edyone LMS has transformed the way our school functions. From fee management to report cards, everything is now streamlined and paperless. The seating plan and admit card generation during exams saved us a lot of manual effort. A truly efficient solution for schools.”`
-                       },
-                       {
-                           name: "Amit Verma",
-                           role: "Math Teacher, Patna Model School",
-                           image: "https://randomuser.me/api/portraits/men/45.jpg",
-                           rating: 4,
-                           feedbackTitle: "⭐⭐⭐⭐☆",
-                           feedback: `“The platform is very teacher-friendly. I can easily upload homework, study materials, and conduct quizzes without needing extra training. The performance analytics also help me understand which students need extra support. I just wish the app loaded a bit faster sometimes.”`
-                       },
-                       {
-                           name: "Sneha Iyer",
-                           role: "Parent, Mumbai",
-                           image: "https://randomuser.me/api/portraits/women/33.jpg",
-                           rating: 5,
-                           feedbackTitle: "⭐⭐⭐⭐⭐",
-                           feedback: `“As a parent, I really appreciate the transparency Edyone LMS provides. I can track my child’s attendance, see homework updates, and even view the syllabus and announcements from the school. The ID card and timetable features are very useful too.”`
-                       },
-                       {
-                           name: "Rahul Mehta",
-                           role: "IT Coordinator, Modern Public School, Jaipur",
-                           image: "https://randomuser.me/api/portraits/men/36.jpg",
-                           rating: 5,
-                           feedbackTitle: "⭐⭐⭐⭐⭐",
-                           feedback: `“The best part of Edyone LMS is its customizability. We were able to adapt it to our school’s academic structure easily. Integration was smooth, and their support team is quick to respond. Looking forward to more updates and advanced analytics.”`
-                       },
-                       {
-                           name: "Kavita Deshmukh",
-                           role: "Science Teacher, Pune International School",
-                           image: "https://randomuser.me/api/portraits/women/41.jpg",
-                           rating: 4,
-                           feedbackTitle: "⭐⭐⭐⭐☆",
-                           feedback: `“The arrangement feature is a blessing! Whenever a teacher is absent, it quickly updates the timetable with substitutes. The ability to share study content and track quiz scores has made teaching much more engaging and data-driven.”`
-                       },
-                       {
-                           name: "Mohammed Arif",
-                           role: "Vice Principal, Al-Falah School, Hyderabad",
-                           image: "https://randomuser.me/api/portraits/men/52.jpg",
-                           rating: 5,
-                           feedbackTitle: "⭐⭐⭐⭐⭐",
-                           feedback: `“Edyone LMS covers everything—from syllabus planning and rule management to report cards and library management. It's an all-in-one solution that every school should consider. The mobile app experience is decent, though occasional updates could make it even smoother.”`
-                       }
-                   ],
+                   testimonials: [],
                    visibleTestimonials: [],
                    scrollIndex: 0,
                    scrollEvery: 5000,
                    container: null,
                    track: null,
 
-                   init() {
-                       this.visibleTestimonials = [...this.testimonials, ...this.testimonials]; // clone for infinite loop
+                   async init() {
                        this.container = this.$refs.container;
                        this.track = this.$refs.track;
 
-                       setInterval(() => this.autoScroll(), this.scrollEvery);
+                       try {
+                           const res = await fetch(‘/api/website/testimonials’);
+                           const json = await res.json();
+                           if (json.success && json.data.length) {
+                               this.testimonials = json.data;
+                           }
+                       } catch (e) {
+                           console.error(‘Failed to load testimonials’, e);
+                       }
+
+                       if (this.testimonials.length) {
+                           // clone for infinite scroll loop
+                           this.visibleTestimonials = [...this.testimonials, ...this.testimonials];
+                           setInterval(() => this.autoScroll(), this.scrollEvery);
+                       }
                    },
 
                    autoScroll() {
@@ -169,24 +141,22 @@
                        const next = children[this.scrollIndex + 1];
                        this.container.scrollTo({
                            top: next.offsetTop,
-                           behavior: 'smooth'
+                           behavior: ‘smooth’
                        });
 
                        this.scrollIndex++;
 
                        if (this.scrollIndex >= this.testimonials.length) {
                            setTimeout(() => {
-                               this.container.scrollTo({
-                                   top: 0
-                               });
+                               this.container.scrollTo({ top: 0 });
                                this.scrollIndex = 0;
                            }, 700);
                        }
                    },
 
                    getStars(rating) {
-                       const full = '★'.repeat(rating);
-                       const empty = '☆'.repeat(5 - rating);
+                       const full = ‘★’.repeat(rating);
+                       const empty = ‘☆’.repeat(5 - rating);
                        return `<span>${full}${empty}</span>`;
                    }
                }

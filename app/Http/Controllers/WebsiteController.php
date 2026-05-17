@@ -52,20 +52,22 @@ class WebsiteController extends Controller
     /** GET /api/website/testimonials */
     public function testimonials()
     {
-        $reviews = RateLms::with('organization:id,name')
+        $reviews = RateLms::with('organization:id,name,logo')
             ->where('status', 1)
             ->latest()
             ->get()
             ->map(function ($r) {
-                $name = $r->organization->name ?? 'Anonymous';
+                $name     = $r->organization->name ?? 'Anonymous';
+                $logo     = $r->organization->logo ?? null;
                 $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $name), 0, 2)));
                 $feedback = trim($r->feedback, '"\'');
                 return [
-                    'id'           => $r->id,
-                    'feedback'     => $feedback,
-                    'rating'       => $r->rating,
-                    'school_name'  => $name,
-                    'initials'     => $initials,
+                    'id'          => $r->id,
+                    'feedback'    => $feedback,
+                    'rating'      => $r->rating,
+                    'school_name' => $name,
+                    'logo'        => $logo,
+                    'initials'    => $initials,
                 ];
             });
 
