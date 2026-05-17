@@ -1904,7 +1904,7 @@
             position: fixed;
             inset: 0;
             background: rgba(255, 255, 255, 0.98);
-            z-index: 999;
+            z-index: 1001;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -2884,7 +2884,7 @@
                     <div class="app-card-desc">Edyone is a comprehensive edtech platform offering academic and
                         competitive exam courses, interactive lessons, practice tests, performance tracking, and smart
                         learning tools for students.</div>
-                        target="_blank" rel="noopener noreferrer" class="app-dl-btn app-dl-btn-primary">
+                    <a href="https://edyone.in" target="_blank" rel="noopener noreferrer" class="app-dl-btn app-dl-btn-primary">
                         <span style="font-size:16px;">▶</span> Coming Soon
                     </a>
                 </div>

@@ -366,7 +366,7 @@
             position: fixed;
             inset: 0;
             background: rgba(255, 255, 255, 0.98);
-            z-index: 999;
+            z-index: 1001;
             flex-direction: column;
             align-items: center;
             justify-content: center;
