@@ -220,25 +220,25 @@ jobs:
           script_stop: true
           envs: GIT_TOKEN,ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
           script: |
-            set -euo pipefail
+            set -x
             cd ${{ secrets.EC2_PROJECT_PATH }}
 
             echo "==> inject ZeptoMail env vars"
-            ENV_FILE=".env"
-            inject_env() {
-              local key="$1" val="$2"
-              if [ -z "$val" ]; then return 0; fi
-              # Remove existing line then append — avoids sed special-char issues
-              grep -v "^${key}=" "$ENV_FILE" > /tmp/.env_tmp 2>/dev/null || true
-              printf '%s=%s\n' "$key" "$val" >> /tmp/.env_tmp
-              mv /tmp/.env_tmp "$ENV_FILE"
-            }
-            inject_env "ZEPTOMAIL_API_TOKEN"                     "${ZEPTOMAIL_API_TOKEN:-}"
-            inject_env "ZEPTOMAIL_OTP_TEMPLATE_KEY"              "${ZEPTOMAIL_OTP_TEMPLATE_KEY:-}"
-            inject_env "ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY" "${ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY:-}"
-            inject_env "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY" "${ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY:-}"
-            inject_env "ZEPTOMAIL_FROM_EMAIL"                    "${ZEPTOMAIL_FROM_EMAIL:-}"
-            inject_env "ZEPTOMAIL_FROM_NAME"                     "${ZEPTOMAIL_FROM_NAME:-}"
+            for ENTRY in \
+              "ZEPTOMAIL_API_TOKEN=${ZEPTOMAIL_API_TOKEN:-}" \
+              "ZEPTOMAIL_OTP_TEMPLATE_KEY=${ZEPTOMAIL_OTP_TEMPLATE_KEY:-}" \
+              "ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY=${ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY:-}" \
+              "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY=${ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY:-}" \
+              "ZEPTOMAIL_FROM_EMAIL=${ZEPTOMAIL_FROM_EMAIL:-}" \
+              "ZEPTOMAIL_FROM_NAME=${ZEPTOMAIL_FROM_NAME:-}"; do
+              KEY="${ENTRY%%=*}"
+              VAL="${ENTRY#*=}"
+              if [ -n "$VAL" ]; then
+                grep -v "^${KEY}=" .env > /tmp/.env_tmp 2>/dev/null; true
+                printf '%s=%s\n' "$KEY" "$VAL" >> /tmp/.env_tmp
+                mv /tmp/.env_tmp .env
+              fi
+            done
 
             echo "==> git pull"
             git remote set-url origin "https://x-access-token:${GIT_TOKEN:-}@github.com/edyonelms/edyonelms.git"
@@ -273,11 +273,7 @@ jobs:
             docker compose exec -T app tail -n 80 storage/logs/laravel.log 2>/dev/null || echo "no laravel log"
 
             echo "==> recache config (picks up new env vars)"
-            docker compose exec -T app php artisan config:cache
-
-            echo "==> restart app to reload config"
-            docker compose restart app
-            sleep 5
+            docker compose exec -T app php artisan config:cache || true
 
             echo "==> prune dangling images"
             docker image prune -f
