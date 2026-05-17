@@ -266,8 +266,8 @@ jobs:
             echo "==> tail of app logs"
             docker compose logs --tail=30 app
 
-            echo "==> clear config cache"
-            docker compose exec -T app php artisan config:clear || true
+            echo "==> recache config (picks up new env vars)"
+            docker compose exec -T app php artisan config:cache || true
 
             echo "==> prune dangling images"
             docker image prune -f
