@@ -168,8 +168,9 @@ class HomeWorkController extends Controller
             }
 
             // Sorting
-            $sortField = $request->get('sort_field', 'created_at');
-            $sortDirection = $request->get('sort_direction', 'desc');
+            $allowedSortFields = ['created_at', 'title', 'updated_at'];
+            $sortField = in_array($request->get('sort_field'), $allowedSortFields) ? $request->get('sort_field') : 'created_at';
+            $sortDirection = $request->get('sort_direction') === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortField, $sortDirection);
 
             // Pagination
@@ -206,10 +207,8 @@ class HomeWorkController extends Controller
             // Build query for student's homework
             $query = HomeWork::with(['standard', 'section', 'subject', 'user'])
                 ->where('organization_id', $organizationId)
-                ->where(function ($q) use ($studentDetail) {
-                    $q->where('standard_id', $studentDetail->standard_id)
-                        ->orWhere('section_id', $studentDetail->section_id);
-                });
+                ->where('standard_id', $studentDetail->standard_id)
+                ->where('section_id', $studentDetail->section_id);
 
             // Search functionality
             if ($request->has('search')) {
@@ -243,8 +242,9 @@ class HomeWorkController extends Controller
             }
 
             // Sorting
-            $sortField = $request->get('sort_field', 'created_at');
-            $sortDirection = $request->get('sort_direction', 'desc');
+            $allowedSortFields = ['created_at', 'title', 'updated_at'];
+            $sortField = in_array($request->get('sort_field'), $allowedSortFields) ? $request->get('sort_field') : 'created_at';
+            $sortDirection = $request->get('sort_direction') === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortField, $sortDirection);
 
             // Pagination

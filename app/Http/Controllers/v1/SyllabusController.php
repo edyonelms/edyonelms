@@ -222,8 +222,9 @@ class SyllabusController extends Controller
             }
 
             // Sorting
-            $sortBy = $request->sort_by ?? 'created_at';
-            $sortOrder = $request->sort_order ?? 'desc';
+            $allowedSortFields = ['created_at', 'name', 'updated_at'];
+            $sortBy = in_array($request->sort_by, $allowedSortFields) ? $request->sort_by : 'created_at';
+            $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortBy, $sortOrder);
 
             // Pagination
