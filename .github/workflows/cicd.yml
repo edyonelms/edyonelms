@@ -226,7 +226,7 @@ jobs:
             ENV_FILE=".env"
             inject_env() {
               local key="$1" val="$2"
-              [ -z "$val" ] && return 0
+              if [ -z "$val" ]; then return 0; fi
               # Remove existing line then append — avoids sed special-char issues
               grep -v "^${key}=" "$ENV_FILE" > /tmp/.env_tmp 2>/dev/null || true
               printf '%s=%s\n' "$key" "$val" >> /tmp/.env_tmp
