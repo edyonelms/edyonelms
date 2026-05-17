@@ -235,7 +235,7 @@ jobs:
               VAL="${ENTRY#*=}"
               if [ -n "$VAL" ]; then
                 grep -v "^${KEY}=" .env > /tmp/.env_tmp 2>/dev/null; true
-                printf '%s=%s\n' "$KEY" "$VAL" >> /tmp/.env_tmp
+                printf '%s="%s"\n' "$KEY" "$VAL" >> /tmp/.env_tmp
                 mv /tmp/.env_tmp .env
               fi
             done
