@@ -16,10 +16,11 @@ class SchoolInfo extends Model
         'school_mobile',
         'school_email',
         'school_address',
+        'school_document_text',
         'usm_vision',
         'usm_mission',
         'usm_values',
-        'usm_goals'
+        'usm_goals',
     ];
 
 public function organization()

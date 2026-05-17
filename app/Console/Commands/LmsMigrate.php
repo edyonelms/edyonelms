@@ -42,6 +42,13 @@ class LmsMigrate extends Command
             }
         });
 
+        Schema::table('school_infos', function (Blueprint $table) {
+            if (!Schema::hasColumn('school_infos', 'school_document_text')) {
+                $table->text('school_document_text')->nullable();
+                $this->info('adding [school_document_text] field in [school_infos] table');
+            }
+        });
+
         Schema::table('student_details', function (Blueprint $table) {
             if (!Schema::hasColumn('student_details', 'transportation_required')) {
                 $table->boolean('transportation_required')->default(false);

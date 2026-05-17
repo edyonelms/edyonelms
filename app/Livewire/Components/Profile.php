@@ -20,7 +20,7 @@ class Profile extends Component
 
     public $organization;
     public $currentPassword;
-    public $showCurrentPassword;
+    public $showCurrentPassword = false;
     public $newPassword;
     public $confirmPassword;
     public $showPassword = false;
@@ -39,8 +39,7 @@ class Profile extends Component
     public $schoolMobileNo;
     public $schoolAddress;
     public $schoolManagement = [];
-    public $documentFiles = [];
-    public $documentTitles = [];
+    public $pendingDocuments = [];
     public $uploadedDocuments = [];
     public $schoolDocumentsText;
     public $managementPhoto;
@@ -74,7 +73,6 @@ class Profile extends Component
             $this->schoolDocumentsText = $this->schoolInfo->school_document_text;
             $this->uploadedDocuments = $this->schoolInfo->documents->toArray();
 
-            // Load USM parameters
             $this->usmVision = $this->schoolInfo->usm_vision;
             $this->usmMission = $this->schoolInfo->usm_mission;
             $this->usmValues = $this->schoolInfo->usm_values;
@@ -132,7 +130,6 @@ class Profile extends Component
         }
     }
 
-
     public function updatePassword()
     {
         $this->validate([
@@ -174,7 +171,7 @@ class Profile extends Component
 
         unset($this->schoolManagement[$index]);
         $this->schoolManagement = array_values($this->schoolManagement);
-        $this->notification()->success('Remove to Click Save all Button!');
+        $this->notification()->success('Removed! Click Save to apply changes.');
     }
 
     public function updatedManagementPhoto($value, $index)
@@ -195,6 +192,17 @@ class Profile extends Component
         }
     }
 
+    public function addDocumentSlot()
+    {
+        $this->pendingDocuments[] = ['file' => null, 'title' => ''];
+    }
+
+    public function removeUploadedFile($index)
+    {
+        unset($this->pendingDocuments[$index]);
+        $this->pendingDocuments = array_values($this->pendingDocuments);
+    }
+
     public function saveSchoolInfo()
     {
         try {
@@ -205,8 +213,8 @@ class Profile extends Component
                 'schoolEmail' => 'nullable|email',
                 'schoolMobileNo' => 'nullable|regex:/^[0-9]+$/|min:10|max:15',
                 'schoolAddress' => 'nullable|string|max:255',
-                'documentFiles.*' => 'nullable|file|mimes:pdf|max:2048',
-                'documentTitles.*' => 'required_with:documentFiles.*|string|max:255',
+                'pendingDocuments.*.file' => 'nullable|file|mimes:pdf|max:2048',
+                'pendingDocuments.*.title' => 'nullable|string|max:255',
                 'schoolManagement.*.name' => 'required|string',
                 'schoolManagement.*.designation' => 'required|string',
                 'schoolManagement.*.photo' => 'nullable|image|max:2048',
@@ -216,38 +224,18 @@ class Profile extends Component
                 'usmValues' => 'nullable|string',
                 'usmGoals' => 'nullable|string',
             ], [
-                // Custom messages for specific rules
-                'documentFiles.*.mimes' => 'Document files must be PDF format.',
-                'documentFiles.*.max' => 'Each document file must not exceed 2MB.',
-                'schoolManagement.*.photo.max' => 'Each management photo must not exceed 2MB.',
+                'pendingDocuments.*.file.mimes' => 'Document must be a PDF file.',
+                'pendingDocuments.*.file.max' => 'Document must not exceed 2 MB.',
+                'pendingDocuments.*.title.max' => 'Document title must not exceed 255 characters.',
+                'schoolManagement.*.photo.max' => 'Management photo must not exceed 2 MB.',
                 'schoolMobileNo.regex' => 'Mobile number must contain only digits.',
                 'schoolMobileNo.min' => 'Mobile number must be at least 10 digits.',
                 'schoolMobileNo.max' => 'Mobile number must not exceed 15 digits.',
                 'schoolAddress.max' => 'School address must not exceed 255 characters.',
-                'documentTitles.*.required_with' => 'Document title is required when a file is uploaded.',
-                'documentTitles.*.max' => 'Document title must not exceed 255 characters.',
                 'schoolManagement.*.name.required' => 'Management member name is required.',
                 'schoolManagement.*.designation.required' => 'Management member designation is required.',
-                'websiteUrl.url' => 'Website URL must be a valid URL (starting with http:// or https://).',
+                'websiteUrl.url' => 'Website URL must start with http:// or https://.',
                 'schoolEmail.email' => 'School email must be a valid email address.',
-            ], [
-                // Custom attribute names
-                'aboutSchool' => 'about school',
-                'websiteInfo' => 'website info',
-                'websiteUrl' => 'website URL',
-                'schoolEmail' => 'school email',
-                'schoolMobileNo' => 'school mobile number',
-                'schoolAddress' => 'school address',
-                'documentFiles.*' => 'document file',
-                'documentTitles.*' => 'document title',
-                'schoolManagement.*.name' => 'management member name',
-                'schoolManagement.*.designation' => 'management member designation',
-                'schoolManagement.*.photo' => 'management member photo',
-                'schoolDocumentsText' => 'school documents text',
-                'usmVision' => 'USM vision',
-                'usmMission' => 'USM mission',
-                'usmValues' => 'USM values',
-                'usmGoals' => 'USM goals',
             ]);
 
             $schoolInfo = AdminSchoolInfo::updateOrCreate(
@@ -287,28 +275,27 @@ class Profile extends Component
                 $schoolInfo->managementTeam()->create($memberData);
             }
 
-            // Process document uploads
-            if ($this->documentFiles) {
-                foreach ($this->documentFiles as $index => $file) {
-                    $filePath = $file->store('school-documents', 's3');
-                    Storage::disk('s3')->setVisibility($filePath, 'public');
-
-                    $schoolInfo->documents()->create([
-                        'title' => $this->documentTitles[$index] ?? 'Document',
-                        'file_path' => Storage::disk('s3')->url($filePath),
-                        'file_type' => $file->getClientOriginalExtension(),
-                        'sort_order' => count($this->uploadedDocuments) + $index,
-                    ]);
+            // Process pending document uploads (each slot is independent — no index mismatch)
+            foreach ($this->pendingDocuments as $index => $pending) {
+                if (empty($pending['file']) || !($pending['file'] instanceof TemporaryUploadedFile)) {
+                    continue;
                 }
+                $filePath = $pending['file']->store('school-documents', 's3');
+                Storage::disk('s3')->setVisibility($filePath, 'public');
+
+                $schoolInfo->documents()->create([
+                    'title' => trim($pending['title']) ?: $pending['file']->getClientOriginalName(),
+                    'file_path' => Storage::disk('s3')->url($filePath),
+                    'file_type' => $pending['file']->getClientOriginalExtension(),
+                    'sort_order' => count($this->uploadedDocuments) + $index,
+                ]);
             }
 
-            $this->notification()->success('Save Successfully!');
+            $this->notification()->success('Saved successfully!');
             $this->loadSchoolInfo();
-            $this->reset(['documentFiles', 'documentTitles']);
-
+            $this->pendingDocuments = [];
             $this->activeTab = 'view';
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Get human-friendly error messages
             $errors = collect($e->errors())->flatten()->implode('<br>');
             $this->notification()->error('Please fix the following errors:<br>' . $errors);
         } catch (\Exception $e) {
@@ -325,14 +312,6 @@ class Profile extends Component
             $document->delete();
             $this->loadSchoolInfo();
         }
-    }
-
-    public function removeUploadedFile($index)
-    {
-        unset($this->documentFiles[$index]);
-        unset($this->documentTitles[$index]);
-        $this->documentFiles = array_values($this->documentFiles);
-        $this->documentTitles = array_values($this->documentTitles);
     }
 
     public function render()
