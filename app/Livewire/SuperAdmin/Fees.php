@@ -39,8 +39,11 @@ class Fees extends Component
     public array $schoolStats = [];
 
     // ─── Fee Structure Form ───────────────────────────────────────────────────
-    public        $standards = [];
-    public array  $feeInputs = [];
+    public        $standards    = [];
+    public array  $feeInputs    = [];
+    public string $feeType      = 'class_wise';   // 'class_wise' | 'one_time'
+    public string $oneTimeAmount = '';
+    public string $oneTimeLabel  = 'Annual Platform Fee';
 
     // ─── Edit Fee Modal ───────────────────────────────────────────────────────
     public bool   $showEditModal = false;
@@ -63,7 +66,7 @@ class Fees extends Component
     public string $payDate         = '';
     public string $payRemark       = '';
     public        $payExistingId   = null;
-    public bool   $isEditPayment   = false;   // true = editing existing payment
+    public bool   $isEditPayment   = false;
 
     public function mount(): void
     {
@@ -77,16 +80,19 @@ class Fees extends Component
     {
         $this->totalStudentsAll = StudentDetail::count();
 
-        $structures = SuperAdminFeeStructure::with('standard')
-            ->active()
+        $structures = SuperAdminFeeStructure::active()
             ->forYear($this->academicYear)
             ->get();
 
         $expected = 0;
         foreach ($structures as $fs) {
-            $count     = StudentDetail::where('organization_id', $fs->organization_id)
-                ->where('standard_id', $fs->standard_id)
-                ->count();
+            if ($fs->fee_type === 'one_time') {
+                $count = StudentDetail::where('organization_id', $fs->organization_id)->count();
+            } else {
+                $count = StudentDetail::where('organization_id', $fs->organization_id)
+                    ->where('standard_id', $fs->standard_id)
+                    ->count();
+            }
             $expected += $fs->amount * $count;
         }
 
@@ -147,6 +153,9 @@ class Fees extends Component
         $this->standards      = [];
         $this->studentFeeList = [];
         $this->schoolStats    = [];
+        $this->feeType        = 'class_wise';
+        $this->oneTimeAmount  = '';
+        $this->oneTimeLabel   = 'Annual Platform Fee';
         $this->search         = '';
     }
 
@@ -165,7 +174,25 @@ class Fees extends Component
 
     private function loadFeeInputs(): void
     {
-        $this->feeInputs = [];
+        // Check if there is an existing one_time structure
+        $oneTime = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+            ->where('academic_year', $this->academicYear)
+            ->where('fee_type', 'one_time')
+            ->first();
+
+        if ($oneTime) {
+            $this->feeType       = 'one_time';
+            $this->oneTimeAmount = (string) $oneTime->amount;
+            $this->oneTimeLabel  = $oneTime->fee_label ?? 'Annual Platform Fee';
+            $this->feeInputs     = [];
+            return;
+        }
+
+        $this->feeType       = 'class_wise';
+        $this->oneTimeAmount = '';
+        $this->oneTimeLabel  = 'Annual Platform Fee';
+        $this->feeInputs     = [];
+
         foreach ($this->standards as $standard) {
             $existing = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
                 ->where('standard_id', $standard->id)
@@ -193,9 +220,13 @@ class Fees extends Component
 
         $expected = 0;
         foreach ($structures as $fs) {
-            $count     = StudentDetail::where('organization_id', $orgId)
-                ->where('standard_id', $fs->standard_id)
-                ->count();
+            if ($fs->fee_type === 'one_time') {
+                $count = $totalStudents;
+            } else {
+                $count = StudentDetail::where('organization_id', $orgId)
+                    ->where('standard_id', $fs->standard_id)
+                    ->count();
+            }
             $expected += $fs->amount * $count;
         }
 
@@ -237,22 +268,66 @@ class Fees extends Component
 
     public function saveFeeStructures(): void
     {
-        foreach ($this->feeInputs as $standardId => $data) {
-            $amount = $data['amount'] ?? '';
-            if ($amount === '' || $amount === null) continue;
+        if ($this->feeType === 'one_time') {
+            $this->validate([
+                'oneTimeAmount' => 'required|numeric|min:0',
+                'oneTimeLabel'  => 'required|string|max:100',
+            ]);
 
-            SuperAdminFeeStructure::updateOrCreate(
-                [
-                    'organization_id' => $this->selectedSchool->id,
-                    'standard_id'     => $standardId,
-                    'academic_year'   => $this->academicYear,
-                ],
-                [
-                    'amount'    => $amount,
-                    'fee_label' => $data['label'] ?? 'Annual Platform Fee',
+            // Remove any class_wise structures for this org/year
+            SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+                ->where('academic_year', $this->academicYear)
+                ->where('fee_type', 'class_wise')
+                ->delete();
+
+            // Upsert the single one_time record (match on org + fee_type + year)
+            $existing = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+                ->where('academic_year', $this->academicYear)
+                ->where('fee_type', 'one_time')
+                ->first();
+
+            if ($existing) {
+                $existing->update([
+                    'amount'    => $this->oneTimeAmount,
+                    'fee_label' => $this->oneTimeLabel,
                     'is_active' => true,
-                ]
-            );
+                ]);
+            } else {
+                SuperAdminFeeStructure::create([
+                    'organization_id' => $this->selectedSchool->id,
+                    'fee_type'        => 'one_time',
+                    'standard_id'     => null,
+                    'academic_year'   => $this->academicYear,
+                    'amount'          => $this->oneTimeAmount,
+                    'fee_label'       => $this->oneTimeLabel,
+                    'is_active'       => true,
+                ]);
+            }
+        } else {
+            // Remove any one_time structure for this org/year
+            SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+                ->where('academic_year', $this->academicYear)
+                ->where('fee_type', 'one_time')
+                ->delete();
+
+            foreach ($this->feeInputs as $standardId => $data) {
+                $amount = $data['amount'] ?? '';
+                if ($amount === '' || $amount === null) continue;
+
+                SuperAdminFeeStructure::updateOrCreate(
+                    [
+                        'organization_id' => $this->selectedSchool->id,
+                        'standard_id'     => $standardId,
+                        'academic_year'   => $this->academicYear,
+                    ],
+                    [
+                        'fee_type'  => 'class_wise',
+                        'amount'    => $amount,
+                        'fee_label' => $data['label'] ?? 'Annual Platform Fee',
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
 
         $this->loadFeeInputs();
@@ -327,6 +402,50 @@ class Fees extends Component
 
     public function loadStudentFeeList(): void
     {
+        if ($this->feeType === 'one_time') {
+            $structure = SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
+                ->where('academic_year', $this->academicYear)
+                ->where('fee_type', 'one_time')
+                ->active()
+                ->first();
+
+            $students = StudentDetail::with(['user', 'section', 'standard'])
+                ->where('organization_id', $this->selectedSchool->id)
+                ->get();
+
+            $this->studentFeeList = $students->map(function ($s, $i) use ($structure) {
+                $feeAmount = $structure?->amount ?? 0;
+                $payment   = $structure
+                    ? SuperAdminFeePayment::where('student_detail_id', $s->id)
+                        ->where('super_admin_fee_structure_id', $structure->id)
+                        ->first()
+                    : null;
+                $collected = $payment?->is_paid ? (float) $payment->amount : 0;
+
+                return [
+                    'serial'        => $i + 1,
+                    'id'            => $s->id,
+                    'name'          => $s->full_name ?? $s->user?->name ?? '—',
+                    'admission_no'  => $s->admission_no ?? '—',
+                    'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
+                    'email'         => $s->user?->email ?? '—',
+                    'section'       => $s->section?->name ?? '—',
+                    'standard'      => $s->standard?->name ?? '—',
+                    'total_fee'     => $feeAmount,
+                    'collected'     => $collected,
+                    'remaining'     => max(0, $feeAmount - $collected),
+                    'is_paid'       => $payment?->is_paid ?? false,
+                    'payment_id'    => $payment?->id,
+                    'structure_id'  => $structure?->id,
+                    'payment_date'  => $payment?->payment_date?->format('d M Y') ?? '—',
+                    'payment_mode'  => $payment?->payment_mode ?? '—',
+                ];
+            })->toArray();
+
+            return;
+        }
+
+        // class_wise
         if (!$this->updateStandardId) {
             $this->notification()->error('Please select a class.');
             return;
@@ -349,8 +468,8 @@ class Fees extends Component
 
             $payment = $structure
                 ? SuperAdminFeePayment::where('student_detail_id', $s->id)
-                ->where('super_admin_fee_structure_id', $structure->id)
-                ->first()
+                    ->where('super_admin_fee_structure_id', $structure->id)
+                    ->first()
                 : null;
 
             $collected = $payment?->is_paid ? (float) $payment->amount : 0;
@@ -363,6 +482,7 @@ class Fees extends Component
                 'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
                 'email'         => $s->user?->email ?? '—',
                 'section'       => $s->section?->name ?? '—',
+                'standard'      => '—',
                 'total_fee'     => $feeAmount,
                 'collected'     => $collected,
                 'remaining'     => max(0, $feeAmount - $collected),
@@ -436,7 +556,7 @@ class Fees extends Component
             ],
             [
                 'organization_id' => $this->selectedSchool->id,
-                'standard_id'     => $structure->standard_id,
+                'standard_id'     => $structure->standard_id, // null for one_time
                 'section_id'      => $student->section_id,
                 'amount'          => $this->payAmount,
                 'academic_year'   => $this->academicYear,

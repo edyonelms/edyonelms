@@ -65,9 +65,13 @@
                                 ->get();
                             $orgExpected = 0;
                             foreach ($orgStructures as $fs) {
-                                $cnt = \App\Models\Student\StudentDetail::where('organization_id', $school->id)
-                                    ->where('standard_id', $fs->standard_id)
-                                    ->count();
+                                if ($fs->fee_type === 'one_time') {
+                                    $cnt = \App\Models\Student\StudentDetail::where('organization_id', $school->id)->count();
+                                } else {
+                                    $cnt = \App\Models\Student\StudentDetail::where('organization_id', $school->id)
+                                        ->where('standard_id', $fs->standard_id)
+                                        ->count();
+                                }
                                 $orgExpected += $fs->amount * $cnt;
                             }
                             $orgCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::forOrg($school->id)
@@ -253,80 +257,171 @@
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-sm font-semibold text-gray-700">Set Fee Per Class</h3>
+                                <h3 class="text-sm font-semibold text-gray-700">Fee Structure</h3>
                                 <p class="text-xs text-gray-400 mt-0.5">Academic year: {{ $academicYear }}</p>
                             </div>
                         </div>
 
-                        @if (count($standards))
-                            <div class="border border-gray-200 rounded-xl overflow-hidden">
-                                <table class="w-full">
-                                    <thead class="bg-gray-50 border-b border-gray-200">
-                                        <tr>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Class
-                                            </th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">
-                                                Students</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Fee
-                                                Label</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Amount
-                                                (₹)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        @foreach ($standards as $standard)
-                                            @php
-                                                $studentCount = \App\Models\Student\StudentDetail::where(
-                                                    'organization_id',
-                                                    $selectedSchool->id,
-                                                )
-                                                    ->where('standard_id', $standard->id)
-                                                    ->count();
-                                            @endphp
-                                            <tr class="hover:bg-gray-50/50">
-                                                <td class="px-4 py-3">
-                                                    <span
-                                                        class="text-sm font-semibold text-gray-800">{{ $standard->name }}</span>
-                                                </td>
-                                                <td class="px-4 py-3">
-                                                    <span
-                                                        class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
-                                                        {{ $studentCount }} students
-                                                    </span>
-                                                </td>
-                                                <td class="px-4 py-3">
-                                                    <input wire:model.defer="feeInputs.{{ $standard->id }}.label"
-                                                        type="text" placeholder="Annual Platform Fee"
-                                                        class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
-                                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                                                </td>
-                                                <td class="px-4 py-3">
-                                                    <input wire:model.defer="feeInputs.{{ $standard->id }}.amount"
-                                                        type="number" placeholder="0" min="0"
-                                                        class="w-32 px-3 py-1.5 text-sm border border-gray-300 rounded-lg
-                                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                        {{-- Fee Type Switcher --}}
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <button wire:click="$set('feeType', 'class_wise')"
+                                class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
+                                    {{ $feeType === 'class_wise'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300' }}">
+                                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                                    {{ $feeType === 'class_wise' ? 'bg-blue-500' : 'bg-gray-100' }}">
+                                    <svg class="w-4 h-4 {{ $feeType === 'class_wise' ? 'text-white' : 'text-gray-500' }}"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 10h18M3 6h18M3 14h18M3 18h18" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold {{ $feeType === 'class_wise' ? 'text-blue-700' : 'text-gray-700' }}">
+                                        Class Wise</p>
+                                    <p class="text-xs {{ $feeType === 'class_wise' ? 'text-blue-500' : 'text-gray-400' }}">
+                                        Different fee per class</p>
+                                </div>
+                            </button>
 
-                            {{-- Save button at bottom --}}
+                            <button wire:click="$set('feeType', 'one_time')"
+                                class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
+                                    {{ $feeType === 'one_time'
+                                        ? 'border-indigo-500 bg-indigo-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300' }}">
+                                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                                    {{ $feeType === 'one_time' ? 'bg-indigo-500' : 'bg-gray-100' }}">
+                                    <svg class="w-4 h-4 {{ $feeType === 'one_time' ? 'text-white' : 'text-gray-500' }}"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold {{ $feeType === 'one_time' ? 'text-indigo-700' : 'text-gray-700' }}">
+                                        One Time</p>
+                                    <p class="text-xs {{ $feeType === 'one_time' ? 'text-indigo-500' : 'text-gray-400' }}">
+                                        Same fee for all students</p>
+                                </div>
+                            </button>
+                        </div>
+
+                        {{-- ── CLASS WISE FORM ── --}}
+                        @if ($feeType === 'class_wise')
+                            @if (count($standards))
+                                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Class</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Students</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Fee Label</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Amount (₹)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            @foreach ($standards as $standard)
+                                                @php
+                                                    $studentCount = \App\Models\Student\StudentDetail::where(
+                                                        'organization_id', $selectedSchool->id)
+                                                        ->where('standard_id', $standard->id)
+                                                        ->count();
+                                                @endphp
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-4 py-3">
+                                                        <span class="text-sm font-semibold text-gray-800">{{ $standard->name }}</span>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+                                                            {{ $studentCount }} students
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <input wire:model.defer="feeInputs.{{ $standard->id }}.label"
+                                                            type="text" placeholder="Annual Platform Fee"
+                                                            class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                                                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <input wire:model.defer="feeInputs.{{ $standard->id }}.amount"
+                                                            type="number" placeholder="0" min="0"
+                                                            class="w-32 px-3 py-1.5 text-sm border border-gray-300 rounded-lg
+                                                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-center py-10 text-sm text-gray-400">
+                                    No classes found for this school.
+                                </div>
+                            @endif
+                        @endif
+
+                        {{-- ── ONE TIME FORM ── --}}
+                        @if ($feeType === 'one_time')
+                            @php
+                                $oneTimeTotalStudents = \App\Models\Student\StudentDetail::where('organization_id', $selectedSchool->id)->count();
+                            @endphp
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Fee Label *</label>
+                                        <input wire:model.defer="oneTimeLabel" type="text"
+                                            placeholder="Annual Platform Fee"
+                                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Amount per Student (₹) *</label>
+                                        <input wire:model.defer="oneTimeAmount" type="number" placeholder="0" min="0"
+                                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                                    </div>
+                                </div>
+
+                                {{-- Preview card --}}
+                                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-indigo-600 font-medium">Total to collect</p>
+                                            <p class="text-xs text-indigo-500 mt-0.5">{{ $oneTimeTotalStudents }} students × ₹{{ number_format((float)($oneTimeAmount ?: 0), 0) }}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-lg font-bold text-indigo-700">
+                                        ₹{{ number_format($oneTimeTotalStudents * (float)($oneTimeAmount ?: 0), 0) }}
+                                    </p>
+                                </div>
+
+                                <p class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                                    <strong>Note:</strong> Switching to One Time will remove all class-wise fee structures for this school and year.
+                                </p>
+                            </div>
+                        @endif
+
+                        {{-- Save button --}}
+                        @if ($feeType === 'class_wise' && count($standards) || $feeType === 'one_time')
                             <div class="mt-4 flex justify-end">
                                 <button wire:click="saveFeeStructures"
-                                    class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700
-                                           text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                                    class="inline-flex items-center gap-1.5 px-5 py-2.5 text-white text-sm font-semibold
+                                           rounded-lg transition-colors shadow-sm
+                                           {{ $feeType === 'one_time'
+                                               ? 'bg-indigo-600 hover:bg-indigo-700'
+                                               : 'bg-blue-600 hover:bg-blue-700' }}">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
                                     Save Fee Structure
                                 </button>
-                            </div>
-                        @else
-                            <div class="text-center py-10 text-sm text-gray-400">
-                                No classes found for this school.
                             </div>
                         @endif
                     </div>
@@ -340,16 +435,12 @@
                                 <table class="w-full">
                                     <thead class="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-10">#
-                                            </th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Class
-                                            </th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Label
-                                            </th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Amount
-                                            </th>
-                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500">
-                                                Actions</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-10">#</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Type</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Class</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Label</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Amount</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
@@ -357,13 +448,26 @@
                                             <tr class="hover:bg-gray-50/50">
                                                 <td class="px-4 py-3 text-xs text-gray-400">{{ $i + 1 }}</td>
                                                 <td class="px-4 py-3">
-                                                    <span
-                                                        class="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-100">
-                                                        {{ $fs->standard?->name ?? '—' }}
-                                                    </span>
+                                                    @if ($fs->fee_type === 'one_time')
+                                                        <span class="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium border border-indigo-100">
+                                                            One Time
+                                                        </span>
+                                                    @else
+                                                        <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">
+                                                            Class Wise
+                                                        </span>
+                                                    @endif
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-gray-600">
-                                                    {{ $fs->fee_label ?? '—' }}</td>
+                                                <td class="px-4 py-3">
+                                                    @if ($fs->fee_type === 'one_time')
+                                                        <span class="text-xs text-gray-400">All Students</span>
+                                                    @else
+                                                        <span class="text-xs px-2 py-0.5 bg-gray-50 text-gray-700 rounded font-medium border border-gray-200">
+                                                            {{ $fs->standard?->name ?? '—' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-gray-600">{{ $fs->fee_label ?? '—' }}</td>
                                                 <td class="px-4 py-3 text-sm font-bold text-emerald-700">
                                                     ₹{{ number_format($fs->amount, 0) }}
                                                 </td>
@@ -372,20 +476,16 @@
                                                         <button wire:click="openEditFee({{ $fs->id }})"
                                                             class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                             title="Edit">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                                viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                             </svg>
                                                         </button>
                                                         <button wire:click="deleteFee({{ $fs->id }})"
                                                             class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                             title="Delete">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                                viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                             </svg>
                                                         </button>
@@ -465,64 +565,48 @@
 
                         {{-- Per Class Breakdown --}}
                         @if ($feeStructures->count())
+                            @php $hasOneTime = $feeStructures->where('fee_type', 'one_time')->count() > 0; @endphp
                             <div>
                                 <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                                    Per Class Breakdown
+                                    {{ $hasOneTime ? 'Fee Breakdown' : 'Per Class Breakdown' }}
                                 </p>
-                                <div
-                                    class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+                                <div class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
                                     @foreach ($feeStructures as $fs)
                                         @php
-                                            $classStudents = \App\Models\Student\StudentDetail::where(
-                                                'organization_id',
-                                                $selectedSchool->id,
-                                            )
-                                                ->where('standard_id', $fs->standard_id)
-                                                ->count();
-                                            $classExpected = $fs->amount * $classStudents;
-                                            $classCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::where(
-                                                'super_admin_fee_structure_id',
-                                                $fs->id,
-                                            )
-                                                ->paid()
-                                                ->sum('amount');
-                                            $classPct =
-                                                $classExpected > 0
-                                                    ? round(($classCollected / $classExpected) * 100)
-                                                    : 0;
-                                            $classRemaining = max(0, $classExpected - $classCollected);
+                                            if ($fs->fee_type === 'one_time') {
+                                                $classStudents = \App\Models\Student\StudentDetail::where('organization_id', $selectedSchool->id)->count();
+                                            } else {
+                                                $classStudents = \App\Models\Student\StudentDetail::where('organization_id', $selectedSchool->id)
+                                                    ->where('standard_id', $fs->standard_id)->count();
+                                            }
+                                            $classExpected  = $fs->amount * $classStudents;
+                                            $classCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::where('super_admin_fee_structure_id', $fs->id)->paid()->sum('amount');
+                                            $classPct       = $classExpected > 0 ? round(($classCollected / $classExpected) * 100) : 0;
                                         @endphp
                                         <div class="px-4 py-3 hover:bg-gray-50/50 transition-colors">
                                             <div class="flex items-center justify-between gap-4">
-
-                                                {{-- Left: class badge + students --}}
                                                 <div class="flex items-center gap-2 min-w-0">
-                                                    <span
-                                                        class="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium border border-indigo-100 flex-shrink-0">
-                                                        {{ $fs->standard?->name }}
-                                                    </span>
-                                                    <span
-                                                        class="text-xs text-gray-400 flex-shrink-0">{{ $classStudents }}
-                                                        students</span>
+                                                    @if ($fs->fee_type === 'one_time')
+                                                        <span class="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium border border-indigo-100 flex-shrink-0">
+                                                            One Time
+                                                        </span>
+                                                    @else
+                                                        <span class="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium border border-indigo-100 flex-shrink-0">
+                                                            {{ $fs->standard?->name }}
+                                                        </span>
+                                                    @endif
+                                                    <span class="text-xs text-gray-400 flex-shrink-0">{{ $classStudents }} students</span>
                                                 </div>
-
-                                                {{-- Right: amounts --}}
                                                 <div class="flex items-center gap-3 text-xs flex-shrink-0">
-                                                    <span class="text-gray-400">₹/student: <strong
-                                                            class="text-gray-700">{{ number_format($fs->amount, 0) }}</strong></span>
-                                                    <span
-                                                        class="text-emerald-600 font-semibold">₹{{ number_format($classCollected, 0) }}</span>
+                                                    <span class="text-gray-400">₹/student: <strong class="text-gray-700">{{ number_format($fs->amount, 0) }}</strong></span>
+                                                    <span class="text-emerald-600 font-semibold">₹{{ number_format($classCollected, 0) }}</span>
                                                     <span class="text-gray-300">/</span>
-                                                    <span
-                                                        class="text-gray-600 font-medium">₹{{ number_format($classExpected, 0) }}</span>
-                                                    <span
-                                                        class="w-10 text-right font-bold {{ $classPct >= 100 ? 'text-emerald-600' : 'text-gray-600' }}">
+                                                    <span class="text-gray-600 font-medium">₹{{ number_format($classExpected, 0) }}</span>
+                                                    <span class="w-10 text-right font-bold {{ $classPct >= 100 ? 'text-emerald-600' : 'text-gray-600' }}">
                                                         {{ $classPct }}%
                                                     </span>
                                                 </div>
                                             </div>
-
-                                            {{-- Thin progress bar --}}
                                             <div class="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
                                                 <div class="h-full rounded-full {{ $classPct >= 100 ? 'bg-emerald-500' : 'bg-blue-500' }}"
                                                     style="width: {{ min(100, $classPct) }}%"></div>
@@ -541,32 +625,46 @@
                 @if ($activeTab === 'update')
                     <div class="p-5 space-y-4">
 
-                        {{-- Filters --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <select wire:model.live="updateStandardId"
-                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                                       focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="">Select Class</option>
-                                @foreach ($standards as $standard)
-                                    <option value="{{ $standard->id }}">{{ $standard->name }}</option>
-                                @endforeach
-                            </select>
+                        {{-- Filters: class_wise shows selectors, one_time shows Load All button --}}
+                        @if ($feeType === 'one_time')
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+                                    <p class="text-sm font-medium text-indigo-700">One Time Fee Mode</p>
+                                    <p class="text-xs text-indigo-500 mt-0.5">Fee applies to all students in this school</p>
+                                </div>
+                                <button wire:click="loadStudentFeeList"
+                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
+                                           rounded-lg transition-colors whitespace-nowrap">
+                                    Load All Students
+                                </button>
+                            </div>
+                        @else
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <select wire:model.live="updateStandardId"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <option value="">Select Class</option>
+                                    @foreach ($standards as $standard)
+                                        <option value="{{ $standard->id }}">{{ $standard->name }}</option>
+                                    @endforeach
+                                </select>
 
-                            <select wire:model.live="updateSectionId" @disabled(!$updateStandardId)
-                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                                       focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed">
-                                <option value="">All Sections</option>
-                                @foreach ($updateSections as $section)
-                                    <option value="{{ $section->id }}">{{ $section->name }}</option>
-                                @endforeach
-                            </select>
+                                <select wire:model.live="updateSectionId" @disabled(!$updateStandardId)
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <option value="">All Sections</option>
+                                    @foreach ($updateSections as $section)
+                                        <option value="{{ $section->id }}">{{ $section->name }}</option>
+                                    @endforeach
+                                </select>
 
-                            <button wire:click="loadStudentFeeList" @disabled(!$updateStandardId)
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
-                                       rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Load Students
-                            </button>
-                        </div>
+                                <button wire:click="loadStudentFeeList" @disabled(!$updateStandardId)
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
+                                           rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Load Students
+                                </button>
+                            </div>
+                        @endif
 
                         {{-- Student Fee Table --}}
                         @if (count($studentFeeList))
@@ -575,104 +673,82 @@
                                     <table class="w-full">
                                         <thead class="bg-gray-50 border-b border-gray-200">
                                             <tr>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">#
-                                                </th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Name</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Admission No</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Mobile</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Section</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Fee
-                                                </th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Collected</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Remaining</th>
-                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">
-                                                    Date</th>
-                                                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500">
-                                                    Action</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">#</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Admission No</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Mobile</th>
+                                                @if ($feeType === 'one_time')
+                                                    <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Class</th>
+                                                @endif
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Section</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Fee</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Collected</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Remaining</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Date</th>
+                                                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100">
                                             @foreach ($studentFeeList as $row)
-                                                <tr
-                                                    class="hover:bg-gray-50/50 {{ $row['is_paid'] ? 'bg-emerald-50/30' : '' }}">
-                                                    <td class="px-3 py-3 text-xs text-gray-400">{{ $row['serial'] }}
-                                                    </td>
+                                                <tr class="hover:bg-gray-50/50 {{ $row['is_paid'] ? 'bg-emerald-50/30' : '' }}">
+                                                    <td class="px-3 py-3 text-xs text-gray-400">{{ $row['serial'] }}</td>
                                                     <td class="px-3 py-3">
-                                                        <p class="text-sm font-medium text-gray-800">
-                                                            {{ $row['name'] }}</p>
+                                                        <p class="text-sm font-medium text-gray-800">{{ $row['name'] }}</p>
                                                         <p class="text-xs text-gray-400">{{ $row['email'] }}</p>
                                                     </td>
-                                                    <td class="px-3 py-3 text-xs font-mono text-gray-700">
-                                                        {{ $row['admission_no'] }}</td>
-                                                    <td class="px-3 py-3 text-xs text-gray-600 font-mono">
-                                                        {{ $row['mobile'] }}</td>
-                                                    <td class="px-3 py-3 text-xs text-gray-600">{{ $row['section'] }}
-                                                    </td>
+                                                    <td class="px-3 py-3 text-xs font-mono text-gray-700">{{ $row['admission_no'] }}</td>
+                                                    <td class="px-3 py-3 text-xs text-gray-600 font-mono">{{ $row['mobile'] }}</td>
+                                                    @if ($feeType === 'one_time')
+                                                        <td class="px-3 py-3 text-xs text-gray-600">{{ $row['standard'] }}</td>
+                                                    @endif
+                                                    <td class="px-3 py-3 text-xs text-gray-600">{{ $row['section'] }}</td>
                                                     <td class="px-3 py-3 text-sm font-semibold text-gray-800">
                                                         ₹{{ number_format($row['total_fee'], 0) }}
                                                     </td>
                                                     <td class="px-3 py-3 text-sm font-semibold text-emerald-700">
                                                         ₹{{ number_format($row['collected'], 0) }}
                                                     </td>
-                                                    <td
-                                                        class="px-3 py-3 text-sm font-semibold
+                                                    <td class="px-3 py-3 text-sm font-semibold
                                                         {{ $row['remaining'] > 0 ? 'text-red-500' : 'text-gray-400' }}">
                                                         ₹{{ number_format($row['remaining'], 0) }}
                                                     </td>
                                                     <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
                                                         {{ $row['payment_date'] }}
                                                         @if ($row['is_paid'] && $row['payment_mode'] !== '—')
-                                                            <span
-                                                                class="block text-gray-400 capitalize">{{ $row['payment_mode'] }}</span>
+                                                            <span class="block text-gray-400 capitalize">{{ $row['payment_mode'] }}</span>
                                                         @endif
                                                     </td>
                                                     <td class="px-3 py-3 text-center">
                                                         @if ($row['is_paid'])
-                                                            {{-- Paid: show edit button --}}
                                                             <div class="flex items-center justify-center gap-1">
-                                                                <button
-                                                                    wire:click="openEditPayModal({{ $row['payment_id'] }})"
+                                                                <button wire:click="openEditPayModal({{ $row['payment_id'] }})"
                                                                     title="Edit payment"
                                                                     class="inline-flex items-center justify-center w-7 h-7 bg-amber-50
                                                                            text-amber-600 border border-amber-200 rounded-full
                                                                            hover:bg-amber-100 transition-colors">
-                                                                    <svg class="w-3.5 h-3.5" fill="none"
-                                                                        stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round"
-                                                                            stroke-linejoin="round" stroke-width="2"
+                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                                     </svg>
                                                                 </button>
-                                                                <button
-                                                                    title="Mark"
+                                                                <button title="Paid"
                                                                     class="inline-flex items-center justify-center w-7 h-7 bg-emerald-500
                                                                            text-white rounded-full hover:bg-emerald-600 transition-colors">
-                                                                    <svg class="w-4 h-4" fill="none"
-                                                                        stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round"
-                                                                            stroke-linejoin="round" stroke-width="2.5"
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                                             d="M5 13l4 4L19 7" />
                                                                     </svg>
                                                                 </button>
                                                             </div>
                                                         @else
-                                                            {{-- Unpaid: show add payment button --}}
                                                             @if ($row['structure_id'])
                                                                 <button
                                                                     wire:click="openPayModal({{ $row['id'] }}, {{ $row['structure_id'] }}, {{ $row['total_fee'] }}, {{ $row['payment_id'] ?? 'null' }})"
                                                                     title="Record payment"
                                                                     class="inline-flex items-center justify-center w-7 h-7 bg-gray-200
                                                                            text-gray-500 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors">
-                                                                    <svg class="w-4 h-4" fill="none"
-                                                                        stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round"
-                                                                            stroke-linejoin="round" stroke-width="2"
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                                             d="M12 4v16m8-8H4" />
                                                                     </svg>
                                                                 </button>
@@ -686,7 +762,7 @@
                                         </tbody>
                                         <tfoot class="bg-gray-50 border-t border-gray-200">
                                             <tr>
-                                                <td colspan="5"
+                                                <td colspan="{{ $feeType === 'one_time' ? 6 : 5 }}"
                                                     class="px-3 py-2.5 text-xs font-semibold text-gray-600">
                                                     Total ({{ count($studentFeeList) }} students)
                                                 </td>
@@ -701,21 +777,24 @@
                                                 </td>
                                                 <td class="px-3 py-2.5 text-xs text-gray-500">—</td>
                                                 <td class="px-3 py-2.5 text-center text-xs text-gray-500">
-                                                    {{ collect($studentFeeList)->where('is_paid', true)->count() }}/{{ count($studentFeeList) }}
-                                                    paid
+                                                    {{ collect($studentFeeList)->where('is_paid', true)->count() }}/{{ count($studentFeeList) }} paid
                                                 </td>
                                             </tr>
                                         </tfoot>
                                     </table>
                                 </div>
                             </div>
-                        @elseif ($updateStandardId)
+                        @elseif ($feeType === 'class_wise' && $updateStandardId)
                             <div class="text-center py-8 text-sm text-gray-400">
                                 No students found. Click "Load Students" to fetch.
                             </div>
                         @else
                             <div class="text-center py-8 text-sm text-gray-400">
-                                Select a class and click "Load Students".
+                                @if ($feeType === 'one_time')
+                                    Click "Load All Students" to view fee status.
+                                @else
+                                    Select a class and click "Load Students".
+                                @endif
                             </div>
                         @endif
                     </div>

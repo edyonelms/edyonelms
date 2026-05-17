@@ -13,6 +13,7 @@ class SuperAdminFeeStructure extends Model
     protected $fillable = [
         'organization_id',
         'standard_id',
+        'fee_type',
         'amount',
         'academic_year',
         'fee_label',
