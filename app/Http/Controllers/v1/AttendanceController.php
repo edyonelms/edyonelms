@@ -219,7 +219,13 @@ class AttendanceController extends Controller
                 'section_id' => 'sometimes|exists:sections,id'
             ]);
 
-            $teacherAssignments = AssignTeacherStandard::where('teacher_detail_id', $user->teacherDetail->id)
+            $teacherDetail = TeacherDetail::where('user_id', $user->id)->first();
+
+            if (!$teacherDetail) {
+                return $this->responseService->errorResponse('Teacher profile not found', 404);
+            }
+
+            $teacherAssignments = AssignTeacherStandard::where('teacher_detail_id', $teacherDetail->id)
                 ->where('organization_id', $user->organization_id);
 
             // Agar specific class request ki hai
@@ -257,8 +263,8 @@ class AttendanceController extends Controller
                 $summaries[] = [
                     'standard_id' => $class->standard_id,
                     'section_id' => $class->section_id,
-                    'standard_name' => $class->standard->name,
-                    'section_name' => $class->section->name,
+                    'standard_name' => $class->standard->name ?? null,
+                    'section_name' => $class->section->name ?? null,
                     ...$summary
                 ];
             }

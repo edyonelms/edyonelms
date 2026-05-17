@@ -234,6 +234,9 @@ class ContentController extends Controller
                 [],
                 'Chapter and its topics deleted successfully'
             );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return $this->responseService->errorResponse('Chapter not found', 404);
         } catch (Exception $e) {
             DB::rollBack();
             return $this->responseService->errorResponse(
@@ -306,12 +309,12 @@ class ContentController extends Controller
      */
     public function deleteTopic($topicId)
     {
+        DB::beginTransaction();
         try {
             $topic = Topic::whereHas('chapter', function ($q) {
                 $q->where('organization_id', Auth::user()->organization_id);
             })
                 ->findOrFail($topicId);
-            DB::beginTransaction();
 
             // Delete associated files
             if ($topic->image_path) Storage::disk('s3')->delete($topic->image_path);
@@ -324,6 +327,9 @@ class ContentController extends Controller
                 [],
                 'Topic deleted successfully'
             );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return $this->responseService->errorResponse('Topic not found', 404);
         } catch (Exception $e) {
             DB::rollBack();
             return $this->responseService->errorResponse(
