@@ -39,6 +39,12 @@ return [
             'prefix' => 'admin.teacher',
         ],
         [
+            'title' => 'Fees',
+            'link' => 'admin.fee',
+            'icon' => 'currency-rupee',
+            'prefix' => 'admin.fee',
+        ],
+        [
             'title' => 'Payroll',
             'link' => 'admin.payroll',
             'icon' => 'banknotes',
@@ -211,12 +217,6 @@ return [
             'link' => 'admin.terms-of-use',
             'icon' => 'document-text',
             'prefix' => 'admin.terms-of-use',
-        ],
-        [
-            'title' => 'Account Users',
-            'link' => 'admin.account-users',
-            'icon' => 'user-group',
-            'prefix' => 'admin.account-users',
         ],
     ],
 
