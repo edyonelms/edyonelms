@@ -205,6 +205,7 @@ jobs:
       - name: SSH and redeploy
         uses: appleboy/ssh-action@v1.0.3
         env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZEPTOMAIL_API_TOKEN: ${{ secrets.ZEPTOMAIL_API_TOKEN }}
           ZEPTOMAIL_OTP_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_OTP_TEMPLATE_KEY }}
           ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY }}
@@ -217,7 +218,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script_stop: true
-          envs: ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
+          envs: GIT_TOKEN,ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
           script: |
             set -euo pipefail
             cd ${{ secrets.EC2_PROJECT_PATH }}
@@ -240,7 +241,9 @@ jobs:
             inject_env "ZEPTOMAIL_FROM_NAME"                     "${ZEPTOMAIL_FROM_NAME:-}"
 
             echo "==> git pull"
-            git pull --ff-only
+            git remote set-url origin "https://x-access-token:${GIT_TOKEN:-}@github.com/edyonelms/edyonelms.git"
+            git fetch origin main
+            git reset --hard origin/main
 
             # Build new app image while old container keeps serving traffic.
             # Compose only recreates services whose image/config changed —
