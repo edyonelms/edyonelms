@@ -11,7 +11,6 @@ use App\Models\Student\Subject;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use WireUi\Traits\WireUiActions;
 
@@ -19,442 +18,478 @@ class Performance extends Component
 {
     use WireUiActions, WithPagination;
 
-    public $activeTab = 'list';
-    public $showSlider = false;
-    public $sliderTitle = '';
-    public $sliderData = [];
+    public string $activeTab = 'subject';
 
-    // For list tab filters
-    #[Url]
-    public $search = '';
+    // ─── View slider ────────────────────────────────────────────────────────
+    public bool   $showSlider = false;
+    public string $sliderTitle = '';
+    public array  $sliderData = [];
 
-    #[Url]
-    public $perPage = 10;
+    // ─── View by Subject tab filters ────────────────────────────────────────
+    #[Url] public string $search        = '';
+    #[Url] public int    $perPage       = 10;
+    #[Url] public string $filterExam     = '';
+    #[Url] public string $filterStandard = '';
+    #[Url] public string $filterSection  = '';
+    #[Url] public string $filterSubject  = '';
 
-    #[Url]
-    public $filterExam = '';
+    // Inline edit for subject tab
+    public ?int  $editingMarkId  = null;
+    public array $editMarkData   = [];
 
-    #[Url]
-    public $filterStandard = '';
+    // ─── View by Student tab ────────────────────────────────────────────────
+    public string $selectedExam     = '';
+    public string $selectedStandard = '';
+    public string $selectedSection  = '';
+    public string $selectedStudent  = '';
+    public array  $studentPerformance = [];
 
-    #[Url]
-    public $filterSection = '';
+    // ─── Upload Marks modal ─────────────────────────────────────────────────
+    public bool   $showUploadModal   = false;
+    public string $uploadExam        = '';
+    public string $uploadStandard    = '';
+    public string $uploadSection     = '';
+    public string $uploadSubject     = '';
+    public array  $studentMarks      = [];
+    public array  $editingStudents   = [];   // [studentId => true] when in edit mode
 
-    #[Url]
-    public $filterSubject = '';
+    // ─── Performers tab ──────────────────────────────────────────────────────
+    public string $perfMode     = 'class-section';
+    public string $perfStandard = '';
+    public string $perfSection  = '';
+    public string $perfExam     = '';
+    public string $perfSubject  = '';
+    public array  $perfSections = [];
+    public array  $performers   = [];
 
-    // For view tab filters
-    public $selectedExam = '';
-    public $selectedStandard = '';
-    public $selectedSection = '';
-    public $selectedStudent = '';
-    public $studentPerformance = [];
-
-    // For upload marks tab
-    public $uploadExam = '';
-    public $uploadStandard = '';
-    public $uploadSection = '';
-    public $uploadSubject = '';
-    public $studentMarks = [];
-
-    // Data for dropdowns
-    public $exams = [];
+    // ─── Shared dropdown data ────────────────────────────────────────────────
+    public $exams     = [];
     public $standards = [];
-    public $sections = [];
-    public $students = [];
-    public $subjects = [];
+    public $sections  = [];
+    public $students  = [];
+    public $subjects  = [];
 
-    public function mount()
+    // ════════════════════════════════════════════════════════════════════════
+    // Boot
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function mount(): void
     {
         $this->loadFilters();
-        $this->loadInitialData();
-    }
-
-    public function loadFilters()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $this->exams = Exam::where('organization_id', $organizationId)
-            ->where('is_published', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $this->standards = Standard::where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get();
-
-        $this->subjects = Subject::where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-    }
-
-    public function loadInitialData()
-    {
         if ($this->filterStandard) {
             $this->sections = Section::where('standard_id', $this->filterStandard)
-                ->where('is_active', true)
-                ->get();
-
-            // Load subjects for the selected standard
-            $this->loadSubjectsForStandard($this->filterStandard, $this->filterSection);
+                ->where('is_active', true)->get();
+            $this->loadSubjectsForStandard($this->filterStandard, $this->filterSection ?: null);
         }
     }
 
-    // Real-time methods for list tab
-    public function updated($property, $value)
+    // ════════════════════════════════════════════════════════════════════════
+    // Tab navigation
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function showTab(string $tab): void
+    {
+        $this->activeTab = $tab;
+
+        if ($tab === 'student') {
+            $this->reset(['selectedExam', 'selectedStandard', 'selectedSection', 'selectedStudent', 'studentPerformance']);
+            $this->sections = [];
+            $this->students = [];
+            $this->loadFilters();
+        } elseif ($tab === 'performers') {
+            $this->performers = [];
+        } else {
+            $this->resetPage();
+            $this->loadFilters();
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Upload Marks modal
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function openUploadMarks(): void
+    {
+        $this->showUploadModal  = true;
+        $this->uploadExam       = '';
+        $this->uploadStandard   = '';
+        $this->uploadSection    = '';
+        $this->uploadSubject    = '';
+        $this->studentMarks     = [];
+        $this->editingStudents  = [];
+        $this->sections         = [];
+        $this->students         = [];
+        $this->loadFilters();
+    }
+
+    public function closeUploadModal(): void
+    {
+        $this->showUploadModal = false;
+        $this->editingStudents = [];
+        // Re-load shared data for active tab
+        if ($this->activeTab === 'subject') {
+            $this->loadFilters();
+        }
+    }
+
+    public function toggleEditStudent(int $studentId): void
+    {
+        $this->editingStudents[$studentId] = !($this->editingStudents[$studentId] ?? false);
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // View by Subject – real-time filter updates
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function updated(string $property, mixed $value): void
     {
         if (in_array($property, ['search', 'filterExam', 'filterStandard', 'filterSection', 'filterSubject'])) {
             $this->resetPage();
         }
 
-        // Handle real-time updates for dropdowns
-        if ($property === 'filterStandard' && $value) {
-            $this->sections = Section::where('standard_id', $value)
-                ->where('is_active', true)
-                ->get();
+        if ($property === 'filterStandard') {
             $this->filterSection = '';
-
-            // Load subjects for this standard
-            $this->loadSubjectsForStandard($value);
             $this->filterSubject = '';
-        } elseif ($property === 'filterStandard' && !$value) {
-            $this->sections = [];
-            $this->filterSection = '';
-
-            // Reset subjects to all subjects
-            $this->loadFilters();
-            $this->filterSubject = '';
+            if ($value) {
+                $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
+                $this->loadSubjectsForStandard($value);
+            } else {
+                $this->sections = [];
+                $this->loadFilters();
+            }
         }
 
-        // Update subjects when section changes
-        if ($property === 'filterSection' && $value && $this->filterStandard) {
-            $this->loadSubjectsForStandard($this->filterStandard, $value);
+        if ($property === 'filterSection') {
             $this->filterSubject = '';
-        } elseif ($property === 'filterSection' && !$value && $this->filterStandard) {
-            // Reset to standard-level subjects when section is cleared
-            $this->loadSubjectsForStandard($this->filterStandard);
-            $this->filterSubject = '';
-        }
-    }
-
-    // Real-time methods for view tab
-    public function updatedSelectedStandard($value)
-    {
-        $this->selectedSection = '';
-        $this->selectedStudent = '';
-        $this->students = [];
-        $this->studentPerformance = [];
-
-        if ($value) {
-            $this->sections = Section::where('standard_id', $value)
-                ->where('is_active', true)
-                ->get();
-
-            // Load subjects for this standard
-            $this->loadSubjectsForStandard($value);
-        } else {
-            $this->sections = [];
-            // Reset to all subjects
-            $organizationId = Auth::user()->organization_id;
-            $this->subjects = Subject::where('organization_id', $organizationId)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
-        }
-    }
-
-    public function updatedSelectedSection($value)
-    {
-        $this->selectedStudent = '';
-        $this->studentPerformance = [];
-
-        if ($value && $this->selectedStandard) {
-            $this->loadStudents($this->selectedStandard, $value);
-            // Load subjects for this section
-            $this->loadSubjectsForStandard($this->selectedStandard, $value);
-        } else {
-            $this->students = [];
-            // Reset to standard-level subjects
-            if ($this->selectedStandard) {
-                $this->loadSubjectsForStandard($this->selectedStandard);
+            if ($value && $this->filterStandard) {
+                $this->loadSubjectsForStandard($this->filterStandard, $value);
+            } elseif ($this->filterStandard) {
+                $this->loadSubjectsForStandard($this->filterStandard);
             }
         }
     }
 
-    public function updatedSelectedStudent($value)
+    // ════════════════════════════════════════════════════════════════════════
+    // View by Student – real-time updates
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function updatedSelectedStandard(mixed $value): void
     {
+        $this->selectedSection  = '';
+        $this->selectedStudent  = '';
+        $this->students         = [];
         $this->studentPerformance = [];
 
-        // Auto-search when student is selected
+        if ($value) {
+            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
+        } else {
+            $this->sections = [];
+        }
+    }
+
+    public function updatedSelectedSection(mixed $value): void
+    {
+        $this->selectedStudent    = '';
+        $this->studentPerformance = [];
+
+        if ($value && $this->selectedStandard) {
+            $this->loadStudents($this->selectedStandard, $value);
+        } else {
+            $this->students = [];
+        }
+    }
+
+    public function updatedSelectedStudent(mixed $value): void
+    {
+        $this->studentPerformance = [];
         if ($value && $this->selectedExam && $this->selectedStandard && $this->selectedSection) {
             $this->searchPerformance();
         }
     }
 
-    // Real-time methods for upload marks tab
-    public function updatedUploadStandard($value)
+    // ════════════════════════════════════════════════════════════════════════
+    // Upload Marks – real-time updates
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function updatedUploadStandard(mixed $value): void
     {
-        $this->uploadSection = '';
-        $this->uploadSubject = '';
+        $this->uploadSection   = '';
+        $this->uploadSubject   = '';
+        $this->editingStudents = [];
 
         if ($value) {
-            $this->sections = Section::where('standard_id', $value)
-                ->where('is_active', true)
-                ->get();
-
-            // Load subjects for this standard
+            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
             $this->loadSubjectsForStandard($value);
         } else {
             $this->sections = [];
-            // Reset to all subjects
-            $organizationId = Auth::user()->organization_id;
-            $this->subjects = Subject::where('organization_id', $organizationId)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
         }
-        $this->resetStudentMarks();
+        $this->studentMarks = [];
     }
 
-    public function updatedUploadSection($value)
+    public function updatedUploadSection(mixed $value): void
     {
+        $this->uploadSubject   = '';
+        $this->editingStudents = [];
+
         if ($value && $this->uploadStandard) {
             $this->loadStudents($this->uploadStandard, $value);
-            // Load subjects for this section
             $this->loadSubjectsForStandard($this->uploadStandard, $value);
         } else {
             $this->students = [];
-            // Reset to standard-level subjects
-            if ($this->uploadStandard) {
-                $this->loadSubjectsForStandard($this->uploadStandard);
+        }
+        $this->studentMarks = [];
+    }
+
+    public function updatedUploadSubject(): void
+    {
+        $this->editingStudents = [];
+        $this->loadStudentMarks();
+    }
+
+    public function updatedUploadExam(): void
+    {
+        $this->editingStudents = [];
+        $this->loadStudentMarks();
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Performers tab
+    // ════════════════════════════════════════════════════════════════════════
+
+    public function updatedPerfMode(): void
+    {
+        $this->perfExam     = '';
+        $this->perfSubject  = '';
+        $this->performers   = [];
+        // Reload subjects for selected standard/section
+        if ($this->perfStandard && $this->perfSection) {
+            $this->loadSubjectsForStandard($this->perfStandard, $this->perfSection);
+        }
+    }
+
+    public function updatedPerfStandard(mixed $value): void
+    {
+        $this->perfSection  = '';
+        $this->perfExam     = '';
+        $this->perfSubject  = '';
+        $this->performers   = [];
+        $this->perfSections = [];
+
+        if ($value) {
+            $this->perfSections = Section::where('standard_id', $value)->where('is_active', true)->get();
+        }
+    }
+
+    public function updatedPerfSection(): void
+    {
+        $this->perfExam    = '';
+        $this->perfSubject = '';
+        $this->performers  = [];
+
+        if ($this->perfSection && $this->perfStandard) {
+            $this->loadSubjectsForStandard($this->perfStandard, $this->perfSection);
+            if ($this->perfMode === 'class-section') {
+                $this->loadPerformers();
             }
         }
-        $this->resetStudentMarks();
     }
 
-    public function updatedUploadSubject()
+    public function updatedPerfExam(): void
     {
-        $this->loadStudentMarks();
-    }
-
-    public function updatedUploadExam()
-    {
-        $this->loadStudentMarks();
-    }
-
-    public function showTab($tab)
-    {
-        $this->activeTab = $tab;
-
-        if ($tab === 'view') {
-            $this->reset(['selectedExam', 'selectedStandard', 'selectedSection', 'selectedStudent', 'studentPerformance']);
-            $this->sections = [];
-            $this->students = [];
-            $this->loadFilters(); // Reset subjects
-        } elseif ($tab === 'upload') {
-            $this->reset(['uploadExam', 'uploadStandard', 'uploadSection', 'uploadSubject', 'studentMarks']);
-            $this->sections = [];
-            $this->students = [];
-            $this->loadFilters(); // Reset subjects
-        } else {
-            $this->resetPage();
-            $this->loadFilters(); // Reset subjects
+        if ($this->perfMode === 'exam-class-section') {
+            $this->loadPerformers();
         }
     }
 
-    private function loadStudents($standardId, $sectionId)
+    public function updatedPerfSubject(): void
     {
-        $this->students = StudentDetail::where('standard_id', $standardId)
-            ->where('section_id', $sectionId)
-            ->with('user')
-            ->orderBy('roll_no')
-            ->get();
-    }
-
-    /**
-     * Load subjects based on standard and optionally section
-     * Uses standard_subjects and section_subjects pivot tables
-     */
-    private function loadSubjectsForStandard($standardId, $sectionId = null)
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        if ($sectionId) {
-            // Get subjects assigned to this specific section
-            $this->subjects = Subject::join('section_subjects', 'subjects.id', '=', 'section_subjects.subject_id')
-                ->where('section_subjects.section_id', $sectionId)
-                ->where('section_subjects.standard_id', $standardId)
-                ->where('subjects.organization_id', $organizationId)
-                ->where('subjects.is_active', true)
-                ->select('subjects.*')
-                ->distinct()
-                ->orderBy('subjects.name')
-                ->get();
-        } else {
-            // Get subjects assigned to this standard
-            $this->subjects = Subject::join('standard_subjects', 'subjects.id', '=', 'standard_subjects.subject_id')
-                ->where('standard_subjects.standard_id', $standardId)
-                ->where('subjects.organization_id', $organizationId)
-                ->where('subjects.is_active', true)
-                ->select('subjects.*')
-                ->distinct()
-                ->orderBy('subjects.name')
-                ->get();
-        }
-
-        // If no subjects found, return empty collection
-        if ($this->subjects->isEmpty()) {
-            $this->subjects = collect();
+        if ($this->perfMode === 'class-section-subject') {
+            $this->loadPerformers();
         }
     }
 
-    private function loadStudentMarks()
+    public function loadPerformers(): void
     {
-        $this->studentMarks = [];
-
-        if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection || !$this->uploadSubject) {
+        if (!$this->perfStandard || !$this->perfSection) {
+            $this->performers = [];
             return;
         }
 
-        foreach ($this->students as $student) {
-            $existingMarks = ExamCopy::where('exam_id', $this->uploadExam)
-                ->where('standard_id', $this->uploadStandard)
-                ->where('section_id', $this->uploadSection)
-                ->where('subject_id', $this->uploadSubject)
-                ->where('student_detail_id', $student->id)
-                ->first();
+        $orgId = Auth::user()->organization_id;
 
-            $this->studentMarks[$student->id] = [
-                'student_id' => $student->id,
-                'student_name' => $student->user->name,
-                'roll_no' => $student->roll_no,
-                'marks_obtained' => $existingMarks ? $existingMarks->marks_obtained : '',
-                'max_marks' => $existingMarks ? $existingMarks->max_marks : 100,
-                'grade' => $existingMarks ? $existingMarks->grade : '',
-                'remarks' => $existingMarks ? $existingMarks->remarks : '',
-            ];
+        $query = ExamCopy::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section'])
+            ->where('organization_id', $orgId)
+            ->where('standard_id', $this->perfStandard)
+            ->where('section_id', $this->perfSection);
+
+        if ($this->perfMode === 'exam-class-section') {
+            if (!$this->perfExam) { $this->performers = []; return; }
+            $query->where('exam_id', $this->perfExam);
         }
+
+        if ($this->perfMode === 'class-section-subject') {
+            if (!$this->perfSubject) { $this->performers = []; return; }
+            $query->where('subject_id', $this->perfSubject);
+        }
+
+        $records = $query->get();
+        if ($records->isEmpty()) { $this->performers = []; return; }
+
+        $totals = [];
+        foreach ($records as $record) {
+            $sid = $record->student_detail_id;
+            if (!isset($totals[$sid])) {
+                $totals[$sid] = [
+                    'student'        => $record->studentDetail,
+                    'total_obtained' => 0,
+                    'total_max'      => 0,
+                    'percentage'     => 0,
+                    'grade'          => '',
+                    'rank'           => 0,
+                ];
+            }
+            $totals[$sid]['total_obtained'] += (float) $record->marks_obtained;
+            $totals[$sid]['total_max']      += (float) $record->max_marks;
+        }
+
+        foreach ($totals as &$data) {
+            $pct = $data['total_max'] > 0
+                ? round(($data['total_obtained'] / $data['total_max']) * 100, 2)
+                : 0;
+            $data['percentage'] = $pct;
+            $data['grade']      = $this->calculateGrade($pct);
+        }
+        unset($data);
+
+        usort($totals, fn($a, $b) => $b['percentage'] <=> $a['percentage']);
+
+        $rank = 1;
+        foreach ($totals as &$data) { $data['rank'] = $rank++; }
+        unset($data);
+
+        $this->performers = array_values($totals);
     }
 
-    private function resetStudentMarks()
-    {
-        $this->studentMarks = [];
-    }
+    // ════════════════════════════════════════════════════════════════════════
+    // CRUD
+    // ════════════════════════════════════════════════════════════════════════
 
-    // List tab methods
-    public function onView($id)
+    public function onView(int $id): void
     {
         try {
             $examCopy = ExamCopy::with([
-                'exam',
-                'standard',
-                'section',
-                'subject',
-                'studentDetail.user',
-                'examSubjectMarks.subject'
+                'exam', 'standard', 'section', 'subject', 'studentDetail.user', 'examSubjectMarks.subject'
             ])->find($id);
 
-            if (!$examCopy) {
-                $this->notification()->error('Exam record not found!');
-                return;
-            }
+            if (!$examCopy) { $this->notification()->error('Record not found!'); return; }
 
             $this->sliderTitle = 'Exam Copy Details';
-            $this->sliderData = [
-                'exam_copy' => $examCopy,
-                'subject_marks' => $examCopy->examSubjectMarks
-            ];
-
-            $this->showSlider = true;
+            $this->sliderData  = ['exam_copy' => $examCopy, 'subject_marks' => $examCopy->examSubjectMarks];
+            $this->showSlider  = true;
         } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error loading details',
-                $e->getMessage()
-            );
+            $this->notification()->error('Error loading details', $e->getMessage());
         }
     }
 
-    public function closeSlider()
+    public function closeSlider(): void
     {
-        $this->showSlider = false;
-        $this->sliderData = [];
+        $this->showSlider  = false;
+        $this->sliderData  = [];
         $this->sliderTitle = '';
     }
 
-    public function onDownloadPdf($examCopyId = null, $type = 'single')
+    public function onEdit(int $id): void
     {
-        try {
-            if ($type === 'single' && $examCopyId) {
-                return $this->downloadSinglePdf($examCopyId);
-            } elseif ($type === 'multiple' && $this->selectedExam) {
-                return $this->downloadMultiplePdf();
-            }
-        } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error generating PDF',
-                $e->getMessage()
-            );
+        $examCopy = ExamCopy::find($id);
+        if ($examCopy) {
+            $this->editingMarkId = $id;
+            $this->editMarkData  = [
+                'marks_obtained' => $examCopy->marks_obtained,
+                'max_marks'      => $examCopy->max_marks,
+                'remarks'        => $examCopy->remarks ?? '',
+            ];
         }
     }
 
-    public function onDelete($id)
+    public function saveEditMark(): void
+    {
+        $this->validate([
+            'editMarkData.marks_obtained' => 'required|numeric|min:0',
+            'editMarkData.max_marks'      => 'required|numeric|min:1',
+        ]);
+
+        try {
+            $examCopy = ExamCopy::find($this->editingMarkId);
+            if ($examCopy) {
+                $pct = ($this->editMarkData['marks_obtained'] / $this->editMarkData['max_marks']) * 100;
+                $examCopy->update([
+                    'marks_obtained' => $this->editMarkData['marks_obtained'],
+                    'max_marks'      => $this->editMarkData['max_marks'],
+                    'percentage'     => round($pct, 2),
+                    'grade'          => $this->calculateGrade($pct),
+                    'remarks'        => $this->editMarkData['remarks'] ?? '',
+                ]);
+                $this->editingMarkId = null;
+                $this->editMarkData  = [];
+                $this->notification()->success('Marks updated successfully!');
+            }
+        } catch (\Exception $e) {
+            $this->notification()->error('Error updating marks', $e->getMessage());
+        }
+    }
+
+    public function cancelEdit(): void
+    {
+        $this->editingMarkId = null;
+        $this->editMarkData  = [];
+    }
+
+    public function onDelete(int $id): void
     {
         $this->dialog()->confirm([
-            'title' => 'Are you Sure?',
-            'icon' => 'exclamation-circle',
-            'iconColor' => 'text-red-500',
-            'description' => 'Are you sure you want to delete this exam record?',
-            'accept' => [
-                'label' => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color' => 'negative',
-            ],
-            'reject' => [
-                'label' => 'No',
-            ],
+            'title'       => 'Delete Record?',
+            'icon'        => 'exclamation-circle',
+            'iconColor'   => 'text-red-500',
+            'description' => 'This will permanently delete this exam record.',
+            'accept'      => ['label' => 'Yes, delete', 'method' => 'doDelete', 'params' => $id, 'color' => 'negative'],
+            'reject'      => ['label' => 'Cancel'],
         ]);
     }
 
-    public function doDelete($id)
+    public function doDelete(int $id): void
     {
         try {
             $examCopy = ExamCopy::find($id);
-
             if ($examCopy) {
                 $examCopy->delete();
-                $this->notification()->success('Exam record deleted successfully!');
+                $this->notification()->success('Record deleted successfully!');
+                if ($this->showUploadModal) {
+                    $this->loadStudentMarks();
+                    $this->editingStudents = [];
+                }
             }
         } catch (\Exception $e) {
             $this->notification()->error('Error deleting record', $e->getMessage());
         }
     }
 
-    public function searchPerformance()
+    public function searchPerformance(): void
     {
         try {
             $this->validate([
-                'selectedExam' => 'required',
+                'selectedExam'     => 'required',
                 'selectedStandard' => 'required',
-                'selectedSection' => 'required',
-                'selectedStudent' => 'required',
+                'selectedSection'  => 'required',
+                'selectedStudent'  => 'required',
             ], [
-                'selectedExam.required' => 'Please select an exam',
-                'selectedStandard.required' => 'Please select a standard',
-                'selectedSection.required' => 'Please select a section',
-                'selectedStudent.required' => 'Please select a student',
+                'selectedExam.required'     => 'Please select an exam',
+                'selectedStandard.required' => 'Please select a class',
+                'selectedSection.required'  => 'Please select a section',
+                'selectedStudent.required'  => 'Please select a student',
             ]);
 
-            // Get records with the exact filters
             $results = ExamCopy::with([
-                'exam',
-                'standard',
-                'section',
-                'subject',
-                'studentDetail.user',
-                'examSubjectMarks.subject'
+                'exam', 'standard', 'section', 'subject', 'studentDetail.user', 'examSubjectMarks.subject'
             ])
                 ->where('exam_id', $this->selectedExam)
                 ->where('standard_id', $this->selectedStandard)
@@ -464,44 +499,26 @@ class Performance extends Component
 
             if ($results->isEmpty()) {
                 $this->studentPerformance = [];
-                $this->notification()->warning(
-                    'No Results',
-                    'No performance records found for the selected criteria.'
-                );
+                $this->notification()->warning('No Results', 'No records found for the selected criteria.');
                 return;
             }
 
-            // Convert to array for Blade template
             $this->studentPerformance = $results->toArray();
-
-            $this->notification()->success(
-                'Success',
-                count($this->studentPerformance) . ' performance record(s) loaded successfully.'
-            );
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            \Log::error('Error in searchPerformance', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             $this->studentPerformance = [];
-            $this->notification()->error(
-                'Error',
-                'An error occurred while searching. Please try again.'
-            );
+            $this->notification()->error('Error', 'An error occurred while searching.');
         }
     }
 
-    // Upload marks methods
-    public function uploadMarks()
+    public function uploadMarks(): void
     {
         $this->validate([
-            'uploadExam' => 'required',
+            'uploadExam'     => 'required',
             'uploadStandard' => 'required',
-            'uploadSection' => 'required',
-            'uploadSubject' => 'required',
+            'uploadSection'  => 'required',
+            'uploadSubject'  => 'required',
         ]);
 
         try {
@@ -509,80 +526,152 @@ class Performance extends Component
 
             foreach ($this->studentMarks as $studentId => $marks) {
                 if (!empty($marks['marks_obtained']) && is_numeric($marks['marks_obtained'])) {
-                    $maxMarks = $marks['max_marks'] ?? 100;
-                    $marksObtained = floatval($marks['marks_obtained']);
-                    $percentage = ($marksObtained / $maxMarks) * 100;
-                    $grade = $this->calculateGrade($percentage);
+                    $max    = (float) ($marks['max_marks'] ?? 100);
+                    $obt    = (float) $marks['marks_obtained'];
+                    $pct    = $max > 0 ? ($obt / $max) * 100 : 0;
 
                     ExamCopy::updateOrCreate(
                         [
-                            'exam_id' => $this->uploadExam,
-                            'standard_id' => $this->uploadStandard,
-                            'section_id' => $this->uploadSection,
-                            'subject_id' => $this->uploadSubject,
+                            'exam_id'           => $this->uploadExam,
+                            'standard_id'       => $this->uploadStandard,
+                            'section_id'        => $this->uploadSection,
+                            'subject_id'        => $this->uploadSubject,
                             'student_detail_id' => $studentId,
                         ],
                         [
                             'organization_id' => Auth::user()->organization_id,
-                            'marks_obtained' => $marksObtained,
-                            'max_marks' => $maxMarks,
-                            'percentage' => round($percentage, 2),
-                            'grade' => $grade,
-                            'remarks' => $marks['remarks'] ?? '',
+                            'marks_obtained'  => $obt,
+                            'max_marks'       => $max,
+                            'percentage'      => round($pct, 2),
+                            'grade'           => $this->calculateGrade($pct),
+                            'remarks'         => $marks['remarks'] ?? '',
                         ]
                     );
-
                     $savedCount++;
                 }
             }
 
             if ($savedCount > 0) {
-                $this->notification()->success(
-                    'Marks Saved Successfully',
-                    "Marks for $savedCount students have been saved."
-                );
-                $this->loadStudentMarks(); // Refresh with updated data
+                $this->notification()->success('Marks Saved', "Marks for {$savedCount} student(s) saved successfully.");
+                $this->loadStudentMarks();
+                $this->editingStudents = [];
             } else {
-                $this->notification()->warning(
-                    'No Marks Saved',
-                    'Please enter marks for at least one student.'
-                );
+                $this->notification()->warning('No Marks Saved', 'Please enter marks for at least one student.');
             }
         } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error saving marks',
-                $e->getMessage()
-            );
+            $this->notification()->error('Error saving marks', $e->getMessage());
         }
     }
 
-    private function calculateGrade($percentage)
+    public function onDownloadPdf(?int $examCopyId = null, string $type = 'single'): void
     {
-        if ($percentage >= 90) return 'A+';
-        if ($percentage >= 80) return 'A';
-        if ($percentage >= 70) return 'B+';
-        if ($percentage >= 60) return 'B';
-        if ($percentage >= 50) return 'C+';
-        if ($percentage >= 40) return 'C';
-        if ($percentage >= 33) return 'D';
+        $this->notification()->success('PDF Download', 'PDF download initiated.');
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Private helpers
+    // ════════════════════════════════════════════════════════════════════════
+
+    private function loadFilters(): void
+    {
+        $orgId = Auth::user()->organization_id;
+
+        $this->exams = Exam::where('organization_id', $orgId)
+            ->where('is_published', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $this->standards = Standard::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get();
+
+        $this->subjects = Subject::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function loadStudents(string $standardId, string $sectionId): void
+    {
+        $this->students = StudentDetail::where('standard_id', $standardId)
+            ->where('section_id', $sectionId)
+            ->with('user')
+            ->orderBy('roll_no')
+            ->get();
+    }
+
+    private function loadSubjectsForStandard(string $standardId, ?string $sectionId = null): void
+    {
+        $orgId = Auth::user()->organization_id;
+
+        if ($sectionId) {
+            $this->subjects = Subject::join('section_subjects', 'subjects.id', '=', 'section_subjects.subject_id')
+                ->where('section_subjects.section_id', $sectionId)
+                ->where('section_subjects.standard_id', $standardId)
+                ->where('subjects.organization_id', $orgId)
+                ->where('subjects.is_active', true)
+                ->select('subjects.*')->distinct()->orderBy('subjects.name')->get();
+        } else {
+            $this->subjects = Subject::join('standard_subjects', 'subjects.id', '=', 'standard_subjects.subject_id')
+                ->where('standard_subjects.standard_id', $standardId)
+                ->where('subjects.organization_id', $orgId)
+                ->where('subjects.is_active', true)
+                ->select('subjects.*')->distinct()->orderBy('subjects.name')->get();
+        }
+
+        if ($this->subjects->isEmpty()) {
+            $this->subjects = collect();
+        }
+    }
+
+    private function loadStudentMarks(): void
+    {
+        $this->studentMarks = [];
+
+        if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection || !$this->uploadSubject) {
+            return;
+        }
+
+        foreach ($this->students as $student) {
+            $existing = ExamCopy::where('exam_id', $this->uploadExam)
+                ->where('standard_id', $this->uploadStandard)
+                ->where('section_id', $this->uploadSection)
+                ->where('subject_id', $this->uploadSubject)
+                ->where('student_detail_id', $student->id)
+                ->first();
+
+            $this->studentMarks[$student->id] = [
+                'student_id'     => $student->id,
+                'student_name'   => $student->user->name ?? $student->full_name ?? 'N/A',
+                'roll_no'        => $student->roll_no,
+                'admission_no'   => $student->admission_no,
+                'image'          => $student->image,
+                'marks_obtained' => $existing ? $existing->marks_obtained : '',
+                'max_marks'      => $existing ? $existing->max_marks : 100,
+                'grade'          => $existing ? $existing->grade : '',
+                'remarks'        => $existing ? ($existing->remarks ?? '') : '',
+                'saved'          => $existing ? true : false,
+                'exam_copy_id'   => $existing ? $existing->id : null,
+            ];
+        }
+    }
+
+    private function calculateGrade(float $pct): string
+    {
+        if ($pct >= 90) return 'A+';
+        if ($pct >= 80) return 'A';
+        if ($pct >= 70) return 'B+';
+        if ($pct >= 60) return 'B';
+        if ($pct >= 50) return 'C+';
+        if ($pct >= 40) return 'C';
+        if ($pct >= 33) return 'D';
         return 'F';
     }
 
-    private function downloadSinglePdf($examCopyId)
-    {
-        $this->notification()->success(
-            'PDF Download',
-            'Exam copy PDF download initiated.'
-        );
-    }
-
-    private function downloadMultiplePdf()
-    {
-        $this->notification()->success(
-            'PDF Download',
-            'Multiple exam copies PDF download initiated.'
-        );
-    }
+    // ════════════════════════════════════════════════════════════════════════
+    // Render
+    // ════════════════════════════════════════════════════════════════════════
 
     public function render()
     {
@@ -592,50 +681,28 @@ class Performance extends Component
 
     private function getExamCopies()
     {
-        if ($this->activeTab !== 'list') {
+        if ($this->activeTab !== 'subject') {
             return collect();
         }
 
-        $query = ExamCopy::with([
-            'exam',
-            'standard',
-            'section',
-            'subject',
-            'studentDetail.user'
-        ])
+        $query = ExamCopy::with(['exam', 'standard', 'section', 'subject', 'studentDetail.user', 'studentDetail'])
             ->where('organization_id', Auth::user()->organization_id);
 
         if ($this->search) {
             $query->where(function ($q) {
-                $q->whereHas('studentDetail.user', function ($userQuery) {
-                    $userQuery->where('name', 'like', '%' . $this->search . '%');
-                })
-                    ->orWhereHas('exam', function ($examQuery) {
-                        $examQuery->where('exam_name', 'like', '%' . $this->search . '%');
-                    })
-                    ->orWhereHas('subject', function ($subjectQuery) {
-                        $subjectQuery->where('name', 'like', '%' . $this->search . '%');
-                    });
+                $q->whereHas('studentDetail.user', fn($u) => $u->where('name', 'like', "%{$this->search}%"))
+                  ->orWhereHas('studentDetail', fn($s) => $s->where('full_name', 'like', "%{$this->search}%")
+                                                             ->orWhere('admission_no', 'like', "%{$this->search}%"))
+                  ->orWhereHas('exam', fn($e) => $e->where('exam_name', 'like', "%{$this->search}%"))
+                  ->orWhereHas('subject', fn($s) => $s->where('name', 'like', "%{$this->search}%"));
             });
         }
 
-        if ($this->filterExam) {
-            $query->where('exam_id', $this->filterExam);
-        }
+        if ($this->filterExam)     $query->where('exam_id', $this->filterExam);
+        if ($this->filterStandard) $query->where('standard_id', $this->filterStandard);
+        if ($this->filterSection)  $query->where('section_id', $this->filterSection);
+        if ($this->filterSubject)  $query->where('subject_id', $this->filterSubject);
 
-        if ($this->filterStandard) {
-            $query->where('standard_id', $this->filterStandard);
-        }
-
-        if ($this->filterSection) {
-            $query->where('section_id', $this->filterSection);
-        }
-
-        if ($this->filterSubject) {
-            $query->where('subject_id', $this->filterSubject);
-        }
-
-        return $query->orderBy('created_at', 'desc')
-            ->paginate($this->perPage);
+        return $query->orderBy('created_at', 'desc')->paginate($this->perPage);
     }
 }
