@@ -1,26 +1,62 @@
 <div class="min-h-screen bg-gray-50">
 
-    {{-- ===== HEADER ===== --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto">
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Profile</h1>
-            <p class="text-sm text-gray-500 mt-0.5">{{ $organization->name ?? 'School Profile' }}</p>
-        </div>
-    </div>
+    {{-- ===== HEADER + TABS ===== --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6">
 
-    {{-- ===== TAB NAVIGATION ===== --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 sticky top-[73px] z-40">
-        <div class="max-w-5xl mx-auto">
-            <nav class="flex gap-1 overflow-x-auto">
+            {{-- Logo + Name row --}}
+            <div class="py-3 sm:py-4 flex items-center gap-3 sm:gap-4">
+
+                {{-- Logo with change button overlay --}}
+                <div class="relative flex-shrink-0">
+                    @if ($tempPhotoUrl)
+                    <img src="{{ $tempPhotoUrl }}"
+                        class="w-12 h-12 rounded-xl object-cover border-2 border-gray-100 shadow-sm">
+                    @elseif ($organization->logo ?? false)
+                    <img src="{{ $organization->logo }}"
+                        class="w-12 h-12 rounded-xl object-cover border-2 border-gray-100 shadow-sm">
+                    @else
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 border-2 border-gray-100 shadow-sm flex items-center justify-center">
+                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                        </svg>
+                    </div>
+                    @endif
+                    <label class="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer shadow hover:bg-blue-700 transition">
+                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                        </svg>
+                        <input type="file" class="hidden" wire:model="photo">
+                    </label>
+                </div>
+
+                {{-- Name + subtitle --}}
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-base sm:text-lg font-bold text-gray-900 truncate">{{ $organization->name ?? 'School Profile' }}</h1>
+                    <p class="text-xs text-gray-500 truncate">{{ $organization->education_board ?? 'Manage your school profile' }}</p>
+                </div>
+
+                {{-- Save Logo (only when photo staged) --}}
+                @if ($photo)
+                <button wire:click="savePhoto"
+                    class="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm">
+                    Save Logo
+                </button>
+                @endif
+            </div>
+
+            {{-- Tabs --}}
+            <nav class="flex overflow-x-auto">
                 @foreach ([
                     'profile'  => 'School Profile',
                     'info'     => 'Edit Info',
                     'view'     => 'View Profile',
                 ] as $key => $label)
                 <button wire:click="showTab('{{ $key }}')"
-                    class="py-3 px-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
+                    class="py-3.5 px-5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors
                         {{ $activeTab === $key
-                            ? 'border-blue-600 text-blue-600'
+                            ? 'border-blue-500 text-blue-700'
                             : 'border-transparent text-gray-500 hover:text-gray-700' }}">
                     {{ $label }}
                 </button>
@@ -34,89 +70,18 @@
         {{-- ===================== PROFILE TAB ===================== --}}
         @if ($activeTab === 'profile')
 
-        {{-- Hero Header (About App style) --}}
+        {{-- Photo feedback banners --}}
+        @error('photo')
+        <div class="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{{ $message }}</div>
+        @enderror
+        @if (session()->has('photo_message'))
+        <div class="p-3 text-sm text-green-700 bg-green-50 rounded-xl border border-green-200">✓ {{ session('photo_message') }}</div>
+        @endif
+
+        {{-- School Info Card --}}
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="h-32 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"></div>
-            <div class="px-8 pb-8 -mt-12">
-                <div class="flex flex-col sm:flex-row sm:items-end gap-5">
-
-                    {{-- Logo --}}
-                    <div class="flex-shrink-0">
-                        @if ($tempPhotoUrl)
-                        <img src="{{ $tempPhotoUrl }}"
-                            class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg">
-                        @elseif ($organization->logo)
-                        <img src="{{ $organization->logo }}"
-                            class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg">
-                        @else
-                        <div class="w-24 h-24 rounded-2xl bg-indigo-100 border-4 border-white shadow-lg flex items-center justify-center">
-                            <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
-                            </svg>
-                        </div>
-                        @endif
-                    </div>
-
-                    {{-- Info --}}
-                    <div class="sm:mb-2 flex-1">
-                        <h1 class="text-2xl font-bold text-gray-900">{{ $organization->name ?? 'School Name' }}</h1>
-                        <p class="text-sm text-gray-500 mt-1">{{ $organization->education_board ?? '' }}</p>
-                        <div class="flex flex-wrap gap-3 mt-2">
-                            @if ($organization->state ?? false)
-                            <span class="inline-flex items-center gap-1.5 text-sm text-gray-500">
-                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                                </svg>
-                                {{ $organization->state }}
-                            </span>
-                            @endif
-                            @if ($organization->school_code ?? false)
-                            <span class="inline-flex items-center gap-1.5 text-sm text-gray-500">
-                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
-                                </svg>
-                                Code: {{ $organization->school_code }}
-                            </span>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Photo upload button --}}
-                    <div class="sm:mb-2">
-                        <label class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl cursor-pointer hover:bg-indigo-700 transition shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                            </svg>
-                            Change Photo
-                            <input type="file" class="hidden" wire:model="photo">
-                        </label>
-                        @error('photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-
-                @if ($photo)
-                <div class="mt-4 flex items-center gap-3">
-                    <button wire:click="savePhoto"
-                        class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-md">
-                        Save Photo
-                    </button>
-                    <p class="text-xs text-gray-400">JPG, PNG or GIF · Max 2MB</p>
-                </div>
-                @endif
-
-                @if (session()->has('photo_message'))
-                <div class="mt-3 p-2 text-xs text-green-700 bg-green-50 rounded-lg border border-green-200">
-                    ✓ {{ session('photo_message') }}
-                </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- School Info Card (About App content section style) --}}
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:border-indigo-200 hover:shadow-md transition-all duration-200">
             <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50 flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-sm font-bold rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                     </svg>
@@ -125,23 +90,113 @@
             </div>
             <div class="px-6 py-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    @foreach ([
-                    ['School Name', $organization->name ?? 'N/A'],
-                    ['Email', $organization->email ?? 'N/A'],
-                    ['Mobile Number', $organization->mobile_number ?? 'N/A'],
-                    ['State', $organization->state ?? 'N/A'],
-                    ['Education Board', $organization->education_board ?? 'N/A'],
-                    ['School Code', $organization->school_code ?? 'N/A'],
-                    ['Serial Number', $organization->serial_number ?? 'N/A'],
-                    ['Address', $organization->address ?? 'N/A'],
-                    ] as [$label, $value])
-                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50 transition-all duration-200">
+
+                    {{-- School Name --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                            </svg>
+                        </div>
                         <div class="min-w-0 flex-1">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">{{ $label }}</p>
-                            <p class="text-sm font-medium text-gray-800 truncate">{{ $value }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">School Name</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->name ?? 'N/A' }}</p>
                         </div>
                     </div>
-                    @endforeach
+
+                    {{-- Email --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-100 hover:bg-blue-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Email</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->email ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Mobile Number --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-green-100 hover:bg-green-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Mobile Number</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->mobile_number ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- State --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-orange-100 hover:bg-orange-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">State</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->state ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Education Board --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-purple-100 hover:bg-purple-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Education Board</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->education_board ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- School Code --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-teal-100 hover:bg-teal-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">School Code</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->school_code ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Serial Number --}}
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-200">
+                        <div class="w-9 h-9 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Serial Number</p>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ $organization->serial_number ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Address --}}
+                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-red-100 hover:bg-red-50 transition-all duration-200">
+                        <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Address</p>
+                            <p class="text-sm font-medium text-gray-800">{{ $organization->address ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
