@@ -308,82 +308,140 @@
         </div>
     </div>
 
-    {{-- ══════════ VIEW MODAL ══════════ --}}
+    {{-- ══════════ VIEW RATING SLIDE-IN PANEL ══════════ --}}
     @if ($selectedReview)
-        <x-view-modal :show="true" title="Review Details" closeAction="closeReview">
+        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm">
+            <div class="relative w-full max-w-md h-screen bg-white shadow-2xl flex flex-col">
 
-            {{-- School Info --}}
-            <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
-                @if ($selectedReview->organization?->logo)
-                    <img src="{{ $selectedReview->organization->logo }}"
-                        class="w-10 h-10 rounded-full object-cover border-2 border-gray-100 shadow-sm">
-                @else
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <span class="text-sm font-bold text-indigo-600">
-                            {{ strtoupper(substr($selectedReview->organization?->name ?? 'S', 0, 1)) }}
-                        </span>
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">Review Details</h2>
+                            <p class="text-xs text-gray-500">School feedback & rating</p>
+                        </div>
                     </div>
-                @endif
-                <div>
-                    <p class="text-sm font-bold text-gray-900">{{ $selectedReview->organization?->name ?? '—' }}</p>
-                    <p class="text-xs text-gray-400">{{ $selectedReview->organization?->email ?? '' }}</p>
-                </div>
-            </div>
-
-            {{-- Rating --}}
-            <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex items-center justify-between">
-                <div class="flex items-center gap-1">
-                    @for ($i = 1; $i <= 5; $i++)
-                        <svg class="w-5 h-5 {{ $i <= $selectedReview->rating ? 'text-yellow-400' : 'text-gray-300' }}"
-                            viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    <button wire:click="closeReview" type="button"
+                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                    @endfor
+                    </button>
                 </div>
-                <span class="text-lg font-bold text-gray-800 bg-white px-3 py-1 rounded-full shadow-sm border border-yellow-200">
-                    {{ $selectedReview->rating }}/5
-                </span>
-            </div>
 
-            {{-- Feedback --}}
-            <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Feedback</p>
-                <div class="bg-gray-50 rounded-xl border border-gray-200 p-3">
-                    <p class="text-sm text-gray-700 leading-relaxed">{{ $selectedReview->feedback }}</p>
+                {{-- Body (scrollable) --}}
+                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+
+                    {{-- School Info --}}
+                    <div class="bg-gray-50 rounded-xl p-4 flex items-center gap-4">
+                        @if ($selectedReview->organization?->logo)
+                            <img src="{{ $selectedReview->organization->logo }}"
+                                class="w-14 h-14 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
+                        @else
+                            <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 shadow">
+                                <span class="text-xl font-bold text-indigo-600">
+                                    {{ strtoupper(substr($selectedReview->organization?->name ?? 'S', 0, 1)) }}
+                                </span>
+                            </div>
+                        @endif
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-gray-900 truncate">{{ $selectedReview->organization?->name ?? '—' }}</p>
+                            <p class="text-xs text-gray-400 truncate">{{ $selectedReview->organization?->email ?? '' }}</p>
+                            <p class="text-xs text-blue-500 mt-0.5 font-medium">{{ $selectedReview->created_at->diffForHumans() }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Rating --}}
+                    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Rating</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <svg class="w-6 h-6 {{ $i <= $selectedReview->rating ? 'text-yellow-400' : 'text-gray-200' }}"
+                                        viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                @endfor
+                            </div>
+                            <span class="text-2xl font-bold text-gray-800">
+                                {{ $selectedReview->rating }}<span class="text-sm font-normal text-gray-400">/5</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Feedback --}}
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Feedback</p>
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                            <p class="text-sm text-gray-700 leading-relaxed">{{ $selectedReview->feedback }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Status --}}
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</p>
+                        @php $sc = $this->getStatusColor($selectedReview->status); @endphp
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                            <span class="inline-flex items-center gap-2 text-sm font-semibold
+                                {{ $selectedReview->status == 1 ? 'text-green-700' : '' }}
+                                {{ $selectedReview->status == 2 ? 'text-amber-600' : '' }}
+                                {{ $selectedReview->status == 3 ? 'text-gray-500' : '' }}">
+                                <span class="w-2 h-2 rounded-full
+                                    {{ $selectedReview->status == 1 ? 'bg-green-500' : '' }}
+                                    {{ $selectedReview->status == 2 ? 'bg-amber-400' : '' }}
+                                    {{ $selectedReview->status == 3 ? 'bg-gray-400' : '' }}">
+                                </span>
+                                {{ $this->getStatusLabel($selectedReview->status) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Date --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Date</p>
+                            <p class="text-sm font-semibold text-gray-800">
+                                {{ \Carbon\Carbon::parse($selectedReview->created_at)->timezone('Asia/Kolkata')->format('d M Y') }}
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Time</p>
+                            <p class="text-sm font-semibold text-gray-800">
+                                {{ \Carbon\Carbon::parse($selectedReview->created_at)->timezone('Asia/Kolkata')->format('h:i A') }}
+                            </p>
+                            <p class="text-xs text-gray-400">IST</p>
+                        </div>
+                    </div>
+
+                    {{-- Change Status --}}
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Change Status</p>
+                        <select wire:change="updateStatus({{ $selectedReview->id }}, $event.target.value)"
+                            class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm
+                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <option value="1" {{ $selectedReview->status == 1 ? 'selected' : '' }}>Active</option>
+                            <option value="2" {{ $selectedReview->status == 2 ? 'selected' : '' }}>Pending</option>
+                            <option value="3" {{ $selectedReview->status == 3 ? 'selected' : '' }}>Archived</option>
+                        </select>
+                    </div>
+
                 </div>
-            </div>
 
-            {{-- Status + Date --}}
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-gray-50 rounded-xl border border-gray-200 p-3">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Status</p>
-                    @php $sc = $this->getStatusColor($selectedReview->status); @endphp
-                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium
-                        bg-{{ $sc }}-50 text-{{ $sc }}-700 border border-{{ $sc }}-100">
-                        <span class="w-1.5 h-1.5 rounded-full bg-{{ $sc }}-500"></span>
-                        {{ $this->getStatusLabel($selectedReview->status) }}
-                    </span>
+                {{-- Footer --}}
+                <div class="px-6 py-4 border-t border-gray-200 bg-white flex-shrink-0">
+                    <button wire:click="closeReview" type="button"
+                        class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors">
+                        Close
+                    </button>
                 </div>
-                <div class="bg-gray-50 rounded-xl border border-gray-200 p-3">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Submitted</p>
-                    <p class="text-xs font-medium text-gray-800">
-                        {{ \Carbon\Carbon::parse($selectedReview->created_at)->timezone('Asia/Kolkata')->format('d M Y') }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                        {{ \Carbon\Carbon::parse($selectedReview->created_at)->timezone('Asia/Kolkata')->format('h:i A') }} IST
-                    </p>
-                </div>
-            </div>
 
-            {{-- Time ago --}}
-            <div class="bg-blue-50 rounded-xl border border-blue-100 px-4 py-2.5 text-center">
-                <span class="text-xs text-blue-600 font-medium">
-                    {{ $selectedReview->created_at->diffForHumans() }}
-                </span>
             </div>
-
-        </x-view-modal>
+        </div>
     @endif
 
 </div>
