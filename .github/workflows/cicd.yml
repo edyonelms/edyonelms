@@ -272,8 +272,12 @@ jobs:
             echo "==> Laravel error log"
             docker compose exec -T app tail -n 80 storage/logs/laravel.log 2>/dev/null || echo "no laravel log"
 
-            echo "==> recache config (picks up new env vars)"
-            docker compose exec -T app php artisan config:cache || true
+            echo "==> flush all caches then rebuild"
+            docker compose exec -T app php artisan optimize:clear || true
+            docker compose exec -T app php artisan optimize || true
+
+            echo "==> app env check"
+            docker compose exec -T app php artisan env || true
 
             echo "==> prune dangling images"
             docker image prune -f
