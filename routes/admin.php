@@ -63,6 +63,7 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         Route::get('/announcement', Announcement::class)->name('admin.announcement');
         Route::get('/timetable', TimeTable::class)->name('admin.timetable');
         Route::get('/arrangement', Arrangement::class)->name('admin.arrangement');
+        Route::get('/fee', Fee::class)->name('admin.fee');
         Route::get('/fee/receipt/{id}', [FeeReceiptController::class, 'show'])->name('admin.fee.receipt');
         Route::get('/homework', Homework::class)->name('admin.homework');
         Route::get('/attendance', Attendance::class)->name('admin.attendance');

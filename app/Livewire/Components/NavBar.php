@@ -142,6 +142,9 @@ class NavBar extends Component
 
     public function profilePage(): mixed
     {
+        if (Auth::user()->role === 'super-admin') {
+            return redirect()->route('super-admin.profile');
+        }
         if (Auth::user()->role === 'accounts') {
             return redirect()->route('accounts.profile', ['organization' => Auth::user()->organization_id]);
         }

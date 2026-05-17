@@ -20,6 +20,7 @@ use App\Livewire\SuperAdmin\Teacher;
 use App\Livewire\SuperAdmin\TermOfUse;
 use App\Livewire\SuperAdmin\TermsCondition;
 use App\Livewire\SuperAdmin\WebsiteData;
+use App\Livewire\Components\Profile;
 use Illuminate\Support\Facades\Route;
 
 // Super Admin Routes
@@ -47,4 +48,5 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('term-of-use', TermOfUse::class)->name('super-admin.term-of-use');
     Route::get('sessions', Session::class)->name('super-admin.sessions');
     Route::get('credit', Credit::class)->name('super-admin.credit');
+    Route::get('profile', Profile::class)->name('super-admin.profile');
 });

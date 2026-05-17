@@ -61,20 +61,24 @@ class WebsiteController extends Controller
             ->get()
             ->map(function ($r) {
                 $name = $r->organization->name ?? 'Anonymous';
+                $logo     = $r->organization->logo ?? null;
                 $words = preg_split('/\s+/', trim($name)) ?: [];
-                $initials = collect($words)
-                    ->filter()
-                    ->take(2)
-                    ->map(fn($word) => strtoupper(mb_substr($word, 0, 1)))
-                    ->implode('');
-                $feedback = trim($r->feedback, '"\'');
+                // $initials = collect($words)
+                //     ->filter()
+                //     ->take(2)
+                //     ->map(fn($word) => strtoupper(mb_substr($word, 0, 1)))
+                //     ->implode('');
+                // $feedback = trim($r->feedback, '"\'');
+                $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $name), 0, 2)));
                 return [
                     'id'           => $r->id,
                     'feedback'     => $feedback,
                     'rating'       => $r->rating,
                     'school_name'  => $name,
+                    'logo'        => $logo,
                     'logo_url'     => $r->organization->logo ?? null,
                     'initials'     => $initials ?: 'S',
+                    // 'initials'    => $initials,
                 ];
             });
 

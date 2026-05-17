@@ -71,7 +71,7 @@ class IdCardController extends Controller
                 'issue_date' => $idCard->issue_date->format('Y-m-d'),
                 'expiry_date' => $idCard->expiry_date->format('Y-m-d'),
                 'status' => $idCard->status,
-                'qr_code_url' => $idCard->qr_code ? null : null,
+                'qr_code_url' => $idCard->qr_code ? 'data:image/png;base64,' . $idCard->qr_code : null,
                 'days_remaining' => now()->diffInDays($idCard->expiry_date, false),
                 'is_expired' => $idCard->expiry_date->isPast(),
             ];
@@ -514,7 +514,7 @@ class IdCardController extends Controller
             ];
 
             return $this->responseService->success(
-                '☑️',
+                $verificationData,
                 'Admit card verified successfully'
             );
         } catch (\Exception $e) {
