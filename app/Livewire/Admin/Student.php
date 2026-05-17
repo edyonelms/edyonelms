@@ -301,19 +301,22 @@ class Student extends Component
 
                 // Send password email on student creation
                 try {
-                    $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
-                    \App\Services\ZeptoMailService::sendTemplate(
-                        config('services.zeptomail.student_password_template_key'),
-                        $student->email,
-                        $student->name,
-                        [
-                            'password'         => $plainPassword,
-                            'school_name'      => $schoolName,
-                            'admission_number' => $detailData['admission_no'],
-                            'username'         => $student->name,
-                        ]
-                    );
-                } catch (\Exception $e) {
+                    $templateKey = config('services.zeptomail.student_password_template_key');
+                    if ($templateKey) {
+                        $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
+                        \App\Services\ZeptoMailService::sendTemplate(
+                            $templateKey,
+                            $student->email,
+                            $student->name,
+                            [
+                                'password'         => $plainPassword,
+                                'school_name'      => $schoolName,
+                                'admission_number' => $detailData['admission_no'],
+                                'username'         => $student->name,
+                            ]
+                        );
+                    }
+                } catch (\Throwable $e) {
                     logger()->error('Student password email failed: ' . $e->getMessage());
                 }
 
