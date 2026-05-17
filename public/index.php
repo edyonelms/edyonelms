@@ -13,30 +13,30 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 // Register the Composer autoloader...
 require __DIR__.'/../vendor/autoload.php';
 
-// Remove stale bootstrap cache entries for classes that no longer exist (e.g. dev-only packages removed via --no-dev)
+// Delete stale bootstrap cache files that reference missing classes (e.g. dev packages removed via --no-dev).
+// Laravel will auto-regenerate them cleanly on the next request.
 (static function () {
     foreach (['packages', 'services'] as $cache) {
         $path = __DIR__ . '/../bootstrap/cache/' . $cache . '.php';
         if (!file_exists($path)) {
             continue;
         }
-        $data = include $path;
+        $data = @include $path;
         if (!is_array($data)) {
+            @unlink($path);
             continue;
         }
-        $dirty = false;
-        foreach (['providers', 'eager', 'deferred'] as $key) {
-            if (!isset($data[$key])) {
-                continue;
+        $missing = false;
+        array_walk_recursive($data, static function ($value) use (&$missing) {
+            if ($missing || !is_string($value) || !str_contains($value, '\\')) {
+                return;
             }
-            $filtered = array_values(array_filter((array) $data[$key], fn($v) => class_exists(is_array($v) ? $v[0] ?? $v : $v)));
-            if (count($filtered) !== count($data[$key])) {
-                $data[$key] = $filtered;
-                $dirty = true;
+            if (!class_exists($value, false) && !interface_exists($value, false)) {
+                $missing = true;
             }
-        }
-        if ($dirty) {
-            @file_put_contents($path, '<?php return ' . var_export($data, true) . ';' . PHP_EOL);
+        });
+        if ($missing) {
+            @unlink($path);
         }
     }
 })();
