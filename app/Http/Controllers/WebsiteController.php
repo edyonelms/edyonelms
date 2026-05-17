@@ -68,7 +68,7 @@ class WebsiteController extends Controller
                 //     ->take(2)
                 //     ->map(fn($word) => strtoupper(mb_substr($word, 0, 1)))
                 //     ->implode('');
-                // $feedback = trim($r->feedback, '"\'');
+                $feedback = trim($r->feedback ?? '', '"\'');
                 $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $name), 0, 2)));
                 return [
                     'id'           => $r->id,

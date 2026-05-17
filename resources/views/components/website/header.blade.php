@@ -49,5 +49,21 @@
     <a href="{{ url('web/demo') }}" class="btn btn-primary" style="font-size:15px;padding:13px 32px;">Request Demo</a>
 </div>
 
-{{-- NOTE: Scroll + mobile-nav JS is handled by each page's own <script> block
-     (index.blade.php has its own DOMContentLoaded listener that controls these) --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var mobileNav  = document.getElementById('mobileNav');
+        var hamburger  = document.getElementById('hamburger');
+        var mobileClose = document.getElementById('mobileClose');
+        if (hamburger)   hamburger.addEventListener('click',   function () { mobileNav && mobileNav.classList.add('open'); });
+        if (mobileClose) mobileClose.addEventListener('click', function () { mobileNav && mobileNav.classList.remove('open'); });
+        document.querySelectorAll('.mobile-nav-link, .mobile-nav a').forEach(function (l) {
+            l.addEventListener('click', function () { mobileNav && mobileNav.classList.remove('open'); });
+        });
+        var navbar = document.getElementById('navbar');
+        if (navbar) {
+            window.addEventListener('scroll', function () {
+                navbar.classList.toggle('scrolled', window.scrollY > 40);
+            });
+        }
+    });
+</script>

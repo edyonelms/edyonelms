@@ -9,6 +9,27 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7S4FD1GMPK"></script>
     <link rel="icon" type="image/png" href="{{ asset('website-image/Group 11525.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('website-image/Group 11525.png') }}">
+    <meta property="og:title" content="EDYONE LMS — India's #1 School Management Platform" />
+    <meta property="og:description" content="Smart attendance, automated timetables, fee management, and real-time progress tracking — all in one powerful platform trusted by schools across India." />
+    <meta property="og:image" content="{{ asset('website-image/Group 11525.png') }}" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:url" content="https://edyonelms.in/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="{{ asset('website-image/Group 11525.png') }}" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "EDYONE LMS",
+      "url": "https://edyonelms.in",
+      "logo": "{{ asset('website-image/Group 11525.png') }}",
+      "description": "India's #1 School Management Platform",
+      "sameAs": ["https://www.instagram.com/edyonelms"]
+    }
+    </script>
     <script>
         window.dataLayer = window.dataLayer || [];
 
@@ -96,6 +117,7 @@
 
         html {
             scroll-behavior: smooth;
+            overflow-x: hidden;
         }
 
         body {
@@ -3009,30 +3031,27 @@
             </div>
 
             <div class="team-grid-home stagger-children">
+
                 <!-- Annant Dagur -->
                 <a href="https://www.instagram.com/annantdagur?igsh=OTMyZnIzaGR2aDVs" target="_blank"
                     rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card-leader">
+                    <div class="team-card-leader"
+                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
+                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
                         <div class="team-dept-badge"
                             style="background:var(--secondary-faint);border:1px solid var(--border);color:var(--violet);">
                             Leadership</div>
                         <div class="team-photo" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="90" height="90" viewBox="0 0 90 90" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="45" cy="45" r="45" fill="url(#adGrad)" />
-                                <circle cx="45" cy="36" r="16" fill="white" fill-opacity="0.9" />
-                                <ellipse cx="45" cy="72" rx="24" ry="16" fill="white"
-                                    fill-opacity="0.9" />
-                                <text x="45" y="41" text-anchor="middle" font-size="18" font-weight="700"
-                                    fill="#6F56FE" font-family="DM Sans,sans-serif">AD</text>
-                                <defs>
-                                    <linearGradient id="adGrad" x1="0" y1="0" x2="90"
-                                        y2="90" gradientUnits="userSpaceOnUse">
-                                        <stop stop-color="#6F56FE" />
-                                        <stop offset="1" stop-color="#5540D4" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                            <div
+                                style="width:90px;height:90px;border-radius:50%;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
+                                <img src="https://forthcoming-scarlet-dgkqbdzkp7.edgeone.app/annant%20image.jpg"
+                                    alt="Annant Dagur"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+                                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div
+                                    style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#6F56FE,#5540D4);border-radius:50%;align-items:center;justify-content:center;font-size:32px;">
+                                    👨‍💼</div>
+                            </div>
                         </div>
                         <div class="team-name">Annant Dagur</div>
                         <div class="team-role"
@@ -3051,27 +3070,23 @@
                 <!-- Shivam Gautam -->
                 <a href="https://www.instagram.com/whoshivix?igsh=MTJyMjhpN3gyYmJpcw==" target="_blank"
                     rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card-leader">
+                    <div class="team-card-leader"
+                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(219,87,178,0.15)';"
+                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
                         <div class="team-dept-badge"
                             style="background:var(--primary-faint);border:1px solid var(--border-pink);color:var(--pink-dark);">
                             Product</div>
                         <div class="team-photo" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="90" height="90" viewBox="0 0 90 90" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="45" cy="45" r="45" fill="url(#sgGrad)" />
-                                <circle cx="45" cy="36" r="16" fill="white" fill-opacity="0.9" />
-                                <ellipse cx="45" cy="72" rx="24" ry="16" fill="white"
-                                    fill-opacity="0.9" />
-                                <text x="45" y="41" text-anchor="middle" font-size="18" font-weight="700"
-                                    fill="#DB57B2" font-family="DM Sans,sans-serif">SG</text>
-                                <defs>
-                                    <linearGradient id="sgGrad" x1="0" y1="0" x2="90"
-                                        y2="90" gradientUnits="userSpaceOnUse">
-                                        <stop stop-color="#DB57B2" />
-                                        <stop offset="1" stop-color="#B83D92" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                            <div
+                                style="width:90px;height:90px;border-radius:50%;overflow:hidden;box-shadow:0 4px 18px rgba(219,87,178,0.18);position:relative;border:3px solid rgba(219,87,178,0.25);">
+                                <img src="https://intense-apricot-kqrcf7troc.edgeone.app/shivam%20img.jpeg"
+                                    alt="Shivam Gautam"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+                                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div
+                                    style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#DB57B2,#B83D92);border-radius:50%;align-items:center;justify-content:center;font-size:32px;">
+                                    👨‍💻</div>
+                            </div>
                         </div>
                         <div class="team-name">Shivam Gautam</div>
                         <div class="team-role"
@@ -3090,27 +3105,23 @@
                 <!-- Satyam Kumar -->
                 <a href="https://www.instagram.com/satyamsingh8755?igsh=MXh5Nnd1dTJoY3VudQ==" target="_blank"
                     rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card-leader">
+                    <div class="team-card-leader"
+                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
+                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
                         <div class="team-dept-badge"
                             style="background:var(--secondary-faint);border:1px solid var(--border);color:var(--violet);">
                             Operations</div>
                         <div class="team-photo" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="90" height="90" viewBox="0 0 90 90" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="45" cy="45" r="45" fill="url(#skGrad)" />
-                                <circle cx="45" cy="36" r="16" fill="white" fill-opacity="0.9" />
-                                <ellipse cx="45" cy="72" rx="24" ry="16" fill="white"
-                                    fill-opacity="0.9" />
-                                <text x="45" y="41" text-anchor="middle" font-size="18" font-weight="700"
-                                    fill="#DB57B2" font-family="DM Sans,sans-serif">SK</text>
-                                <defs>
-                                    <linearGradient id="skGrad" x1="0" y1="0" x2="90"
-                                        y2="90" gradientUnits="userSpaceOnUse">
-                                        <stop stop-color="#DB57B2" />
-                                        <stop offset="1" stop-color="#6F56FE" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                            <div
+                                style="width:90px;height:90px;border-radius:50%;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
+                                <img src="https://identical-emerald-pq3i0deeab.edgeone.app/satyam%20img.jpeg"
+                                    alt="Satyam Kumar"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+                                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div
+                                    style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#DB57B2,#6F56FE);border-radius:50%;align-items:center;justify-content:center;font-size:32px;">
+                                    👨‍🔧</div>
+                            </div>
                         </div>
                         <div class="team-name">Satyam Kumar</div>
                         <div class="team-role"
@@ -3129,27 +3140,23 @@
                 <!-- Rekha Devi -->
                 <a href="https://www.instagram.com/edyonelms?utm_source=ig_web_button_share_sheet&igsh=ZzlkamE5ZTR5MDB6"
                     target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card-leader">
+                    <div class="team-card-leader"
+                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
+                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
                         <div class="team-dept-badge"
                             style="background:var(--primary-faint);border:1px solid var(--border-pink);color:var(--pink-dark);">
                             Managing</div>
                         <div class="team-photo" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="90" height="90" viewBox="0 0 90 90" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="45" cy="45" r="45" fill="url(#rdGrad)" />
-                                <circle cx="45" cy="36" r="16" fill="white" fill-opacity="0.9" />
-                                <ellipse cx="45" cy="72" rx="24" ry="16" fill="white"
-                                    fill-opacity="0.9" />
-                                <text x="45" y="41" text-anchor="middle" font-size="18" font-weight="700"
-                                    fill="#6F56FE" font-family="DM Sans,sans-serif">RD</text>
-                                <defs>
-                                    <linearGradient id="rdGrad" x1="0" y1="0" x2="90"
-                                        y2="90" gradientUnits="userSpaceOnUse">
-                                        <stop stop-color="#6F56FE" />
-                                        <stop offset="1" stop-color="#DB57B2" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                            <div
+                                style="width:90px;height:90px;border-radius:50%;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
+                                <img src="https://edyonelms.in/website-image/rekha-devi.jpg"
+                                    alt="Rekha Devi"
+                                    style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+                                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div
+                                    style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#6F56FE,#5540D4);border-radius:50%;align-items:center;justify-content:center;font-size:32px;">
+                                    👩‍🏫</div>
+                            </div>
                         </div>
                         <div class="team-name">Rekha Devi</div>
                         <div class="team-role"
@@ -3164,6 +3171,7 @@
                             </svg></div>
                     </div>
                 </a>
+
             </div>
 
             <div class="reveal" style="text-align:center;margin-top:40px;">
