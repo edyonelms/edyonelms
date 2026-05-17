@@ -53,6 +53,12 @@ class Credit extends Component
     public        $policyImage     = null;   // uploaded file
     public        $policyDocument  = null;   // uploaded file
 
+    // ── Mark as collected ─────────────────────────────────────────────────────
+    public bool   $showCollectModal    = false;
+    public ?int   $collectQueryId      = null;
+    public string $collectQueryAmount  = '';
+    public string $collectQuerySchool  = '';
+
     // ── Delete confirms ───────────────────────────────────────────────────────
     public ?int $pendingDeleteQueryId  = null;
     public ?int $pendingDeletePolicyId = null;
@@ -165,6 +171,33 @@ class Credit extends Component
         CreditQuery::where('id', $this->statusQueryId)->update($data);
         $this->closeStatusModal();
         $this->notification()->success('Updated', 'Status updated successfully.');
+    }
+
+    // ── Mark as collected ─────────────────────────────────────────────────────
+    public function openCollectModal(int $id): void
+    {
+        $query = CreditQuery::with('organization')->findOrFail($id);
+        $this->collectQueryId     = $id;
+        $this->collectQueryAmount = number_format($query->amount, 0);
+        $this->collectQuerySchool = $query->organization->name;
+        $this->showCollectModal   = true;
+    }
+
+    public function closeCollectModal(): void
+    {
+        $this->showCollectModal   = false;
+        $this->collectQueryId     = null;
+        $this->collectQueryAmount = '';
+        $this->collectQuerySchool = '';
+    }
+
+    public function markAsCollected(): void
+    {
+        CreditQuery::where('id', $this->collectQueryId)->update([
+            'collected_at' => now(),
+        ]);
+        $this->closeCollectModal();
+        $this->notification()->success('Collected', 'Amount marked as collected successfully.');
     }
 
     // ── Delete query ──────────────────────────────────────────────────────────

@@ -20,12 +20,14 @@ class CreditQuery extends Model
         'penalties_per_day',
         'approved_by',
         'approved_at',
+        'collected_at',
     ];
 
     protected $casts = [
         'start_date'       => 'date',
         'end_date'         => 'date',
         'approved_at'      => 'datetime',
+        'collected_at'     => 'datetime',
         'amount'           => 'decimal:2',
         'penalties_per_day'=> 'decimal:2',
     ];
