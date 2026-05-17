@@ -71,6 +71,7 @@
 
         html {
             scroll-behavior: smooth;
+            overflow-x: hidden;
         }
 
         body {
@@ -1978,7 +1979,6 @@
 
     <!-- ══════════════════ SCROLL REVEAL JS ══════════════════ -->
     <script>
-        // Intersection Observer for scroll animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -1986,12 +1986,15 @@
                     observer.unobserve(entry.target);
                 }
             });
-        }, {
-            threshold: 0.05,
-            rootMargin: '0px 0px -20px 0px'
-        });
+        }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
 
-        document.querySelectorAll('.reveal, .stagger, .stagger-left').forEach(el => observer.observe(el));
+        document.querySelectorAll('.reveal, .stagger, .stagger-left').forEach(function(el) {
+            if (el.getBoundingClientRect().top < window.innerHeight) {
+                el.classList.add('visible');
+            } else {
+                observer.observe(el);
+            }
+        });
     </script>
 </body>
 
