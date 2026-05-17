@@ -3091,7 +3091,7 @@
                         <div class="team-name">Shivam Gautam</div>
                         <div class="team-role"
                             style="background:linear-gradient(135deg,#DB57B2,#B83D92);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-                            CTO &amp; Sales</div>
+                            Co-Founder &amp; CTO</div>
                         <div class="team-bio">Leads the engineering team. Ensures 99.9% uptime, fast performance, and
                             continuous innovation in every release.</div>
                         <div class="team-profile-btn">View Profile <svg width="10" height="10"

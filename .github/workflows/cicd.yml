@@ -210,9 +210,28 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script_stop: true
+          envs: ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
           script: |
             set -euo pipefail
             cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            echo "==> inject ZeptoMail env vars"
+            ENV_FILE=".env"
+            inject_env() {
+              local key="$1" val="$2"
+              if [ -z "$val" ]; then return; fi
+              if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+                sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
+              else
+                echo "${key}=${val}" >> "$ENV_FILE"
+              fi
+            }
+            inject_env "ZEPTOMAIL_API_TOKEN"                     "$ZEPTOMAIL_API_TOKEN"
+            inject_env "ZEPTOMAIL_OTP_TEMPLATE_KEY"              "$ZEPTOMAIL_OTP_TEMPLATE_KEY"
+            inject_env "ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY" "$ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY"
+            inject_env "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY" "$ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY"
+            inject_env "ZEPTOMAIL_FROM_EMAIL"                    "$ZEPTOMAIL_FROM_EMAIL"
+            inject_env "ZEPTOMAIL_FROM_NAME"                     "$ZEPTOMAIL_FROM_NAME"
 
             echo "==> git pull"
             git pull --ff-only
@@ -240,6 +259,9 @@ jobs:
 
             echo "==> tail of app logs"
             docker compose logs --tail=30 app
+
+            echo "==> clear config cache"
+            docker compose exec -T app php artisan config:clear || true
 
             echo "==> prune dangling images"
             docker image prune -f
