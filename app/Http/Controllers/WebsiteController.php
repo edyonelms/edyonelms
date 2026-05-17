@@ -38,10 +38,13 @@ class WebsiteController extends Controller
     public function schools()
     {
         $schools = Organization::where('status', true)
-            ->select('name')
+            ->select('name', 'logo')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->pluck('name');
+            ->map(fn($school) => [
+                'name'     => $school->name,
+                'logo_url' => $school->logo,
+            ]);
 
         return response()->json([
             'success' => true,
@@ -52,20 +55,26 @@ class WebsiteController extends Controller
     /** GET /api/website/testimonials */
     public function testimonials()
     {
-        $reviews = RateLms::with('organization:id,name')
+        $reviews = RateLms::with('organization:id,name,logo')
             ->where('status', 1)
             ->latest()
             ->get()
             ->map(function ($r) {
                 $name = $r->organization->name ?? 'Anonymous';
-                $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $name), 0, 2)));
+                $words = preg_split('/\s+/', trim($name)) ?: [];
+                $initials = collect($words)
+                    ->filter()
+                    ->take(2)
+                    ->map(fn($word) => strtoupper(mb_substr($word, 0, 1)))
+                    ->implode('');
                 $feedback = trim($r->feedback, '"\'');
                 return [
                     'id'           => $r->id,
                     'feedback'     => $feedback,
                     'rating'       => $r->rating,
                     'school_name'  => $name,
-                    'initials'     => $initials,
+                    'logo_url'     => $r->organization->logo ?? null,
+                    'initials'     => $initials ?: 'S',
                 ];
             });
 

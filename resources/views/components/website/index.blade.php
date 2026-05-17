@@ -1557,6 +1557,16 @@
             font-size: 13px;
             font-weight: 700;
             color: #fff;
+            overflow: hidden;
+            flex: 0 0 40px;
+            border: 1px solid rgba(111, 86, 254, 0.12);
+        }
+
+        .testimonial-avatar img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
         }
 
         .testimonial-name {
@@ -3480,7 +3490,8 @@
                 // Build items (×2 for seamless loop)
                 let html = '';
                 [data, data].forEach(set => {
-                    set.forEach((name, i) => {
+                    set.forEach((school, i) => {
+                        const name = typeof school === 'string' ? school : school.name;
                         const c = colors[i % 2];
                         html +=
                             `<div class="marquee-item"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="${c}"/></svg> ${escText(name)}</div>`;
@@ -3547,7 +3558,9 @@
                 <div class="testimonial-stars">${starsHtml(t.rating)}</div>
                 <p class="testimonial-text">"${escText(t.feedback)}"</p>
                 <div class="testimonial-author">
-                    <div class="testimonial-avatar" style="background:${gradients[i % gradients.length]};min-width:40px;">${escText(t.initials)}</div>
+                    ${t.logo_url
+                        ? `<div class="testimonial-avatar" style="background:#fff;min-width:40px;"><img src="${escText(t.logo_url)}" alt="${escText(t.school_name)} logo" loading="lazy" onerror="this.closest('.testimonial-avatar').outerHTML='<div class=&quot;testimonial-avatar&quot; style=&quot;background:${gradients[i % gradients.length]};min-width:40px;&quot;>${escText(t.initials)}</div>'"></div>`
+                        : `<div class="testimonial-avatar" style="background:${gradients[i % gradients.length]};min-width:40px;">${escText(t.initials)}</div>`}
                     <div>
                         <div class="testimonial-name">${escText(t.school_name)}</div>
                         <div class="testimonial-role">Verified School</div>
@@ -3631,18 +3644,21 @@
                 feedback: 'EDYONE LMS transformed how we manage our institution. Attendance tracking and fee collection became completely seamless.',
                 rating: 5,
                 school_name: 'Delhi Public School',
+                logo_url: null,
                 initials: 'DP'
             },
             {
                 feedback: 'The setup was incredibly smooth and support was always available. Student engagement increased by over 60%.',
                 rating: 5,
                 school_name: 'Sunrise Academy',
+                logo_url: null,
                 initials: 'SA'
             },
             {
                 feedback: 'Sharing notes and assignments is so easy now. Parents can track their child\'s progress in real time.',
                 rating: 5,
                 school_name: "St. Mary's School",
+                logo_url: null,
                 initials: 'SM'
             },
         ];

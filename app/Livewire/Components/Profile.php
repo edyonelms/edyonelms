@@ -2,20 +2,6 @@
 
 namespace App\Livewire\Components;
 
-<<<<<<< HEAD
-use Livewire\Component;
-
-class Profile extends Component
-{
-    public $activeTab = 'profile';
-
-    public function showTab($tab)
-    {
-        // Line 13 check karein, yahan $ hona chahiye
-        $this->activeTab = $tab;
-    }
-
-=======
 use App\Models\Admin\SchoolInfo as AdminSchoolInfo;
 use App\Models\Admin\SchoolDocument;
 use App\Models\Organization;
@@ -33,6 +19,7 @@ class Profile extends Component
     use WithFileUploads, WireUiActions;
 
     public $organization;
+    public $currentPassword;
     public $showCurrentPassword;
     public $newPassword;
     public $confirmPassword;
@@ -348,7 +335,6 @@ class Profile extends Component
         $this->documentTitles = array_values($this->documentTitles);
     }
 
->>>>>>> fa7657e814e8f4c11235ced8f350e611ce8cc360
     public function render()
     {
         return view('livewire.components.profile');

@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -252,50 +253,66 @@ class Schools extends Component
             'logo'           => 'nullable|image|max:2048',
         ]);
 
-        DB::transaction(function () {
-            $logoUrl = $this->existingLogo;
+        try {
+            DB::transaction(function () {
+                $logoUrl = $this->existingLogo;
 
-            if ($this->logo) {
-                $path    = $this->logo->store('school-logos', 's3');
-                Storage::disk('s3')->setVisibility($path, 'public');
-                $logoUrl = Storage::disk('s3')->url($path);
-            }
+                if ($this->logo) {
+                    if ($this->existingLogo) {
+                        $this->deleteS3FileFromUrl($this->existingLogo);
+                    }
 
-            $orgData = [
-                'name'            => $this->schoolName,
-                'email'           => $this->email,
-                'mobile_number'   => $this->mobileNumber,
-                'state'           => $this->state,
-                'education_board' => $this->educationBoard,
-                'school_code'     => $this->schoolCode,
-                'affiliation_no'  => $this->affiliationNo,
-                'udise_number'    => $this->udiseNumber,
-                'serial_number'   => $this->serialNumber,
-                'address'         => $this->address,
-                'logo'            => $logoUrl,
-                'status'          => true,
-            ];
+                    $extension = $this->logo->getClientOriginalExtension() ?: 'png';
+                    $path = $this->logo->storeAs(
+                        'school-logos',
+                        Str::uuid() . '.' . $extension,
+                        's3'
+                    );
 
-            if ($this->editId) {
-                Organization::findOrFail($this->editId)->update($orgData);
-                if ($this->adminUserId) {
-                    User::where('id', $this->adminUserId)->update([
-                        'email'         => $this->email,
-                        'mobile_number' => $this->mobileNumber,
-                    ]);
+                    Storage::disk('s3')->setVisibility($path, 'public');
+                    $logoUrl = Storage::disk('s3')->url($path);
                 }
-            } else {
-                $org = Organization::create($orgData);
-                User::create([
-                    'name'            => $this->schoolName . ' Admin',
+
+                $orgData = [
+                    'name'            => $this->schoolName,
                     'email'           => $this->email,
                     'mobile_number'   => $this->mobileNumber,
-                    'organization_id' => $org->id,
-                    'role'            => 'admin',
-                    'password'        => Hash::make('123456789'),
-                ]);
-            }
-        });
+                    'state'           => $this->state,
+                    'education_board' => $this->educationBoard,
+                    'school_code'     => $this->schoolCode,
+                    'affiliation_no'  => $this->affiliationNo,
+                    'udise_number'    => $this->udiseNumber,
+                    'serial_number'   => $this->serialNumber,
+                    'address'         => $this->address,
+                    'logo'            => $logoUrl,
+                    'status'          => true,
+                ];
+
+                if ($this->editId) {
+                    Organization::findOrFail($this->editId)->update($orgData);
+                    if ($this->adminUserId) {
+                        User::where('id', $this->adminUserId)->update([
+                            'email'         => $this->email,
+                            'mobile_number' => $this->mobileNumber,
+                        ]);
+                    }
+                } else {
+                    $org = Organization::create($orgData);
+                    User::create([
+                        'name'            => $this->schoolName . ' Admin',
+                        'email'           => $this->email,
+                        'mobile_number'   => $this->mobileNumber,
+                        'organization_id' => $org->id,
+                        'role'            => 'admin',
+                        'password'        => Hash::make('123456789'),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            $this->notification()->error('Unable to save school. Please check S3 credentials and try again.');
+            return;
+        }
 
         $this->closeModal();
         $this->loadStats();
@@ -322,7 +339,12 @@ class Schools extends Component
 
     public function doDelete($id): void
     {
-        Organization::find($id)?->delete();
+        $organization = Organization::find($id);
+        if ($organization?->logo) {
+            $this->deleteS3FileFromUrl($organization->logo);
+        }
+
+        $organization?->delete();
         User::where('organization_id', $id)->where('role', 'admin')->delete();
 
         if ($this->activeView === 'detail' && $this->detailSchool?->id == $id) {
@@ -352,6 +374,17 @@ class Schools extends Component
             'editId',
             'adminUserId',
         ]);
+    }
+
+    private function deleteS3FileFromUrl(string $url): void
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (!$path) {
+            return;
+        }
+
+        Storage::disk('s3')->delete(ltrim($path, '/'));
     }
 
     public function render()
