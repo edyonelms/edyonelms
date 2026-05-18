@@ -195,6 +195,16 @@ class LmsMigrate extends Command
             }
         });
 
+        // Ensure role_user pivot table exists (not covered by a regular migration)
+        if (!Schema::hasTable('role_user')) {
+            Schema::create('role_user', function (Blueprint $table) {
+                $table->unsignedBigInteger('role_id');
+                $table->unsignedBigInteger('user_id');
+                $table->primary(['role_id', 'user_id']);
+            });
+            $this->info('created [role_user] pivot table');
+        }
+
         // Ensure super-admin role exists
         $superAdminRole = Role::firstOrCreate(
             ['slug' => 'super-admin'],
