@@ -14,11 +14,14 @@ class ContactAdmin extends Component
 {
     use WireUiActions, WithFileUploads;
 
-    public $showViewModal = false;
-    public $open          = false;
-    public $editId        = null;
-    public $viewModalTitle = '';
-    public $viewData      = [];
+    public $showViewModal    = false;
+    public $open             = false;
+    public $editId           = null;
+    public $viewModalTitle   = '';
+    public $viewData         = [];
+
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
 
     // Form fields
     public $topic        = '';
@@ -195,25 +198,19 @@ class ContactAdmin extends Component
 
     public function onDeleteContact($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this message?',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDeleteContact',
-                'params' => $id,
-                'color'  => 'negative',
-                'size'   => 'md',
-            ],
-            'reject' => ['label' => 'No', 'size' => 'md'],
-        ]);
+        $this->deleteTargetId  = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDeleteContact($id): void
+    public function cancelDelete(): void
     {
-        $contact = ContactSuperAdmin::find($id);
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId   = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        $contact = ContactSuperAdmin::find($this->deleteTargetId);
 
         if ($contact) {
             if ($contact->image) {
@@ -226,6 +223,9 @@ class ContactAdmin extends Component
         } else {
             $this->notification()->error('Message not found!');
         }
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId   = null;
     }
 
     protected function resetForm(): void
