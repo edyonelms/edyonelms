@@ -22,6 +22,9 @@ class Announcement extends Component
     public $selectedAnnouncement = null;
     public $dateFilter = 'all';
 
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
+
     #[Rule('required|string|max:255')]
     public $announcementName = '';
 
@@ -149,28 +152,19 @@ class Announcement extends Component
 
     public function onDelete($id)
     {
-        $this->dialog()->confirm([
-            'title' => 'Are you Sure?',
-            'icon' => 'exclamation-circle',
-            'iconColor' => 'text-red-500',
-            'description' => 'Are you sure you want to delete this announcement? This action cannot be undone.',
-            'accept' => [
-                'label' => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color' => 'negative',
-                'size' => 'md',
-            ],
-            'reject' => [
-                'label' => 'No, cancel',
-                'size' => 'md',
-            ],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDelete($id)
+    public function cancelDelete(): void
     {
-        $announcement = AnnouncementModel::find($id);
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        $announcement = AnnouncementModel::find($this->deleteTargetId);
 
         if ($announcement) {
             // Delete associated files from S3
@@ -184,13 +178,15 @@ class Announcement extends Component
                 Storage::disk('s3')->delete($oldPdfPath);
             }
 
-            // Delete the announcement record
             $announcement->delete();
 
             $this->dispatch('notify', type: 'success', message: "Announcement Deleted Successfully!");
         } else {
             $this->dispatch('notify', type: 'error', message: "Announcement not found!");
         }
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
     }
 
     public function deleteFile($type)
