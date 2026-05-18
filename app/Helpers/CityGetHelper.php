@@ -37,8 +37,10 @@ class CityGetHelper
      */
     public function cityGetByState($stateName)
     {
-        return array_filter($this->citiesData, function($city) use ($stateName) {
+        $filtered = array_filter($this->citiesData, function($city) use ($stateName) {
             return $city['state'] === $stateName;
         });
+
+        return array_values(array_map(fn($c) => $c['name'], $filtered));
     }
 }
