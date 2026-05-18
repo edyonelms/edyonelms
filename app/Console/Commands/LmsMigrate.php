@@ -3,9 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 class LmsMigrate extends Command
@@ -192,5 +194,32 @@ class LmsMigrate extends Command
                 $this->info('adding [image] field in [school_users] table');
             }
         });
+
+        // Ensure super-admin role exists
+        $superAdminRole = Role::firstOrCreate(
+            ['slug' => 'super-admin'],
+            ['name' => 'Super Admin', 'description' => 'Administrator with All access']
+        );
+
+        // Seed super admin accounts (idempotent — safe to run on every boot)
+        $superAdmins = [
+            'edyonelms@gmail.com',
+            'edyonelms1@gmail.com',
+        ];
+
+        foreach ($superAdmins as $email) {
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => 'Super Admin',
+                    'password' => Hash::make('12345678'),
+                    'role' => 'super-admin',
+                    'is_active' => 1,
+                    'organization_id' => 0,
+                ]
+            );
+            $user->roles()->syncWithoutDetaching($superAdminRole->id);
+            $this->info("Super admin ready: {$email}");
+        }
     }
 }
