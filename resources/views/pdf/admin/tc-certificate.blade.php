@@ -142,7 +142,7 @@
     <div class="header">
         @if (($tc->organization->logo ?? false))
             <div style="margin-bottom:2mm;">
-                <img src="{{ public_path('storage/' . $tc->organization->logo) }}" height="50">
+                <img src="{{ $tc->organization->logo }}" height="50">
             </div>
         @endif
 

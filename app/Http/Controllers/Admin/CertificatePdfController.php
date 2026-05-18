@@ -25,7 +25,7 @@ class CertificatePdfController extends Controller
             ->setPaper('a4', 'landscape')
             ->setOption('dpi', 150)
             ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', false)
+            ->setOption('isRemoteEnabled', true)
             ->setOption('defaultFont', 'DejaVu Sans');
 
         $filename = 'certificate_' . ($cert->certificate_no ?? $cert->id) . '.pdf';
@@ -47,7 +47,7 @@ class CertificatePdfController extends Controller
             ->setPaper('a4', 'portrait')
             ->setOption('dpi', 150)
             ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', false)
+            ->setOption('isRemoteEnabled', true)
             ->setOption('defaultFont', 'DejaVu Sans');
 
         $filename = 'TC_' . ($tc->tc_no ?? $tc->id) . '.pdf';

@@ -425,7 +425,7 @@ class ExamCopy extends Component
                         ->first();
 
                     if ($existingCopy && $existingCopy->pdf_path) {
-                        Storage::disk('public')->delete($existingCopy->pdf_path);
+                        Storage::disk('s3')->delete($existingCopy->pdf_path);
                     }
 
                     $student = $this->students->firstWhere('id', $studentId);
@@ -438,7 +438,8 @@ class ExamCopy extends Component
                         $student->id . '_' .
                         time() . '.pdf';
 
-                    $path = $file->storeAs('exam_copies', basename($fileName), 'public');
+                    $path = $file->storeAs('exam_copies', basename($fileName), 's3');
+                    Storage::disk('s3')->setVisibility($path, 'public');
 
                     $remarks = $this->studentPdfs[$studentId]['remarks'] ?? '';
 
@@ -486,7 +487,7 @@ class ExamCopy extends Component
                 ->first();
 
             if ($examCopy && $examCopy->pdf_path) {
-                Storage::disk('public')->delete($examCopy->pdf_path);
+                Storage::disk('s3')->delete($examCopy->pdf_path);
                 $examCopy->pdf_path = null;
                 $examCopy->save();
 
@@ -543,15 +544,12 @@ class ExamCopy extends Component
                 return;
             }
 
-            if (!Storage::disk('public')->exists($examCopy->pdf_path)) {
+            if (!Storage::disk('s3')->exists($examCopy->pdf_path)) {
                 $this->notification()->error('PDF file does not exist!');
                 return;
             }
 
-            return response()->download(
-                Storage::disk('public')->path($examCopy->pdf_path),
-                basename($examCopy->pdf_path)
-            );
+            return redirect(Storage::disk('s3')->url($examCopy->pdf_path));
         } catch (\Exception $e) {
             $this->notification()->error('Error downloading PDF', $e->getMessage());
         }
@@ -583,7 +581,7 @@ class ExamCopy extends Component
 
             if ($examCopy) {
                 if ($examCopy->pdf_path) {
-                    Storage::disk('public')->delete($examCopy->pdf_path);
+                    Storage::disk('s3')->delete($examCopy->pdf_path);
                 }
 
                 $examCopy->delete();

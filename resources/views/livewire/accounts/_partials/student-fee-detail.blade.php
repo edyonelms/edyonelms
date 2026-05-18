@@ -8,7 +8,7 @@
             {{-- Profile Picture --}}
             <div class="flex-shrink-0">
                 @if(!empty($data['student']['image']))
-                    <img src="{{ asset('storage/' . $data['student']['image']) }}"
+                    <img src="{{ $data['student']['image'] }}"
                          alt="{{ $data['student']['full_name'] }}"
                          class="w-20 h-20 rounded-full object-cover border-2 border-emerald-200 shadow-sm">
                 @else

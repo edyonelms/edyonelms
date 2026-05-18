@@ -53,12 +53,6 @@ class Credit extends Component
     public        $policyImage     = null;   // uploaded file
     public        $policyDocument  = null;   // uploaded file
 
-    // ── Mark as collected ─────────────────────────────────────────────────────
-    public bool   $showCollectModal    = false;
-    public ?int   $collectQueryId      = null;
-    public string $collectQueryAmount  = '';
-    public string $collectQuerySchool  = '';
-
     // ── Delete confirms ───────────────────────────────────────────────────────
     public ?int $pendingDeleteQueryId  = null;
     public ?int $pendingDeletePolicyId = null;
@@ -173,33 +167,6 @@ class Credit extends Component
         $this->notification()->success('Updated', 'Status updated successfully.');
     }
 
-    // ── Mark as collected ─────────────────────────────────────────────────────
-    public function openCollectModal(int $id): void
-    {
-        $query = CreditQuery::with('organization')->findOrFail($id);
-        $this->collectQueryId     = $id;
-        $this->collectQueryAmount = number_format($query->amount, 0);
-        $this->collectQuerySchool = $query->organization->name;
-        $this->showCollectModal   = true;
-    }
-
-    public function closeCollectModal(): void
-    {
-        $this->showCollectModal   = false;
-        $this->collectQueryId     = null;
-        $this->collectQueryAmount = '';
-        $this->collectQuerySchool = '';
-    }
-
-    public function markAsCollected(): void
-    {
-        CreditQuery::where('id', $this->collectQueryId)->update([
-            'collected_at' => now(),
-        ]);
-        $this->closeCollectModal();
-        $this->notification()->success('Collected', 'Amount marked as collected successfully.');
-    }
-
     // ── Delete query ──────────────────────────────────────────────────────────
     public function confirmDeleteQuery(int $id): void  { $this->pendingDeleteQueryId = $id; }
     public function cancelDeleteQuery(): void          { $this->pendingDeleteQueryId = null; }
@@ -257,10 +224,14 @@ class Credit extends Component
         ];
 
         if ($this->policyImage) {
-            $data['image'] = $this->policyImage->store('credit-policies/images', 's3');
+            $path = $this->policyImage->store('credit-policies/images', 's3');
+            Storage::disk('s3')->setVisibility($path, 'public');
+            $data['image'] = $path;
         }
         if ($this->policyDocument) {
-            $data['document'] = $this->policyDocument->store('credit-policies/documents', 's3');
+            $path = $this->policyDocument->store('credit-policies/documents', 's3');
+            Storage::disk('s3')->setVisibility($path, 'public');
+            $data['document'] = $path;
         }
 
         if ($this->editPolicyId) {
