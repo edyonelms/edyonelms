@@ -42,10 +42,20 @@ class Enqueries extends Component
 
     protected $queryString = [
         'activeTab'    => ['except' => 'teacher'],
-        'filterDays'   => ['except' => null],
+        'filterDays'   => ['except' => ''],
         'search'       => ['except' => ''],
         'statusFilter' => ['except' => ''],
     ];
+
+    /**
+     * Read the query body off an enquiry record regardless of model
+     * (teacher_query for ContactAdminTeacher, student_query for ContactAdminStudent).
+     */
+    public function getQueryText($enquiry): string
+    {
+        if (!$enquiry) return '';
+        return (string) ($enquiry->teacher_query ?? $enquiry->student_query ?? '');
+    }
 
     public function mount(): void
     {

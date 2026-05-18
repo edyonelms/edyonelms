@@ -108,7 +108,7 @@
             @forelse ($enquiries as $enquiry)
                 @php
                     $isReplied = !empty($enquiry->admin_reply);
-                    $queryField = $activeTab === 'teacher' ? 'teacher_query' : 'student_query';
+                    $queryText = $enquiry->teacher_query ?? $enquiry->student_query ?? '';
                 @endphp
                 <div class="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
                     <div class="flex items-stretch">
@@ -148,7 +148,7 @@
                                         </div>
 
                                         <p class="text-sm text-gray-600 line-clamp-2 mb-2.5 leading-relaxed">
-                                            {{ Str::limit($enquiry->{$queryField} ?? '', 160) }}
+                                            {{ Str::limit($queryText, 160) }}
                                         </p>
 
                                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
@@ -220,7 +220,7 @@
          VIEW SLIDE-IN PANEL
     ══════════════════════════════════════════════════ --}}
     @if ($showDetailModal && $selectedEnquiry)
-        @php $queryField = $activeTab === 'teacher' ? 'teacher_query' : 'student_query'; @endphp
+        @php $detailQueryText = $selectedEnquiry->teacher_query ?? $selectedEnquiry->student_query ?? ''; @endphp
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDetailModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
@@ -262,7 +262,7 @@
 
                     <div>
                         <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Message</p>
-                        <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $selectedEnquiry->{$queryField} ?? '' }}</p>
+                        <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $detailQueryText }}</p>
                     </div>
 
                     @if ($selectedEnquiry->image)
@@ -332,10 +332,10 @@
                 </div>
 
                 <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-                    @php $queryField = $activeTab === 'teacher' ? 'teacher_query' : 'student_query'; @endphp
+                    @php $replyQueryText = $selectedEnquiry->teacher_query ?? $selectedEnquiry->student_query ?? ''; @endphp
                     <div class="bg-gray-50 rounded-md p-3 border border-gray-200">
                         <p class="text-xs text-gray-400 uppercase tracking-wider mb-1.5">{{ $selectedEnquiry->topic ?? 'Enquiry' }}</p>
-                        <p class="text-sm text-gray-700 leading-relaxed line-clamp-4">{{ $selectedEnquiry->{$queryField} ?? '' }}</p>
+                        <p class="text-sm text-gray-700 leading-relaxed line-clamp-4">{{ $replyQueryText }}</p>
                     </div>
 
                     <div>
