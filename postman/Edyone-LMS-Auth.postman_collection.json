@@ -1,0 +1,314 @@
+{
+  "info": {
+    "_postman_id": "edyone-lms-auth-collection",
+    "name": "Edyone LMS — Auth & Legal APIs",
+    "description": "Authentication, password management, and legal document endpoints for Edyone LMS v1 API.\n\n**Base URL variable:** `{{baseUrl}}` — set to your environment (e.g. https://edyonelms.in/api or http://localhost:8000/api)\n\n**Auth variable:** `{{token}}` — captured automatically by Login requests via the test script.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Student Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('token', json.data.token);",
+                  "        pm.collectionVariables.set('user_id', json.data.user.id);",
+                  "        console.log('Student token saved');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admission_number\": \"ADM001\",\n  \"password\": \"Student@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/user/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "user", "login"]
+            },
+            "description": "Login as a student using admission number and password.\n\n**Request body:**\n- `admission_number` (required, string)\n- `password` (required, string)\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"status_code\": 200,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": { ... },\n    \"token\": \"...\",\n    \"token_type\": \"Bearer\"\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "Teacher Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('token', json.data.token);",
+                  "        pm.collectionVariables.set('user_id', json.data.user.id);",
+                  "        console.log('Teacher token saved');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@example.com\",\n  \"password\": \"Teacher@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/teacher/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "teacher", "login"]
+            },
+            "description": "Login as a teacher using email and password.\n\n**Request body:**\n- `email` (required, valid email)\n- `password` (required, string)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Password Management",
+      "item": [
+        {
+          "name": "Forgot Password (Send OTP)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.user_id) {",
+                  "        pm.collectionVariables.set('reset_user_id', json.data.user_id);",
+                  "        console.log('Reset user_id saved: ' + json.data.user_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "forgot-password"]
+            },
+            "description": "Send a 6-digit OTP to the user's email address. OTP is valid for **2 minutes**.\n\n**Request body:**\n- `email` (required, valid email)\n\n**Response includes:**\n- `user_id` — to be used in Verify OTP\n- `email`\n- `expires_in` (seconds)\n\nOTP is delivered via ZeptoMail template configured in `services.zeptomail.otp_template_key`."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{reset_user_id}},\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "verify-otp"]
+            },
+            "description": "Verify the 6-digit OTP sent to user's email.\n\n**Request body:**\n- `user_id` (required, numeric) — from Forgot Password response\n- `otp` (required, 6 digits)\n\nAfter successful verification, OTP is cleared from DB and user can proceed to `change-password`."
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{reset_user_id}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/resend-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "resend-otp"]
+            },
+            "description": "Resend OTP to user's email. **120-second cooldown** applies between resends.\n\n**Request body:**\n- `user_id` (required, numeric)"
+          }
+        },
+        {
+          "name": "Change Password (after OTP verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{reset_user_id}},\n  \"password\": \"NewPass@123\",\n  \"password_confirmation\": \"NewPass@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "change-password"]
+            },
+            "description": "Set new password after OTP verification (forgot password flow).\n\n**Request body:**\n- `user_id` (required, numeric)\n- `password` (required, min 8 chars, must contain lowercase, uppercase, number, special char)\n- `password_confirmation` (required, must match `password`)\n\n**Important:** OTP must be verified (via `verify-otp`) before calling this. Returns a fresh auth token."
+          }
+        },
+        {
+          "name": "Update Password (authenticated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Current@123\",\n  \"new_password\": \"NewPass@456\",\n  \"new_password_confirmation\": \"NewPass@456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/update-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "update-password"]
+            },
+            "description": "Update password while logged in. Requires current password.\n\n**Headers:** `Authorization: Bearer {{token}}`\n\n**Request body:**\n- `current_password` (required)\n- `new_password` (required, same complexity rules as Change Password)\n- `new_password_confirmation` (required, must match)\n\nAll existing tokens are revoked and a new one is issued."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. App Info",
+      "item": [
+        {
+          "name": "About App",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/about-app",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "about-app"]
+            },
+            "description": "Public endpoint. Returns app information: heading, content, logo, contact details, address, core team, social media links."
+          }
+        },
+        {
+          "name": "School Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/school-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "school-info"]
+            },
+            "description": "**Authenticated.** Returns school information for the logged-in user's organization: about school, vision/mission/values/goals, mobile, email, address, website, management team (with photos), and documents.\n\n**Headers:** `Authorization: Bearer {{token}}`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Legal Documents",
+      "item": [
+        {
+          "name": "Terms and Conditions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/terms-and-conditions",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "terms-and-conditions"]
+            },
+            "description": "Public endpoint. Returns Terms and Conditions with platform info, company details, and structured metadata sections."
+          }
+        },
+        {
+          "name": "Privacy Policy",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/privacy-policy",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "privacy-policy"]
+            },
+            "description": "Public endpoint. Returns Privacy Policy metadata and last updated date."
+          }
+        },
+        {
+          "name": "Terms of Use",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/terms-of-use",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "terms-of-use"]
+            },
+            "description": "Public endpoint. Returns Terms of Use metadata and last updated date."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://edyonelms.in/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reset_user_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

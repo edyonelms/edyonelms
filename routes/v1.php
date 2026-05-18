@@ -40,6 +40,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::get('/about-app', [AuthController::class, 'aboutApp']);
+    Route::get('/terms-and-conditions', [AuthController::class, 'termsAndConditions']);
+    Route::get('/privacy-policy', [AuthController::class, 'privacyPolicy']);
+    Route::get('/terms-of-use', [AuthController::class, 'termsOfUse']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

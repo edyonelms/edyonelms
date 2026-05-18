@@ -7,11 +7,14 @@ use App\Http\Resources\UserResource;
 use App\Models\AboutApp;
 use App\Models\Admin\RulesAndRegulation;
 use App\Models\Admin\SchoolInfo;
+use App\Models\Admin\TermAndCondition;
+use App\Models\PrivacyPolicy;
 use App\Models\Student\Chapter;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
 use App\Models\Student\Subject;
 use App\Models\Student\Topic;
+use App\Models\TermOfUse;
 use App\Models\User;
 use App\Services\OtplessService;
 use App\Services\OtpMailService;
@@ -67,10 +70,15 @@ class AuthController extends Controller
         }
 
         try {
-            OtpMailService::sendOtp($user, 'Student App');
+            $panelName = $user->role === 'teacher' ? 'Teacher App' : 'Student App';
+            OtpMailService::sendOtp($user, $panelName);
 
             return $this->responseService->success(
-                ['user_id' => $user->id],
+                [
+                    'user_id'    => $user->id,
+                    'email'      => $user->email,
+                    'expires_in' => 120, // seconds
+                ],
                 'OTP sent successfully to your email address.'
             );
         } catch (Exception $e) {
@@ -143,10 +151,15 @@ class AuthController extends Controller
         }
 
         try {
-            OtpMailService::sendOtp($user, 'Student App');
+            $panelName = $user->role === 'teacher' ? 'Teacher App' : 'Student App';
+            OtpMailService::sendOtp($user, $panelName);
 
             return $this->responseService->success(
-                null,
+                [
+                    'user_id'    => $user->id,
+                    'email'      => $user->email,
+                    'expires_in' => 120,
+                ],
                 'OTP resent successfully to your email address.'
             );
         } catch (Exception $e) {
@@ -362,6 +375,94 @@ class AuthController extends Controller
             return $this->responseService->success(
                 $aboutInfo,
                 'App information retrieved successfully'
+            );
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse(
+                'An error occurred: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    public function termsAndConditions()
+    {
+        try {
+            $terms = TermAndCondition::first();
+
+            if (!$terms) {
+                return $this->responseService->errorResponse(
+                    'Terms and Conditions not found',
+                    404
+                );
+            }
+
+            return $this->responseService->success(
+                [
+                    'id'             => $terms->id,
+                    'platform_logo'  => $terms->platform_logo,
+                    'platform_name'  => $terms->platform_name,
+                    'company_name'   => $terms->company_name,
+                    'company_cin'    => $terms->company_cin,
+                    'metadata'       => $terms->metadata,
+                    'last_updated'   => $terms->last_updated,
+                ],
+                'Terms and Conditions retrieved successfully'
+            );
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse(
+                'An error occurred: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    public function privacyPolicy()
+    {
+        try {
+            $policy = PrivacyPolicy::first();
+
+            if (!$policy) {
+                return $this->responseService->errorResponse(
+                    'Privacy Policy not found',
+                    404
+                );
+            }
+
+            return $this->responseService->success(
+                [
+                    'id'           => $policy->id,
+                    'metadata'     => $policy->metadata,
+                    'last_updated' => $policy->last_updated,
+                ],
+                'Privacy Policy retrieved successfully'
+            );
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse(
+                'An error occurred: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    public function termsOfUse()
+    {
+        try {
+            $termsOfUse = TermOfUse::first();
+
+            if (!$termsOfUse) {
+                return $this->responseService->errorResponse(
+                    'Terms of Use not found',
+                    404
+                );
+            }
+
+            return $this->responseService->success(
+                [
+                    'id'           => $termsOfUse->id,
+                    'metadata'     => $termsOfUse->metadata,
+                    'last_updated' => $termsOfUse->last_updated,
+                ],
+                'Terms of Use retrieved successfully'
             );
         } catch (Exception $e) {
             return $this->responseService->errorResponse(

@@ -25,8 +25,8 @@ class TeacherController extends Controller
     public function teacherLogin(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required',
+            'email'    => 'required|email',
+            'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -36,36 +36,43 @@ class TeacherController extends Controller
             );
         }
 
-        $user = User::where('email', $request->email)->where('role', 'teacher')->first();
+        try {
+            $user = User::where('email', $request->email)->where('role', 'teacher')->first();
 
-        if (!$user) {
-            return $this->responseService->error(
-                'The provided email or teacher does not exist in our records.',
-                401
+            if (!$user) {
+                return $this->responseService->errorResponse(
+                    'No teacher account found with this email address.',
+                    401
+                );
+            }
+
+            if (!Hash::check($request->password, $user->password)) {
+                return $this->responseService->errorResponse(
+                    'The provided password is incorrect.',
+                    401
+                );
+            }
+
+            if (!$user->is_active) {
+                return $this->responseService->errorResponse(
+                    'Your account has been deactivated. Please contact support.',
+                    403
+                );
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return $this->responseService->authResponse(
+                new UserResource($user),
+                $token,
+                'Login successful'
+            );
+        } catch (\Exception $e) {
+            return $this->responseService->errorResponse(
+                'Login failed: ' . $e->getMessage(),
+                500
             );
         }
-
-        if (!Hash::check($request->password, $user->password)) {
-            return $this->responseService->error(
-                'The provided password is incorrect.',
-                401
-            );
-        }
-
-        if (!$user->is_active) {
-            return $this->responseService->error(
-                'Your account has been deactivated. Please contact support.',
-                403
-            );
-        }
-
-        // Create token
-        $token = $user->createToken('auth_token')->plainTextToken;
-        return $this->responseService->authResponse(
-            new UserResource($user),
-            $token,
-            'Login successful'
-        );
     }
 
     public function teacherProfile(Request $request)

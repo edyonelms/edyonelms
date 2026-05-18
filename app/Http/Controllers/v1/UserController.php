@@ -26,8 +26,8 @@ class UserController extends Controller
     public function studentLogin(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'admission_number' => 'required',
-            'password' => 'required',
+            'admission_number' => 'required|string',
+            'password'         => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -37,54 +37,52 @@ class UserController extends Controller
             );
         }
 
-        // Find student detail by admission number
-        $studentDetail = StudentDetail::where('admission_no', $request->admission_number)->first();
+        try {
+            $studentDetail = StudentDetail::where('admission_no', $request->admission_number)->first();
 
-        if (!$studentDetail) {
-            return $this->responseService->error(
-                'The provided admission number does not exist in our records.',
-                401
+            if (!$studentDetail) {
+                return $this->responseService->errorResponse(
+                    'The provided admission number does not exist in our records.',
+                    401
+                );
+            }
+
+            $user = $studentDetail->user()->where('role', 'user')->first();
+
+            if (!$user) {
+                return $this->responseService->errorResponse(
+                    'No valid student account found for this admission number.',
+                    401
+                );
+            }
+
+            if (!Hash::check($request->password, $user->password)) {
+                return $this->responseService->errorResponse(
+                    'The provided password is incorrect.',
+                    401
+                );
+            }
+
+            if (!$user->is_active) {
+                return $this->responseService->errorResponse(
+                    'Your account has been deactivated. Please contact support.',
+                    403
+                );
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return $this->responseService->authResponse(
+                new UserResource($user),
+                $token,
+                'Login successful'
+            );
+        } catch (\Exception $e) {
+            return $this->responseService->errorResponse(
+                'Login failed: ' . $e->getMessage(),
+                500
             );
         }
-
-        // Get the associated user
-        $user = $studentDetail->user()->where('role', 'user')->first();
-
-        if (!$user) {
-            return $this->responseService->error(
-                'No valid student account found for this admission number.',
-                401
-            );
-        }
-
-        if (!$user->is_active) {
-            return $this->responseService->error(
-                'Student account is not active. Please contact support.',
-                403
-            );
-        }
-
-        if (!Hash::check($request->password, $user->password)) {
-            return $this->responseService->error(
-                'The provided password is incorrect.',
-                401
-            );
-        }
-
-        if (!$user->is_active) {
-            return $this->responseService->error(
-                'Your account has been deactivated. Please contact support.',
-                403
-            );
-        }
-
-        // Create token
-        $token = $user->createToken('auth_token')->plainTextToken;
-        return $this->responseService->authResponse(
-            new UserResource($user),
-            $token,
-            'Login successful'
-        );
     }
 
     public function studentProfile(Request $request)
