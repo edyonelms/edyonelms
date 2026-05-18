@@ -211,7 +211,44 @@
       ]
     },
     {
-      "name": "3. App Info",
+      "name": "3. Profile",
+      "item": [
+        {
+          "name": "Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "user", "profile"]
+            },
+            "description": "**Authenticated (student).** Returns full student profile in 6 grouped sections:\n\n**1. personal_info** — student_detail_id, user_id, full_name, email, mobile_number, phone, dob, gender, religion, aadhar_no, appar_id, registration_number, image, is_active, role\n\n**2. family_info** — father_name, mother_name\n\n**3. address_info** — local_address, permanent_address, city, state, pincode\n\n**4. academic_info** — admission_no, date_of_admission, roll_no, board, standard_id, standard_name, standard_code, section_id, section_name\n\n**5. transport_info** — transportation_required, active_transport (vehicle_no, route, pickup_point, is_active)\n\n**6. organization_info** — organization_id, name, code, logo_url"
+          }
+        },
+        {
+          "name": "Teacher Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/teacher/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "teacher", "profile"]
+            },
+            "description": "**Authenticated (teacher).** Returns full teacher profile in 5 grouped sections:\n\n**1. personal_info** — teacher_detail_id, user_id, name, email, mobile_number, phone, emergency_contact, gender, dob, image, role, is_active\n\n**2. professional_info** — employee_id, date_of_joining, qualification, total_subjects_assigned, total_classes_assigned, total_sections_assigned\n\n**3. address_info** — address, city, state, pincode\n\n**4. assignments** — `subjects[]` (subject_id, subject_name, subject_code, standard_id, standard_name, section_id, section_name), `classes[]` (standard_id, standard_name, section_id, section_name), `sections[]` (section_id, section_name, standard_id, standard_name), `summary` (total_assignments, has_data)\n\n**5. organization_info** — organization_id, name, code, logo_url"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. App Info",
       "item": [
         {
           "name": "About App",
@@ -245,7 +282,7 @@
       ]
     },
     {
-      "name": "4. Legal Documents",
+      "name": "5. Legal Documents",
       "item": [
         {
           "name": "Terms and Conditions",

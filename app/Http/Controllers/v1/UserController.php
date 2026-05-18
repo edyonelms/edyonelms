@@ -90,10 +90,13 @@ class UserController extends Controller
         try {
             $user = Auth::user();
 
-            // Load student details with relationships
-            $studentDetail = StudentDetail::with(['user', 'standard', 'section'])
-                ->where('user_id', $user->id)
-                ->first();
+            $studentDetail = StudentDetail::with([
+                'user',
+                'standard',
+                'section',
+                'organization',
+                'transportations',
+            ])->where('user_id', $user->id)->first();
 
             if (!$studentDetail) {
                 return $this->responseService->errorResponse(
@@ -108,7 +111,7 @@ class UserController extends Controller
             );
         } catch (\Exception $e) {
             return $this->responseService->errorResponse(
-                $e->getMessage(),
+                'Failed to retrieve student profile: ' . $e->getMessage(),
                 500
             );
         }
