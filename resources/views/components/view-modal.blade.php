@@ -8,8 +8,8 @@
 ])
 
 @if ($show)
-    <div class="fixed inset-0 flex justify-end bg-black/[0.13] backdrop-blur-[2px] z-[9999] pt-16 pb-4"
-         wire:click="{{ $closeAction }}">
+    <div class="fixed inset-0 flex justify-end bg-black/[0.04] backdrop-blur-[1.5px] z-[9999] pt-16 pb-4"
+         x-data @click="$wire.{{ $closeAction }}()">
         <div class="relative w-full {{ $maxWidth }} mx-4 sm:mx-6 md:mx-8 my-8"
              @click.stop>
             <div class="relative z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl flex flex-col max-h-[80vh]">
