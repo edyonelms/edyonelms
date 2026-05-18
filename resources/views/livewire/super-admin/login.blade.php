@@ -11,15 +11,15 @@
 
         {{-- Right form panel --}}
         <div class="w-full md:w-1/2 flex flex-col items-center justify-center p-8 md:p-12">
-            <div class="mb-8 w-20 h-20">
+            <div class="mb-6 w-16 h-16">
                 <img src="{{ asset('website-image/Group 11525.png') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
 
             {{-- ── STEP 1: Credentials ── --}}
             @if ($step === 'credentials')
-                <div class="text-center mb-8">
+                <div class="text-center mb-6">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Admin Login</h1>
-                    <p class="text-gray-500 mt-2">Login to continue to your dashboard</p>
+                    <p class="text-gray-500 mt-1 text-sm">Login to continue to your dashboard</p>
                 </div>
 
                 <div class="w-full max-w-sm">
@@ -50,13 +50,13 @@
                         @error('password') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
-                    <div class="flex items-center justify-end mb-6">
+                    <div class="flex justify-end mb-5">
                         <a href="{{ route('super-admin.forgot-password') }}"
                             class="text-sm text-purple-600 hover:text-purple-800 hover:underline">Forgot password?</a>
                     </div>
 
                     <button wire:click="login" wire:loading.attr="disabled"
-                        class="w-full py-3 bg-gradient-3 text-white rounded-lg hover:opacity-90 transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        class="w-full py-3 bg-gradient-3 text-white rounded-lg hover:opacity-90 transition duration-300 shadow-md disabled:opacity-60">
                         <span wire:loading.remove wire:target="login">Login</span>
                         <span wire:loading wire:target="login">Sending OTP…</span>
                     </button>
@@ -65,45 +65,86 @@
 
             {{-- ── STEP 2: OTP Verification ── --}}
             @if ($step === 'otp')
-                <div class="text-center mb-8">
-                    <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
+                <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800">Verify OTP</h1>
-                    <p class="text-gray-500 mt-2 text-sm">
-                        A 6-digit code was sent to<br>
-                        <span class="font-medium text-gray-700">{{ $otpSentTo }}</span>
-                    </p>
-                    <p class="text-xs text-gray-400 mt-1">Valid for 2 minutes</p>
+                    <p class="text-gray-500 mt-1 text-sm">Enter the 6-digit code sent to your email</p>
+                    <p class="text-purple-600 text-sm font-medium mt-1">{{ $otpSentTo }}</p>
                 </div>
 
                 <div class="w-full max-w-sm">
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-medium mb-1">Enter OTP</label>
-                        <input type="text" wire:model="otpCode" inputmode="numeric" maxlength="6"
-                            placeholder="_ _ _ _ _ _"
-                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center text-2xl tracking-[0.5em] font-mono"
-                            wire:keydown.enter="verifyOtp">
-                        @error('otpCode') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                    {{-- 6-box OTP input (same pattern as accounts verify-otp) --}}
+                    <div x-data="{
+                            otp: @entangle('otp'),
+                            focusNext(index) {
+                                if (this.otp[index] && index < 5) {
+                                    this.$refs['otp' + (index + 1)].focus();
+                                }
+                            },
+                            focusPrev(index, event) {
+                                if (event.key === 'Backspace' && !this.otp[index] && index > 0) {
+                                    this.$refs['otp' + (index - 1)].focus();
+                                }
+                            }
+                        }" class="flex justify-center gap-3 mb-4">
+                        @for ($i = 0; $i < 6; $i++)
+                            <input type="text" maxlength="1"
+                                x-ref="otp{{ $i }}"
+                                x-model="otp[{{ $i }}]"
+                                x-on:input="focusNext({{ $i }})"
+                                x-on:keydown="focusPrev({{ $i }}, $event)"
+                                inputmode="numeric"
+                                class="w-11 h-13 text-center text-xl font-bold border-2 border-gray-300 rounded-xl
+                                       focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                                @if ($i === 0) autofocus @endif>
+                        @endfor
                     </div>
 
+                    @error('otp')
+                        <p class="text-red-500 text-xs text-center mb-3">{{ $message }}</p>
+                    @enderror
+
                     <button wire:click="verifyOtp" wire:loading.attr="disabled"
-                        class="w-full py-3 bg-gradient-3 text-white rounded-lg hover:opacity-90 transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        class="w-full py-3 bg-gradient-3 text-white rounded-lg hover:opacity-90 transition duration-300 shadow-md disabled:opacity-60 mb-4">
                         <span wire:loading.remove wire:target="verifyOtp">Verify & Login</span>
                         <span wire:loading wire:target="verifyOtp">Verifying…</span>
                     </button>
 
-                    <div class="flex items-center justify-between mt-4">
+                    {{-- Countdown + Resend --}}
+                    <div class="text-center" x-data="{
+                            countdown: @entangle('countdown'),
+                            canResend: @entangle('canResend'),
+                            timer: null,
+                            startTimer() {
+                                this.timer = setInterval(() => {
+                                    if (this.countdown > 0) {
+                                        this.countdown--;
+                                    } else {
+                                        this.canResend = true;
+                                        clearInterval(this.timer);
+                                        $wire.timerFinished();
+                                    }
+                                }, 1000);
+                            }
+                        }" x-init="startTimer()">
+                        <template x-if="!canResend">
+                            <p class="text-sm text-gray-500">
+                                Resend OTP in
+                                <span class="font-semibold text-purple-600"
+                                    x-text="Math.floor(countdown / 60) + ':' + String(countdown % 60).padStart(2, '0')"></span>
+                            </p>
+                        </template>
+                        <template x-if="canResend">
+                            <button wire:click="resendOtp"
+                                class="text-sm text-purple-600 hover:text-purple-800 font-medium hover:underline">
+                                Resend OTP
+                            </button>
+                        </template>
+                    </div>
+
+                    <div class="text-center mt-3">
                         <button wire:click="backToLogin"
-                            class="text-sm text-gray-500 hover:text-gray-700 hover:underline">
-                            ← Back
-                        </button>
-                        <button wire:click="resendOtp"
-                            class="text-sm text-purple-600 hover:text-purple-800 hover:underline">
-                            Resend OTP
+                            class="text-sm text-gray-400 hover:text-gray-600 hover:underline">
+                            ← Back to login
                         </button>
                     </div>
                 </div>

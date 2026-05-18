@@ -12,10 +12,14 @@ class Login extends Component
 {
     public string $step = 'credentials'; // 'credentials' | 'otp'
 
-    public $email = '';
+    public $email    = '';
     public $password = '';
-    public $otpCode = '';
     public $otpSentTo = '';
+
+    // OTP step — array of 6 single digits (matches accounts VerifyOtp pattern)
+    public array $otp = ['', '', '', '', '', ''];
+    public int   $countdown = 120;
+    public bool  $canResend = false;
 
     public function login()
     {
@@ -47,38 +51,54 @@ class Login extends Component
 
         OtpMailService::sendOtp($user, 'Super Admin');
 
-        $this->otpSentTo = $user->email;
-        $this->step = 'otp';
+        $this->otpSentTo  = $user->email;
+        $this->otp        = ['', '', '', '', '', ''];
+        $this->countdown  = 120;
+        $this->canResend  = false;
+        $this->step       = 'otp';
+    }
+
+    public function updatedOtp(): void
+    {
+        $entered = implode('', $this->otp);
+        if (strlen($entered) === 6 && ctype_digit($entered)) {
+            $this->verifyOtp();
+        }
     }
 
     public function verifyOtp()
     {
-        $this->validate([
-            'otpCode' => 'required|digits:6',
-        ], [
-            'otpCode.required' => 'Please enter the OTP.',
-            'otpCode.digits'   => 'OTP must be 6 digits.',
-        ]);
+        $entered = implode('', $this->otp);
+
+        if (strlen($entered) !== 6 || !ctype_digit($entered)) {
+            $this->addError('otp', 'Please enter a valid 6-digit OTP.');
+            return;
+        }
 
         $user = User::where('email', $this->email)->first();
 
         if (!$user) {
-            $this->addError('otpCode', 'Session expired. Please login again.');
+            $this->addError('otp', 'Session expired. Please login again.');
             $this->step = 'credentials';
             return;
         }
 
         try {
-            OtpMailService::verifyOtp($user, $this->otpCode);
+            OtpMailService::verifyOtp($user, $entered);
             Auth::login($user);
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
-            $this->addError('otpCode', $e->getMessage());
+            $this->otp = ['', '', '', '', '', ''];
+            $this->addError('otp', $e->getMessage());
         }
     }
 
-    public function resendOtp()
+    public function resendOtp(): void
     {
+        if (!$this->canResend) {
+            return;
+        }
+
         $user = User::where('email', $this->email)->first();
 
         if (!$user) {
@@ -86,20 +106,26 @@ class Login extends Component
             return;
         }
 
-        if (!OtpMailService::canResend($user)) {
-            $this->addError('otpCode', 'Please wait before requesting a new OTP.');
-            return;
+        try {
+            OtpMailService::sendOtp($user, 'Super Admin');
+            $this->otp       = ['', '', '', '', '', ''];
+            $this->countdown = 120;
+            $this->canResend = false;
+            $this->resetValidation('otp');
+        } catch (\Exception $e) {
+            $this->addError('otp', 'Failed to resend OTP: ' . $e->getMessage());
         }
+    }
 
-        OtpMailService::sendOtp($user, 'Super Admin');
-        $this->otpCode = '';
-        $this->resetValidation('otpCode');
+    public function timerFinished(): void
+    {
+        $this->canResend = true;
     }
 
     public function backToLogin()
     {
-        $this->step = 'credentials';
-        $this->otpCode = '';
+        $this->step      = 'credentials';
+        $this->otp       = ['', '', '', '', '', ''];
         $this->otpSentTo = '';
         $this->resetValidation();
     }
