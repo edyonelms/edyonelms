@@ -4,8 +4,6 @@ namespace App\Livewire\SuperAdmin;
 
 use App\Models\Admin\Fee\FeePayment;
 use App\Models\Organization;
-use App\Models\Student\Section;
-use App\Models\Student\Standard;
 use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\User;
@@ -66,22 +64,6 @@ class Schools extends Component
     public string $bankIfsc       = '';
     public string $bankBranch     = '';
     public string $bankHolderName = '';
-
-    // ─── Add Student Panel ─────────────────────────────────────────────────────
-    public bool   $showAddStudentPanel = false;
-    public string $stName              = '';
-    public string $stEmail             = '';
-    public string $stMobile            = '';
-    public string $stGender            = '';
-    public string $stDob               = '';
-    public string $stFatherName        = '';
-    public string $stMotherName        = '';
-    public string $stDateOfAdmission   = '';
-    public string $stBoard             = '';
-    public string $stStandardId        = '';
-    public string $stSectionId         = '';
-    public        $stSections          = [];
-    public        $stStandards         = [];
 
     protected $listeners = [
         'editSchool'   => 'onEdit',
@@ -383,155 +365,6 @@ class Schools extends Component
         $this->loadStats();
         $this->resetPage();
         $this->notification()->success('School deleted successfully!');
-    }
-
-    // ─── Add Student Panel ─────────────────────────────────────────────────────
-
-    public function openAddStudentPanel(): void
-    {
-        $this->stStandards         = Standard::where('organization_id', $this->detailSchool->id)->orderBy('name')->get();
-        $this->stSections          = [];
-        $this->stStandardId        = '';
-        $this->stSectionId         = '';
-        $this->stDateOfAdmission   = now()->format('Y-m-d');
-        $this->stBoard             = $this->detailSchool->education_board ?? '';
-        $this->stName              = '';
-        $this->stEmail             = '';
-        $this->stMobile            = '';
-        $this->stGender            = '';
-        $this->stDob               = '';
-        $this->stFatherName        = '';
-        $this->stMotherName        = '';
-        $this->resetValidation();
-        $this->showAddStudentPanel = true;
-    }
-
-    public function closeAddStudentPanel(): void
-    {
-        $this->showAddStudentPanel = false;
-        $this->resetValidation();
-    }
-
-    public function updatedStStandardId(): void
-    {
-        $this->stSectionId = '';
-        $this->stSections  = $this->stStandardId
-            ? Section::where('standard_id', $this->stStandardId)->get()
-            : [];
-    }
-
-    public function saveStudent(): void
-    {
-        $this->validate([
-            'stName'            => 'required|string|max:255',
-            'stEmail'           => 'required|email|max:100|unique:users,email',
-            'stMobile'          => 'required|digits:10',
-            'stGender'          => 'required|in:male,female,other',
-            'stDob'             => 'required|date|before:today',
-            'stFatherName'      => 'required|string|max:255',
-            'stMotherName'      => 'required|string|max:255',
-            'stDateOfAdmission' => 'required|date|before_or_equal:today',
-            'stBoard'           => 'required|string|max:100',
-            'stStandardId'      => 'nullable|integer|exists:standards,id',
-            'stSectionId'       => 'nullable|integer|exists:sections,id',
-        ]);
-
-        $plainPassword = Str::upper(Str::random(4)) . rand(100, 999) . Str::random(3);
-
-        $user = User::create([
-            'name'            => $this->stName,
-            'email'           => $this->stEmail,
-            'mobile_number'   => $this->stMobile,
-            'role'            => 'user',
-            'is_active'       => true,
-            'organization_id' => $this->detailSchool->id,
-            'password'        => Hash::make($plainPassword),
-        ]);
-
-        $admissionNo = $this->generateStudentAdmissionNumber();
-        $rollNo      = $this->generateStudentRollNumber();
-
-        StudentDetail::create([
-            'user_id'           => $user->id,
-            'standard_id'       => $this->stStandardId ?: null,
-            'section_id'        => $this->stSectionId ?: null,
-            'full_name'         => $this->stName,
-            'father_name'       => $this->stFatherName,
-            'mother_name'       => $this->stMotherName,
-            'email'             => $this->stEmail,
-            'dob'               => $this->stDob,
-            'gender'            => $this->stGender,
-            'phone'             => $this->stMobile,
-            'admission_no'      => $admissionNo,
-            'date_of_admission' => $this->stDateOfAdmission,
-            'roll_no'           => $rollNo,
-            'board'             => $this->stBoard,
-            'organization_id'   => $this->detailSchool->id,
-        ]);
-
-        try {
-            $templateKey = config('services.zeptomail.student_password_template_key');
-            if ($templateKey) {
-                ZeptoMailService::sendTemplate(
-                    $templateKey,
-                    $this->stEmail,
-                    $this->stName,
-                    [
-                        'password'         => $plainPassword,
-                        'school_name'      => $this->detailSchool->name,
-                        'admission_number' => $admissionNo,
-                        'username'         => $this->stName,
-                    ]
-                );
-            }
-        } catch (\Throwable $e) {
-            Log::error('Student welcome email failed', ['email' => $this->stEmail, 'error' => $e->getMessage()]);
-        }
-
-        $this->closeAddStudentPanel();
-        $this->loadStats();
-        $this->detailSchool = Organization::withCount([
-            'students as total_students',
-            'teachers as total_teachers',
-        ])->find($this->detailSchool->id);
-
-        $this->notification()->success('Student Added!', $this->stName . ' has been added successfully.');
-    }
-
-    private function generateStudentAdmissionNumber(): string
-    {
-        $year       = date('Y');
-        $schoolCode = $this->detailSchool->school_code ?? 'SCH';
-        $class      = $this->stStandardId ?: '0';
-        $section    = $this->stSectionId ?: '0';
-
-        $last = StudentDetail::where('organization_id', $this->detailSchool->id)
-            ->where('standard_id', $class)
-            ->where('section_id', $section)
-            ->where('admission_no', 'like', "$year$schoolCode$class$section%")
-            ->orderBy('admission_no', 'desc')
-            ->first();
-
-        $serial = $last ? (int) substr($last->admission_no, -4) + 1 : 1;
-        return $year . $schoolCode . $class . $section . str_pad($serial, 4, '0', STR_PAD_LEFT);
-    }
-
-    private function generateStudentRollNumber(): string
-    {
-        $shortYear    = substr(date('Y'), -2);
-        $schoolSerial = '01';
-        $classFmt     = str_pad($this->stStandardId ?: '0', 2, '0', STR_PAD_LEFT);
-        $sectionCode  = $this->stSectionId ? substr((string) $this->stSectionId, 0, 1) : '0';
-
-        $last = StudentDetail::where('organization_id', $this->detailSchool->id)
-            ->where('standard_id', $this->stStandardId ?: null)
-            ->where('section_id', $this->stSectionId ?: null)
-            ->where('roll_no', 'like', "$shortYear$schoolSerial$classFmt$sectionCode%")
-            ->orderBy('roll_no', 'desc')
-            ->first();
-
-        $serial = $last ? (int) substr($last->roll_no, -3) + 1 : 1;
-        return $shortYear . $schoolSerial . $classFmt . $sectionCode . str_pad($serial, 3, '0', STR_PAD_LEFT);
     }
 
     private function resetForm(): void

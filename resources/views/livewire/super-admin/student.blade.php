@@ -15,6 +15,17 @@
                     <span class="pl-4">Inactive: <strong class="text-red-500">{{ $inactiveStudents }}</strong></span>
                 </div>
 
+                {{-- Add Student Button --}}
+                <button wire:click="openAddPanel"
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold text-white
+                           bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="hidden sm:inline">Add Student</span>
+                    <span class="sm:hidden">Add</span>
+                </button>
+
                 {{-- Export Button --}}
                 <button wire:click="exportStudents" @disabled(!$filterOrganization)
                     class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
@@ -450,6 +461,263 @@
             @endif
         </div>
     </div>
+
+    {{-- ══════════ ADD STUDENT SLIDE-IN PANEL ══════════ --}}
+    @if ($showAddPanel)
+        <div class="fixed inset-0 z-[9999]">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeAddPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-lg bg-white shadow-2xl flex flex-col z-10">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900">Add Student</p>
+                            <p class="text-xs text-gray-400">Select a school and fill in the details</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeAddPanel"
+                        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Scrollable Body --}}
+                <div class="flex-1 overflow-y-auto p-5 space-y-4">
+
+                    {{-- Organisation --}}
+                    <div class="bg-indigo-50 rounded-xl p-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">School</p>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Select School <span class="text-red-500">*</span></label>
+                            <select wire:model.live="addOrgId"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white @error('addOrgId') border-red-400 @enderror">
+                                <option value="">-- Select School --</option>
+                                @foreach ($organizations as $org)
+                                    <option value="{{ $org->id }}">{{ $org->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('addOrgId') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Basic Info --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Basic Information</p>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Full Name <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="addName" type="text" placeholder="Student's full name"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addName') border-red-400 @enderror" />
+                            @error('addName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Email <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addEmail" type="email" placeholder="student@email.com"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addEmail') border-red-400 @enderror" />
+                                @error('addEmail') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Mobile <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addMobile" type="text" placeholder="10-digit"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addMobile') border-red-400 @enderror" />
+                                @error('addMobile') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Gender <span class="text-red-500">*</span></label>
+                                <select wire:model.defer="addGender"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white @error('addGender') border-red-400 @enderror">
+                                    <option value="">Select</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                @error('addGender') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addDob" type="date"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addDob') border-red-400 @enderror" />
+                                @error('addDob') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Religion</label>
+                            <input wire:model.defer="addReligion" type="text" placeholder="e.g. Hindu"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                    </div>
+
+                    {{-- Family --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Family Details</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Father's Name <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addFatherName" type="text" placeholder="Father's name"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addFatherName') border-red-400 @enderror" />
+                                @error('addFatherName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Mother's Name <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addMotherName" type="text" placeholder="Mother's name"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addMotherName') border-red-400 @enderror" />
+                                @error('addMotherName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Academic --}}
+                    <div class="bg-blue-50 rounded-xl p-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Academic Details</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
+                                <select wire:model.live="addStandardId" @disabled(!$addOrgId)
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+                                    <option value="">Select class</option>
+                                    @foreach ($addStandards as $std)
+                                        <option value="{{ $std->id }}">{{ $std->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
+                                <select wire:model.defer="addSectionId" @disabled(!$addStandardId)
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+                                    <option value="">Select section</option>
+                                    @foreach ($addSections as $sec)
+                                        <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Board <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addBoard" type="text" placeholder="e.g. CBSE"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addBoard') border-red-400 @enderror" />
+                                @error('addBoard') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Date of Admission <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="addDateOfAdmission" type="date"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addDateOfAdmission') border-red-400 @enderror" />
+                                @error('addDateOfAdmission') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Aadhar No</label>
+                                <input wire:model.defer="addAadharNo" type="text" placeholder="12-digit"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addAadharNo') border-red-400 @enderror" />
+                                @error('addAadharNo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Appar ID</label>
+                                <input wire:model.defer="addApparId" type="text" placeholder="Optional"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Registration Number</label>
+                            <input wire:model.defer="addRegNo" type="text" placeholder="Optional"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input wire:model.defer="addTransportation" type="checkbox" id="addTransport"
+                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <label for="addTransport" class="text-sm text-gray-700">Transportation Required</label>
+                        </div>
+                    </div>
+
+                    {{-- Address --}}
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Address</p>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Local Address</label>
+                            <textarea wire:model.defer="addLocalAddress" rows="2" placeholder="Local address"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Permanent Address</label>
+                            <textarea wire:model.defer="addPermanentAddress" rows="2" placeholder="Permanent address"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">State</label>
+                                <select wire:model.live="addState"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <option value="">Select state</option>
+                                    @foreach ($addStates as $state)
+                                        <option value="{{ $state }}">{{ $state }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">City</label>
+                                <select wire:model.defer="addCity" @disabled(!$addState)
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+                                    <option value="">Select city</option>
+                                    @foreach ($addCities as $city)
+                                        <option value="{{ $city }}">{{ $city }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
+                            <input wire:model.defer="addPincode" type="text" placeholder="6-digit pincode"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('addPincode') border-red-400 @enderror" />
+                            @error('addPincode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Email note --}}
+                    <div class="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                        <svg class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-xs text-amber-700">A random password will be auto-generated and sent to the student's email.</p>
+                    </div>
+
+                </div>
+
+                {{-- Footer --}}
+                <div class="flex-shrink-0 px-5 py-4 border-t border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                    <button wire:click="saveNewStudent"
+                        class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
+                               rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save Student
+                    </button>
+                    <button wire:click="closeAddPanel"
+                        class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    @endif
 
     {{-- ══════════ VIEW MODAL ══════════ --}}
     <x-view-modal :show="$showViewModal" :title="$viewModalTitle" closeAction="closeViewModal">
