@@ -2,9 +2,14 @@
 
 namespace App\Livewire\SuperAdmin;
 
+use App\Helpers\CityGetHelper;
 use App\Models\Organization;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\User;
+use App\Services\ZeptoMailService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
 use WireUi\Traits\WireUiActions;
@@ -30,6 +35,25 @@ class Teacher extends Component
     public int    $perPage            = 50;
 
     public $organizations = [];
+
+    // ─── Add Teacher Panel ────────────────────────────────────────────────────
+    public bool   $showAddPanel       = false;
+    public string $addOrgId           = '';
+    public string $addName            = '';
+    public string $addEmail           = '';
+    public string $addMobile          = '';
+    public string $addDob             = '';
+    public string $addGender          = '';
+    public string $addEmployeeId      = '';
+    public string $addDateOfJoining   = '';
+    public string $addQualification   = '';
+    public string $addAddress         = '';
+    public string $addPincode         = '';
+    public string $addEmergencyContact = '';
+    public string $addState           = '';
+    public string $addCity            = '';
+    public        $addStates          = [];
+    public        $addCities          = [];
 
     protected $queryString = [
         'search'             => ['except' => ''],
@@ -224,6 +248,116 @@ class Teacher extends Component
         }, 'teachers_' . now()->format('Y-m-d_H-i-s') . '.csv', [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    // ─── Add Teacher Panel ────────────────────────────────────────────────────
+
+    public function openAddPanel(): void
+    {
+        $this->addStates          = (new CityGetHelper())->getState();
+        $this->addOrgId           = '';
+        $this->addName            = '';
+        $this->addEmail           = '';
+        $this->addMobile          = '';
+        $this->addDob             = '';
+        $this->addGender          = '';
+        $this->addEmployeeId      = '';
+        $this->addDateOfJoining   = now()->format('Y-m-d');
+        $this->addQualification   = '';
+        $this->addAddress         = '';
+        $this->addPincode         = '';
+        $this->addEmergencyContact = '';
+        $this->addState           = '';
+        $this->addCity            = '';
+        $this->addCities          = [];
+        $this->resetValidation();
+        $this->showAddPanel       = true;
+    }
+
+    public function closeAddPanel(): void
+    {
+        $this->showAddPanel = false;
+        $this->resetValidation();
+    }
+
+    public function updatedAddState(): void
+    {
+        $this->addCity   = '';
+        $this->addCities = $this->addState
+            ? (new CityGetHelper())->cityGetByState($this->addState)
+            : [];
+    }
+
+    public function saveNewTeacher(): void
+    {
+        $this->validate([
+            'addOrgId'            => 'required|integer|exists:organizations,id',
+            'addName'             => 'required|string|max:255',
+            'addEmail'            => 'required|email|max:100',
+            'addMobile'           => 'required|digits:10',
+            'addDob'              => 'required|date|before:today',
+            'addGender'           => 'required|in:male,female,other',
+            'addEmployeeId'       => 'required|string|max:50',
+            'addDateOfJoining'    => 'required|date|before_or_equal:today',
+            'addQualification'    => 'required|string|max:255',
+            'addAddress'          => 'required|string|max:500',
+            'addPincode'          => 'required|digits:6',
+            'addEmergencyContact' => 'required|digits:10',
+        ]);
+
+        $existing = User::where('email', $this->addEmail)->where('role', 'teacher')->first();
+        if ($existing) {
+            $this->addError('addEmail', 'A teacher with this email already exists.');
+            return;
+        }
+
+        $org           = Organization::findOrFail($this->addOrgId);
+        $plainPassword = Str::upper(Str::random(4)) . rand(100, 999) . Str::random(3);
+
+        $user = User::create([
+            'name'            => $this->addName,
+            'email'           => $this->addEmail,
+            'mobile_number'   => $this->addMobile,
+            'dob'             => $this->addDob,
+            'gender'          => $this->addGender,
+            'role'            => 'teacher',
+            'is_active'       => true,
+            'organization_id' => $this->addOrgId,
+            'password'        => Hash::make($plainPassword),
+        ]);
+
+        TeacherDetail::create([
+            'user_id'           => $user->id,
+            'organization_id'   => $this->addOrgId,
+            'employee_id'       => $this->addEmployeeId,
+            'date_of_joining'   => $this->addDateOfJoining,
+            'qualification'     => $this->addQualification,
+            'phone'             => $this->addMobile,
+            'address'           => $this->addAddress,
+            'city'              => $this->addCity ?: null,
+            'state'             => $this->addState ?: null,
+            'pincode'           => $this->addPincode,
+            'emergency_contact' => $this->addEmergencyContact,
+        ]);
+
+        try {
+            $templateKey = config('services.zeptomail.teacher_password_template_key');
+            if ($templateKey) {
+                ZeptoMailService::sendTemplate($templateKey, $this->addEmail, $this->addName, [
+                    'password'      => $plainPassword,
+                    'email_address' => $this->addEmail,
+                    'school_name'   => $org->name,
+                    'username'      => $this->addName,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Teacher welcome email failed', ['email' => $this->addEmail, 'error' => $e->getMessage()]);
+        }
+
+        $this->closeAddPanel();
+        $this->loadStats();
+        $this->resetPage();
+        $this->notification()->success('Teacher Added!', $this->addName . ' added to ' . $org->name . '.');
     }
 
     public function render()

@@ -15,6 +15,17 @@
                     <span class="pl-4">Inactive: <strong class="text-red-500">{{ $inactiveTeachers }}</strong></span>
                 </div>
 
+                {{-- Add Teacher Button --}}
+                <button wire:click="openAddPanel"
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
+                           bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline">Add Teacher</span>
+                    <span class="sm:hidden">Add</span>
+                </button>
+
                 {{-- Export Button --}}
                 <button wire:click="exportTeachers" @disabled(!$filterOrganization)
                     class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
@@ -438,6 +449,240 @@
     </div>
 
     {{-- ══════════ VIEW MODAL ══════════ --}}
+    {{-- ══════════ ADD TEACHER SLIDE-IN PANEL ══════════ --}}
+    @if ($showAddPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]"
+                wire:click="closeAddPanel"></div>
+
+            {{-- Panel --}}
+            <div class="absolute top-0 right-0 bottom-0 z-10 w-full max-w-xl bg-white shadow-2xl
+                        flex flex-col overflow-hidden">
+
+                {{-- Panel Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">Add New Teacher</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Fill in all required fields to create a teacher account</p>
+                    </div>
+                    <button wire:click="closeAddPanel"
+                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Panel Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                    {{-- School --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">School</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Organization <span class="text-red-500">*</span>
+                            </label>
+                            <select wire:model="addOrgId"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                       focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white">
+                                <option value="">— Select School —</option>
+                                @foreach ($organizations as $org)
+                                    <option value="{{ $org->id }}">{{ $org->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('addOrgId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Basic Info --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Basic Information</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Full Name <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addName" type="text" placeholder="Enter full name"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addName') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Email <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addEmail" type="email" placeholder="teacher@school.com"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addEmail') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Mobile <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addMobile" type="text" placeholder="10-digit number"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addMobile') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Date of Birth <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addDob" type="date"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addDob') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Gender <span class="text-red-500">*</span>
+                                </label>
+                                <select wire:model="addGender"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white">
+                                    <option value="">— Select —</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                @error('addGender') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Professional --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Professional Details</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Employee ID <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addEmployeeId" type="text" placeholder="e.g. EMP001"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono" />
+                                @error('addEmployeeId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Date of Joining <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addDateOfJoining" type="date"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addDateOfJoining') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Qualification <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addQualification" type="text" placeholder="e.g. B.Ed, M.Sc"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addQualification') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Address --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Address</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Address <span class="text-red-500">*</span>
+                                </label>
+                                <textarea wire:model="addAddress" rows="2" placeholder="House no., Street, Area"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"></textarea>
+                                @error('addAddress') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                                <select wire:model.live="addState"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white">
+                                    <option value="">— Select State —</option>
+                                    @foreach ($addStates as $state)
+                                        <option value="{{ $state }}">{{ $state }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                <select wire:model="addCity"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white
+                                           {{ empty($addCities) ? 'opacity-50' : '' }}">
+                                    <option value="">— Select City —</option>
+                                    @foreach ($addCities as $city)
+                                        <option value="{{ $city }}">{{ $city }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Pincode <span class="text-red-500">*</span>
+                                </label>
+                                <input wire:model="addPincode" type="text" placeholder="6-digit pincode"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                           focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                                @error('addPincode') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Emergency --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Emergency Contact</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Emergency Contact Number <span class="text-red-500">*</span>
+                            </label>
+                            <input wire:model="addEmergencyContact" type="text" placeholder="10-digit mobile number"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                       focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                            @error('addEmergencyContact') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Password note --}}
+                    <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                        <p class="font-semibold mb-0.5">Auto-generated password</p>
+                        <p class="text-xs text-amber-700">A secure password will be generated and emailed to the teacher upon account creation.</p>
+                    </div>
+
+                </div>
+
+                {{-- Panel Footer --}}
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button wire:click="closeAddPanel" type="button"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300
+                               rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button wire:click="saveNewTeacher" type="button"
+                        wire:loading.attr="disabled" wire:target="saveNewTeacher"
+                        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                               bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm
+                               disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="saveNewTeacher">Save Teacher</span>
+                        <span wire:loading wire:target="saveNewTeacher" class="flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <x-view-modal :show="$showViewModal" :title="$viewModalTitle" closeAction="closeViewModal">
         @if (!empty($viewData))
             <div class="space-y-5 text-left text-sm text-gray-700">
