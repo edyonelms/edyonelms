@@ -356,6 +356,7 @@ class Schools extends Component
     {
         Organization::find($id)?->delete();
         User::where('organization_id', $id)->where('role', 'admin')->delete();
+        \App\Models\Admin\RateLms::where('organization_id', $id)->delete();
 
         if ($this->activeView === 'detail' && $this->detailSchool?->id == $id) {
             $this->backToList();
