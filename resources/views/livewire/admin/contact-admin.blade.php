@@ -103,98 +103,111 @@
     <div class="p-4 sm:p-6">
         <div class="space-y-3">
             @forelse($contacts as $contact)
-                <div class="group bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm
-                            transition-all duration-150">
-                    <div class="p-4 sm:p-5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-3 flex-1 min-w-0">
+                <div class="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md
+                            transition-all duration-200 overflow-hidden">
+                    <div class="flex items-stretch">
 
-                                {{-- Status dot --}}
-                                <div class="mt-1.5 flex-shrink-0">
-                                    <span class="block w-2 h-2 rounded-full
-                                        {{ $contact->super_admin_reply ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
-                                </div>
+                        {{-- Status accent bar --}}
+                        <div class="w-1 flex-shrink-0
+                            {{ $contact->super_admin_reply ? 'bg-emerald-500' : 'bg-amber-400' }}"></div>
 
-                                <div class="flex-1 min-w-0">
-                                    {{-- Title row --}}
-                                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                                        <h3 class="text-base font-semibold text-gray-900 truncate">{{ $contact->topic }}</h3>
-                                        <span class="text-xs font-medium px-1.5 py-0.5 rounded
-                                            {{ $contact->super_admin_reply ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
-                                            {{ $contact->super_admin_reply ? 'Replied' : 'Pending' }}
-                                        </span>
-                                        @if ($contact->image)
-                                            <span class="inline-flex items-center gap-0.5 text-xs text-gray-400">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                </svg>
-                                                attachment
-                                            </span>
+                        <div class="flex-1 p-4 sm:p-5 min-w-0">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-start gap-3 flex-1 min-w-0">
+
+                                    {{-- Status icon --}}
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                                        {{ $contact->super_admin_reply ? 'bg-emerald-50' : 'bg-amber-50' }}">
+                                        @if ($contact->super_admin_reply)
+                                            <svg class="w-4.5 h-4.5 text-emerald-600 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                            </svg>
+                                        @else
+                                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
                                         @endif
                                     </div>
 
-                                    {{-- Query preview --}}
-                                    <p class="text-sm text-gray-600 line-clamp-2 mb-2">
-                                        {{ Str::limit($contact->admin_query, 140) }}
-                                    </p>
+                                    <div class="flex-1 min-w-0">
+                                        {{-- Title row --}}
+                                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                                            <h3 class="text-base font-semibold text-gray-900">{{ $contact->topic }}</h3>
+                                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide
+                                                {{ $contact->super_admin_reply ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                                {{ $contact->super_admin_reply ? 'Replied' : 'Pending' }}
+                                            </span>
+                                            @if ($contact->image)
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                    </svg>
+                                                    Attachment
+                                                </span>
+                                            @endif
+                                        </div>
 
-                                    {{-- Meta footer --}}
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-                                        <span class="flex items-center gap-1">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                            {{ $contact->user->name }}
-                                        </span>
-                                        <span>·</span>
-                                        <span>{{ $contact->created_at->format('M j, Y') }}</span>
-                                        <span>·</span>
-                                        <span>{{ $contact->created_at->diffForHumans() }}</span>
+                                        {{-- Query preview --}}
+                                        <p class="text-sm text-gray-600 line-clamp-2 mb-2.5 leading-relaxed">
+                                            {{ Str::limit($contact->admin_query, 140) }}
+                                        </p>
+
+                                        {{-- Meta footer --}}
+                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                            <span class="inline-flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                                <span class="font-medium text-gray-600">{{ $contact->user->name }}</span>
+                                            </span>
+                                            <span class="text-gray-300">•</span>
+                                            <span class="inline-flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {{ $contact->created_at->format('M j, Y · g:i A') }}
+                                            </span>
+                                            <span class="text-gray-300">•</span>
+                                            <span class="text-gray-400">{{ $contact->created_at->diffForHumans() }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {{-- Action Buttons --}}
-                            <div class="flex items-center gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <button wire:click="onViewContact({{ $contact->id }})" title="View"
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </button>
-
-                                @if (!$contact->super_admin_reply)
-                                    <button wire:click="onEditContact({{ $contact->id }})" title="Edit"
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                {{-- Action Buttons --}}
+                                <div class="flex items-center gap-1 flex-shrink-0">
+                                    <button wire:click="onViewContact({{ $contact->id }})" title="View"
+                                        class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
-                                @endif
 
-                                <button wire:click="onDeleteContact({{ $contact->id }})" title="Delete"
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                                    @if (!$contact->super_admin_reply)
+                                        <button wire:click="onEditContact({{ $contact->id }})" title="Edit"
+                                            class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                    @endif
+
+                                    <button wire:click="onDeleteContact({{ $contact->id }})" title="Delete"
+                                        class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             @empty
-                <div class="text-center py-20 bg-white rounded-lg border border-gray-200">
-                    <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <div class="text-center py-20 bg-white rounded-xl border border-gray-200">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                     </div>
                     <h3 class="text-base font-semibold text-gray-800 mb-1">No messages found</h3>
