@@ -20,9 +20,10 @@ class Enquiry extends Component
     public string  $filterDays     = '';
     public string  $statusFilter   = '';
     public string  $search         = '';
-    public bool    $showRemarkModal = false;
-    public string  $remarkText      = '';
-    public ?int    $remarkEnquiryId = null;
+    public bool    $showRemarkModal  = false;
+    public string  $remarkText       = '';
+    public ?int    $remarkEnquiryId  = null;
+    public ?int    $pendingDeleteId  = null;
 
     protected $queryString = [
         'activeTab'    => ['except' => 'demo'],
@@ -175,36 +176,30 @@ class Enquiry extends Component
 
     public function deleteEnquiry(int $id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Enquiry?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this enquiry? This action cannot be undone.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color'  => 'negative',
-                'size'   => 'md',
-            ],
-            'reject' => ['label' => 'Cancel', 'size' => 'md'],
-        ]);
+        $this->pendingDeleteId = $id;
     }
 
-    public function doDelete(int $id): void
+    public function cancelDelete(): void
     {
+        $this->pendingDeleteId = null;
+    }
+
+    public function executeDelete(): void
+    {
+        if (!$this->pendingDeleteId) return;
+
         $model   = $this->activeTab === 'demo' ? WebsiteDemo::class : WebsiteContact::class;
-        $enquiry = $model::find($id);
+        $enquiry = $model::find($this->pendingDeleteId);
 
         if ($enquiry) {
             $enquiry->delete();
             $this->notification()->success('Enquiry Deleted', 'The enquiry has been deleted successfully.');
-        } else {
-            $this->notification()->error('Error', 'Enquiry not found.');
         }
 
-        if ($this->viewEnquiryId === $id) {
+        if ($this->viewEnquiryId === $this->pendingDeleteId) {
             $this->closeDetailModal();
         }
+
+        $this->pendingDeleteId = null;
     }
 }
