@@ -367,7 +367,7 @@ class Schools extends Component
         }
 
         Auth::login($admin);
-        return redirect()->route('admin.home');
+        return redirect()->route('admin.home', ['organization' => $admin->organization_id]);
     }
 
     public function doDelete($id): void
