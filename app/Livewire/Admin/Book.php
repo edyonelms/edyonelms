@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -285,7 +285,7 @@ class Book extends Component
                         Storage::disk('s3')->delete($oldLogoPath);
                     }
 
-                    $logoPath = $this->book_logo->store('books/logos', 's3');
+                    $logoPath = $this->book_logo->store('admin/library/covers', 's3');
                     Storage::disk('s3')->setVisibility($logoPath, 'public');
                     $data['book_logo'] = Storage::disk('s3')->url($logoPath);
                 }
@@ -296,7 +296,7 @@ class Book extends Component
                         Storage::disk('s3')->delete($oldPdfPath);
                     }
 
-                    $pdfPath = $this->pdf_file->store('books/pdfs', 's3');
+                    $pdfPath = $this->pdf_file->store('admin/library/pdfs', 's3');
                     Storage::disk('s3')->setVisibility($pdfPath, 'public');
                     $data['pdf_file'] = Storage::disk('s3')->url($pdfPath);
                 }
@@ -305,13 +305,13 @@ class Book extends Component
                 $this->notification()->success('Book updated successfully!');
             } else {
                 if ($this->book_logo) {
-                    $logoPath = $this->book_logo->store('books/logos', 's3');
+                    $logoPath = $this->book_logo->store('admin/library/covers', 's3');
                     Storage::disk('s3')->setVisibility($logoPath, 'public');
                     $data['book_logo'] = Storage::disk('s3')->url($logoPath);
                 }
 
                 if ($this->pdf_file) {
-                    $pdfPath = $this->pdf_file->store('books/pdfs', 's3');
+                    $pdfPath = $this->pdf_file->store('admin/library/pdfs', 's3');
                     Storage::disk('s3')->setVisibility($pdfPath, 'public');
                     $data['pdf_file'] = Storage::disk('s3')->url($pdfPath);
                 }

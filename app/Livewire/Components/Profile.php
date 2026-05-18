@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Components;
 
@@ -108,7 +108,7 @@ class Profile extends Component
             Storage::disk('s3')->delete($oldPhotoPath);
         }
 
-        $imagePath = $this->photo->store('organization-photos', 's3');
+        $imagePath = $this->photo->store('admin/profile/photos', 's3');
         Storage::disk('s3')->setVisibility($imagePath, 'public');
         $imageUrl = Storage::disk('s3')->url($imagePath);
 
@@ -265,7 +265,7 @@ class Profile extends Component
                 ];
 
                 if (isset($member['photo']) && $member['photo'] instanceof TemporaryUploadedFile) {
-                    $photoPath = $member['photo']->store('school-management/photos', 's3');
+                    $photoPath = $member['photo']->store('admin/school-management/photos', 's3');
                     Storage::disk('s3')->setVisibility($photoPath, 'public');
                     $memberData['photo_path'] = Storage::disk('s3')->url($photoPath);
                 } elseif (!empty($member['photo_path'])) {
@@ -280,7 +280,7 @@ class Profile extends Component
                 if (empty($pending['file']) || !($pending['file'] instanceof TemporaryUploadedFile)) {
                     continue;
                 }
-                $filePath = $pending['file']->store('school-documents', 's3');
+                $filePath = $pending['file']->store('admin/school-documents', 's3');
                 Storage::disk('s3')->setVisibility($filePath, 'public');
 
                 $schoolInfo->documents()->create([

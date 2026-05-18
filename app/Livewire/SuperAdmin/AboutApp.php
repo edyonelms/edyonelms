@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\SuperAdmin;
 
@@ -198,7 +198,7 @@ class AboutApp extends Component
                     ltrim(parse_url($this->core_team[$this->editTeamIndex]['image'], PHP_URL_PATH), '/')
                 );
             }
-            $path = $this->newTeamMemberImage->store('team-members', 's3');
+            $path = $this->newTeamMemberImage->store('superadmin/team-members', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $member['image'] = Storage::disk('s3')->url($path);
         } elseif ($this->editTeamIndex !== null) {
@@ -272,7 +272,7 @@ class AboutApp extends Component
         $social = $this->newSocialMedia;
 
         if ($this->newSocialMediaIcon) {
-            $path = $this->newSocialMediaIcon->store('social-media/icons', 's3');
+            $path = $this->newSocialMediaIcon->store('superadmin/social-media/icons', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $social['icon'] = Storage::disk('s3')->url($path);
         } elseif ($this->editSocialIndex !== null) {
@@ -337,7 +337,7 @@ class AboutApp extends Component
                         ltrim(parse_url($this->aboutApp->logo, PHP_URL_PATH), '/')
                     );
                 }
-                $path = $this->logo->store('logos', 's3');
+                $path = $this->logo->store('superadmin/app/logos', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['logo']     = Storage::disk('s3')->url($path);
                 $this->logoPreview = $data['logo'];

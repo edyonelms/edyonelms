@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -252,7 +252,7 @@ class Student extends Component
                 if ($student->image) {
                     Storage::disk('s3')->delete(parse_url($student->image, PHP_URL_PATH));
                 }
-                $path = $this->studentImage->store('student-images', 's3');
+                $path = $this->studentImage->store('admin/students/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $studentData['image'] = Storage::disk('s3')->url($path);
             }

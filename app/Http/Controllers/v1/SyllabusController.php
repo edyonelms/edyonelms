@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\v1;
 
@@ -45,7 +45,7 @@ class SyllabusController extends Controller
 
             if ($request->hasFile('syllabus_pdf') && $request->file('syllabus_pdf')->isValid()) {
                 $pdfFile = $request->file('syllabus_pdf');
-                $pdfPath = $pdfFile->store('syllabus_pdfs', 's3');
+                $pdfPath = $pdfFile->store('admin/syllabus/pdfs', 's3');
                 Storage::disk('s3')->setVisibility($pdfPath, 'public');
                 $pdfUrl = Storage::disk('s3')->url($pdfPath);
             }
@@ -139,7 +139,7 @@ class SyllabusController extends Controller
 
                 // Upload new PDF
                 $pdfFile = $request->file('syllabus_pdf');
-                $pdfPath = $pdfFile->store('syllabus_pdfs', 's3');
+                $pdfPath = $pdfFile->store('admin/syllabus/pdfs', 's3');
                 Storage::disk('s3')->setVisibility($pdfPath, 'public');
                 $pdfUrl = Storage::disk('s3')->url($pdfPath);
 

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -146,7 +146,7 @@ class Payroll extends Component
                     ltrim(parse_url($this->empExistingPhoto, PHP_URL_PATH), '/')
                 );
             }
-            $path = $this->empPhoto->store('payroll/admin/photos', 's3');
+            $path = $this->empPhoto->store('admin/payroll/photos', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $data['photo'] = Storage::disk('s3')->url($path);
         } elseif ($this->empExistingPhoto) {

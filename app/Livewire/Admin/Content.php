@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -295,14 +295,14 @@ class Content extends Component
 
             if ($this->contentImage) {
                 if ($chapter->image_path) $this->deleteS3File($chapter->image_path);
-                $path = $this->contentImage->store('chapter-images', 's3');
+                $path = $this->contentImage->store('admin/content/chapter-images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['image_path'] = Storage::disk('s3')->url($path);
             }
 
             if ($this->contentPdf) {
                 if ($chapter->pdf_path) $this->deleteS3File($chapter->pdf_path);
-                $path = $this->contentPdf->store('chapter-pdfs', 's3');
+                $path = $this->contentPdf->store('admin/content/chapter-pdfs', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['pdf_path'] = Storage::disk('s3')->url($path);
             }
@@ -327,7 +327,7 @@ class Content extends Component
             case 'image':
                 if ($this->contentImage) {
                     if ($chapter->image_path) $this->deleteS3File($chapter->image_path);
-                    $path = $this->contentImage->store('chapter-images', 's3');
+                    $path = $this->contentImage->store('admin/content/chapter-images', 's3');
                     Storage::disk('s3')->setVisibility($path, 'public');
                     $data['image_path'] = Storage::disk('s3')->url($path);
                 }
@@ -338,7 +338,7 @@ class Content extends Component
             case 'pdf':
                 if ($this->contentPdf) {
                     if ($chapter->pdf_path) $this->deleteS3File($chapter->pdf_path);
-                    $path = $this->contentPdf->store('chapter-pdfs', 's3');
+                    $path = $this->contentPdf->store('admin/content/chapter-pdfs', 's3');
                     Storage::disk('s3')->setVisibility($path, 'public');
                     $data['pdf_path'] = Storage::disk('s3')->url($path);
                 }
@@ -360,14 +360,14 @@ class Content extends Component
 
             if ($this->contentImage) {
                 if ($topic->image_path) $this->deleteS3File($topic->image_path);
-                $path = $this->contentImage->store('topic-images', 's3');
+                $path = $this->contentImage->store('admin/content/topic-images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['image_path'] = Storage::disk('s3')->url($path);
             }
 
             if ($this->contentPdf) {
                 if ($topic->pdf_path) $this->deleteS3File($topic->pdf_path);
-                $path = $this->contentPdf->store('topic-pdfs', 's3');
+                $path = $this->contentPdf->store('admin/content/topic-pdfs', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['pdf_path'] = Storage::disk('s3')->url($path);
             }
@@ -396,7 +396,7 @@ class Content extends Component
             case 'image':
                 if ($this->contentImage) {
                     if ($topic->image_path) $this->deleteS3File($topic->image_path);
-                    $path = $this->contentImage->store('topic-images', 's3');
+                    $path = $this->contentImage->store('admin/content/topic-images', 's3');
                     Storage::disk('s3')->setVisibility($path, 'public');
                     $data['image_path'] = Storage::disk('s3')->url($path);
                 }
@@ -406,7 +406,7 @@ class Content extends Component
             case 'pdf':
                 if ($this->contentPdf) {
                     if ($topic->pdf_path) $this->deleteS3File($topic->pdf_path);
-                    $path = $this->contentPdf->store('topic-pdfs', 's3');
+                    $path = $this->contentPdf->store('admin/content/topic-pdfs', 's3');
                     Storage::disk('s3')->setVisibility($path, 'public');
                     $data['pdf_path'] = Storage::disk('s3')->url($path);
                 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -438,7 +438,7 @@ class ExamCopy extends Component
                         $student->id . '_' .
                         time() . '.pdf';
 
-                    $path = $file->storeAs('exam_copies', basename($fileName), 's3');
+                    $path = $file->storeAs('admin/exam-copies', basename($fileName), 's3');
                     Storage::disk('s3')->setVisibility($path, 'public');
 
                     $remarks = $this->studentPdfs[$studentId]['remarks'] ?? '';

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -253,7 +253,7 @@ class Teacher extends Component
                 if ($teacher->image) {
                     Storage::disk('s3')->delete(parse_url($teacher->image, PHP_URL_PATH));
                 }
-                $path = $this->teacherImage->store('teacher-images', 's3');
+                $path = $this->teacherImage->store('admin/teachers/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $teacher->image = Storage::disk('s3')->url($path);
             }
@@ -268,22 +268,19 @@ class Teacher extends Component
             // Send password email only on creation
             if (!$isEdit) {
                 try {
-                    $teacherTemplateKey = config('services.zeptomail.teacher_password_template_key');
-                    if ($teacherTemplateKey) {
-                        $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
-                        \App\Services\ZeptoMailService::sendTemplate(
-                            $teacherTemplateKey,
-                            $teacher->email,
-                            $teacher->name,
-                            [
-                                'password'      => $plainPassword,
-                                'email_address' => $teacher->email,
-                                'school_name'   => $schoolName,
-                                'username'      => $teacher->name,
-                            ]
-                        );
-                    }
-                } catch (\Throwable $e) {
+                    $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
+                    \App\Services\ZeptoMailService::sendTemplate(
+                        config('services.zeptomail.teacher_password_template_key'),
+                        $teacher->email,
+                        $teacher->name,
+                        [
+                            'password'      => $plainPassword,
+                            'email_address' => $teacher->email,
+                            'school_name'   => $schoolName,
+                            'username'      => $teacher->name,
+                        ]
+                    );
+                } catch (\Exception $e) {
                     logger()->error('Teacher password email failed: ' . $e->getMessage());
                 }
             }

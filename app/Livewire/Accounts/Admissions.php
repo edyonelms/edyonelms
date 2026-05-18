@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Accounts;
 
@@ -278,7 +278,7 @@ class Admissions extends Component
                     Storage::disk('s3')->delete($enquiry->result_pdf);
                 }
                 $path = $this->resultPdf->store(
-                    'admission-results/' . $this->orgId(),
+                    'accounts/admissions/result-pdfs/' . $this->orgId(),
                     's3'
                 );
                 $updateData['result_pdf'] = $path;
@@ -381,7 +381,7 @@ class Admissions extends Component
             if ($this->editPaperFile) {
                 Storage::disk('s3')->delete($paper->file_path);
                 $updateData['file_path'] = $this->editPaperFile->store(
-                    'admission-exam-papers/' . $this->orgId(), 's3'
+                    'accounts/admissions/exam-papers/' . $this->orgId(), 's3'
                 );
             }
 

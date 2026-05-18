@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\SuperAdmin;
 
@@ -265,7 +265,7 @@ class Schools extends Component
             $logoUrl = $this->existingLogo;
 
             if ($this->logo) {
-                $path    = $this->logo->store('school-logos', 's3');
+                $path    = $this->logo->store('superadmin/schools/logos', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $logoUrl = Storage::disk('s3')->url($path);
             }

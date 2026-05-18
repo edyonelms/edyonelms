@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\SuperAdmin;
 
@@ -247,7 +247,7 @@ class TermsCondition extends Component
                 Storage::disk('s3')->delete($oldLogoPath);
             }
 
-            $logoPath = $this->platform_logo->store('terms-conditions/logos', 's3');
+            $logoPath = $this->platform_logo->store('superadmin/terms-conditions/logos', 's3');
             Storage::disk('s3')->setVisibility($logoPath, 'public');
             $data['platform_logo'] = Storage::disk('s3')->url($logoPath);
         }
@@ -263,7 +263,7 @@ class TermsCondition extends Component
             $uploadedFiles = [];
             foreach ($this->files as $index => $file) {
                 if ($file) {
-                    $filePath = $file->store('terms-conditions/files', 's3');
+                    $filePath = $file->store('superadmin/terms-conditions/files', 's3');
                     Storage::disk('s3')->setVisibility($filePath, 'public');
 
                     $uploadedFiles[] = [

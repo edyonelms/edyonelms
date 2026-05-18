@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\v1;
 
@@ -71,7 +71,7 @@ class ContentController extends Controller
                     // Handle image upload if present
                     if (!empty($topicData['image']) && $topicData['image'] instanceof \Illuminate\Http\UploadedFile) {
                         $imageFile = $topicData['image'];
-                        $imagePath = $imageFile->store('topic_images', 's3');
+                        $imagePath = $imageFile->store('admin/content/topic-images', 's3');
                         Storage::disk('s3')->setVisibility($imagePath, 'public');
                         $imageUrl = Storage::disk('s3')->url($imagePath); // Get full URL
                     } else {
@@ -81,7 +81,7 @@ class ContentController extends Controller
                     // Handle PDF upload if present
                     if (!empty($topicData['pdf']) && $topicData['pdf'] instanceof \Illuminate\Http\UploadedFile) {
                         $pdfFile = $topicData['pdf'];
-                        $pdfPath = $pdfFile->store('topic_pdfs', 's3');
+                        $pdfPath = $pdfFile->store('admin/content/topic-pdfs', 's3');
                         Storage::disk('s3')->setVisibility($pdfPath, 'public');
                         $pdfUrl = Storage::disk('s3')->url($pdfPath); // Get full URL
                     } else {
@@ -265,13 +265,13 @@ class ContentController extends Controller
 
             if ($request->hasFile('image')) {
                 if ($imagePath) Storage::disk('s3')->delete($imagePath);
-                $imagePath = $request->file('image')->store('topic_images', 's3');
+                $imagePath = $request->file('image')->store('admin/content/topic-images', 's3');
                 Storage::disk('s3')->setVisibility($imagePath, 'public');
             }
 
             if ($request->hasFile('pdf')) {
                 if ($pdfPath) Storage::disk('s3')->delete($pdfPath);
-                $pdfPath = $request->file('pdf')->store('topic_pdfs', 's3');
+                $pdfPath = $request->file('pdf')->store('admin/content/topic-pdfs', 's3');
                 Storage::disk('s3')->setVisibility($pdfPath, 'public');
             }
 

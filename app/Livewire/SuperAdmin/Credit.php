@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\SuperAdmin;
 
@@ -224,12 +224,12 @@ class Credit extends Component
         ];
 
         if ($this->policyImage) {
-            $path = $this->policyImage->store('credit-policies/images', 's3');
+            $path = $this->policyImage->store('superadmin/credit-policies/images', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $data['image'] = $path;
         }
         if ($this->policyDocument) {
-            $path = $this->policyDocument->store('credit-policies/documents', 's3');
+            $path = $this->policyDocument->store('superadmin/credit-policies/documents', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $data['document'] = $path;
         }

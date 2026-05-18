@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -453,7 +453,7 @@ class Standard extends Component
                 $old = Subject::find($this->editId)?->image;
                 if ($old) Storage::disk('s3')->delete(parse_url($old, PHP_URL_PATH));
             }
-            $path = $this->subjectImage->store('subject-images', 's3');
+            $path = $this->subjectImage->store('admin/subjects/images', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $subjectData['image'] = Storage::disk('s3')->url($path);
         } elseif ($this->subjectImageUrl) {
@@ -466,7 +466,7 @@ class Standard extends Component
                 $old = Subject::find($this->editId)?->detail_image;
                 if ($old) Storage::disk('s3')->delete(parse_url($old, PHP_URL_PATH));
             }
-            $path = $this->subjectDetailImage->store('subject-detail-images', 's3');
+            $path = $this->subjectDetailImage->store('admin/subjects/detail-images', 's3');
             Storage::disk('s3')->setVisibility($path, 'public');
             $subjectData['detail_image'] = Storage::disk('s3')->url($path);
         } elseif ($this->subjectDetailImageUrl) {

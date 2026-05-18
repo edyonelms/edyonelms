@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\v1;
 
@@ -56,7 +56,7 @@ class TeacherContactController extends Controller
 
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-                $imagePath = $file->store('teacher_contact_images', 's3');
+                $imagePath = $file->store('accounts/contacts/teacher-images', 's3');
 
                 if ($imagePath !== false) {
                     Storage::disk('s3')->setVisibility($imagePath, 'public');

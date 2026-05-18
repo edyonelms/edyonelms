@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\v1;
 
@@ -59,7 +59,7 @@ class StudentContactController extends Controller
 
             if ($request->hasFile('image')) {
                 $file      = $request->file('image');
-                $imagePath = $file->store('student_contact_images', 's3');
+                $imagePath = $file->store('accounts/contacts/student-images', 's3');
 
                 if ($imagePath === false) {
                     return $this->responseService->errorResponse('Image upload failed.', 500);

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -142,7 +142,7 @@ class RulesAndRegulation extends Component
         $uploadedFiles = [];
         foreach ($this->files as $index => $file) {
             if ($file) {
-                $filePath = $file->store('rules-regulations/files', 's3');
+                $filePath = $file->store('admin/rules-regulations/files', 's3');
                 Storage::disk('s3')->setVisibility($filePath, 'public');
 
                 $uploadedFiles[] = [

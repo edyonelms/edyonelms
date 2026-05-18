@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -294,7 +294,7 @@ class Homework extends Component
                         Storage::disk('s3')->delete($oldFilePath);
                     }
 
-                    $filePath = $this->homework_file->store('homeworks/files', 's3');
+                    $filePath = $this->homework_file->store('admin/homework/files', 's3');
                     Storage::disk('s3')->setVisibility($filePath, 'public');
                     $data['file'] = Storage::disk('s3')->url($filePath);
                 }
@@ -303,7 +303,7 @@ class Homework extends Component
                 $this->notification()->success('Homework updated successfully!');
             } else {
                 if ($this->homework_file) {
-                    $filePath = $this->homework_file->store('homeworks/files', 's3');
+                    $filePath = $this->homework_file->store('admin/homework/files', 's3');
                     Storage::disk('s3')->setVisibility($filePath, 'public');
                     $data['file'] = Storage::disk('s3')->url($filePath);
                 }

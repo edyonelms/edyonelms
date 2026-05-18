@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -135,7 +135,7 @@ class AccountUsers extends Component
                 if ($schoolUser && $schoolUser->image) {
                     Storage::disk('s3')->delete(parse_url($schoolUser->image, PHP_URL_PATH));
                 }
-                $path = $this->userImage->store('account-user-images', 's3');
+                $path = $this->userImage->store('admin/account-users/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $schoolUserData['image'] = Storage::disk('s3')->url($path);
             }
@@ -170,7 +170,7 @@ class AccountUsers extends Component
 
             // Handle image upload
             if ($this->userImage) {
-                $path = $this->userImage->store('account-user-images', 's3');
+                $path = $this->userImage->store('admin/account-users/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $schoolUserData['image'] = Storage::disk('s3')->url($path);
             }

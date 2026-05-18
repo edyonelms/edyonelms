@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -100,14 +100,14 @@ class Announcement extends Component
 
         // Handle image upload
         if ($this->announcementImage) {
-            $imagePath = $this->announcementImage->store('announcement-images', 's3');
+            $imagePath = $this->announcementImage->store('admin/announcements/images', 's3');
             Storage::disk('s3')->setVisibility($imagePath, 'public');
             $data['announcement_image'] = Storage::disk('s3')->url($imagePath);
         }
 
         // Handle PDF upload
         if ($this->announcementPdf) {
-            $pdfPath = $this->announcementPdf->store('announcement-pdfs', 's3');
+            $pdfPath = $this->announcementPdf->store('admin/announcements/pdfs', 's3');
             Storage::disk('s3')->setVisibility($pdfPath, 'public');
             $data['announcement_pdf'] = Storage::disk('s3')->url($pdfPath);
         }

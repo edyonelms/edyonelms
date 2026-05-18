@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Livewire\Admin;
 
@@ -122,7 +122,7 @@ class ContactAdmin extends Component
                 if ($contact->image) {
                     Storage::disk('s3')->delete(parse_url($contact->image, PHP_URL_PATH));
                 }
-                $path = $this->image->store('contact-images', 's3');
+                $path = $this->image->store('admin/contact/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $data['image'] = Storage::disk('s3')->url($path);
             } elseif ($this->existingImage) {
