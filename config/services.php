@@ -63,6 +63,7 @@ return [
         'fee_receipt_template_key' => env('ZEPTOMAIL_FEE_RECEIPT_TEMPLATE_KEY'),
         'announcement_template_key' => env('ZEPTOMAIL_ANNOUNCEMENT_TEMPLATE_KEY'),
         'password_changed_template_key' => env('ZEPTOMAIL_PASSWORD_CHANGED_TEMPLATE_KEY'),
+        'school_creation_template_key'  => env('ZEPTOMAIL_SCHOOL_CREATION_TEMPLATE_KEY'),
     ],
 
 ];
