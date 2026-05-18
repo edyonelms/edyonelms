@@ -85,6 +85,41 @@ class Student extends Component
     public        $addStates           = [];
     public        $addCities           = [];
 
+    // ─── Delete Confirm ───────────────────────────────────────────────────────
+    public bool $showDeleteConfirm = false;
+    public      $deleteTargetId    = null;
+
+    // ─── Edit Student Panel ───────────────────────────────────────────────────
+    public bool   $showEditPanel         = false;
+    public        $editDetailId          = null;
+    public        $editUserId            = null;
+    public string $editOrgId             = '';
+    public string $editName              = '';
+    public string $editEmail             = '';
+    public string $editMobile            = '';
+    public string $editGender            = '';
+    public string $editDob               = '';
+    public string $editFatherName        = '';
+    public string $editMotherName        = '';
+    public string $editReligion          = '';
+    public string $editLocalAddress      = '';
+    public string $editPermanentAddress  = '';
+    public string $editState             = '';
+    public string $editCity              = '';
+    public string $editPincode           = '';
+    public string $editAadharNo          = '';
+    public string $editBoard             = '';
+    public string $editDateOfAdmission   = '';
+    public string $editStandardId        = '';
+    public string $editSectionId         = '';
+    public bool   $editTransportation    = false;
+    public string $editApparId           = '';
+    public string $editRegNo             = '';
+    public        $editStandards         = [];
+    public        $editSections          = [];
+    public        $editStates            = [];
+    public        $editCities            = [];
+
     protected $listeners = ['onViewStudentSuperAdmin', 'onDeleteStudentSuperAdmin'];
 
     // ─── Mount ────────────────────────────────────────────────────────────────
@@ -218,19 +253,14 @@ class Student extends Component
 
     public function onDeleteStudentSuperAdmin($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this student? This action cannot be undone.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDeleteStudent',
-                'params' => $id,
-                'color'  => 'negative',
-            ],
-            'reject' => ['label' => 'No'],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
     }
 
     public function doDeleteStudent($id): void
@@ -240,12 +270,163 @@ class Student extends Component
             $user = User::find($detail->user_id);
             $detail->delete();
             $user?->delete();
+            $this->showDeleteConfirm = false;
+            $this->deleteTargetId    = null;
             $this->loadStats();
             $this->resetPage();
             $this->notification()->success('Student deleted successfully!');
         } else {
             $this->notification()->error('Student not found!');
         }
+    }
+
+    // ─── Edit Student Panel ────────────────────────────────────────────────────
+
+    public function openEditPanel($id): void
+    {
+        $detail = StudentDetail::with(['user'])->find($id);
+        if (!$detail) {
+            $this->notification()->error('Student not found!');
+            return;
+        }
+
+        $this->editStates = (new CityGetHelper())->getState();
+
+        $this->editDetailId         = $detail->id;
+        $this->editUserId           = $detail->user_id;
+        $this->editOrgId            = (string) ($detail->organization_id ?? '');
+        $this->editName             = $detail->full_name ?? '';
+        $this->editEmail            = $detail->user?->email ?? '';
+        $this->editMobile           = $detail->phone ?? '';
+        $this->editGender           = $detail->gender ?? '';
+        $this->editDob              = $detail->dob?->format('Y-m-d') ?? '';
+        $this->editFatherName       = $detail->father_name ?? '';
+        $this->editMotherName       = $detail->mother_name ?? '';
+        $this->editReligion         = $detail->religion ?? '';
+        $this->editLocalAddress     = $detail->local_address ?? '';
+        $this->editPermanentAddress = $detail->permanent_address ?? '';
+        $this->editState            = $detail->state ?? '';
+        $this->editCity             = $detail->city ?? '';
+        $this->editPincode          = $detail->pincode ?? '';
+        $this->editAadharNo         = $detail->aadhar_no ?? '';
+        $this->editBoard            = $detail->board ?? '';
+        $this->editDateOfAdmission  = $detail->date_of_admission?->format('Y-m-d') ?? '';
+        $this->editStandardId       = (string) ($detail->standard_id ?? '');
+        $this->editSectionId        = (string) ($detail->section_id ?? '');
+        $this->editTransportation   = (bool) $detail->transportation_required;
+        $this->editApparId          = $detail->appar_id ?? '';
+        $this->editRegNo            = $detail->registration_number ?? '';
+
+        $this->editStandards = $this->editOrgId
+            ? Standard::where('organization_id', $this->editOrgId)->orderBy('name')->get()
+            : [];
+
+        $this->editSections = $this->editStandardId
+            ? Section::where('standard_id', $this->editStandardId)->get()
+            : [];
+
+        $this->editCities = $this->editState
+            ? (new CityGetHelper())->cityGetByState($this->editState)
+            : [];
+
+        $this->resetValidation();
+        $this->showEditPanel = true;
+    }
+
+    public function closeEditPanel(): void
+    {
+        $this->showEditPanel = false;
+        $this->resetValidation();
+    }
+
+    public function updatedEditOrgId(): void
+    {
+        $this->editStandardId = '';
+        $this->editSectionId  = '';
+        $this->editSections   = [];
+        $this->editBoard      = '';
+
+        if ($this->editOrgId) {
+            $this->editStandards = Standard::where('organization_id', $this->editOrgId)->orderBy('name')->get();
+            $this->editBoard     = Organization::find($this->editOrgId)?->education_board ?? '';
+        } else {
+            $this->editStandards = [];
+        }
+    }
+
+    public function updatedEditStandardId(): void
+    {
+        $this->editSectionId = '';
+        $this->editSections  = $this->editStandardId
+            ? Section::where('standard_id', $this->editStandardId)->get()
+            : [];
+    }
+
+    public function updatedEditState(): void
+    {
+        $this->editCity   = '';
+        $this->editCities = $this->editState
+            ? (new CityGetHelper())->cityGetByState($this->editState)
+            : [];
+    }
+
+    public function saveEditStudent(): void
+    {
+        $this->validate([
+            'editOrgId'            => 'required|integer|exists:organizations,id',
+            'editName'             => 'required|string|max:255',
+            'editEmail'            => 'required|email|max:100|unique:users,email,' . $this->editUserId,
+            'editMobile'           => 'required|digits:10',
+            'editGender'           => 'required|in:male,female,other',
+            'editDob'              => 'required|date|before:today',
+            'editFatherName'       => 'required|string|max:255',
+            'editMotherName'       => 'required|string|max:255',
+            'editBoard'            => 'required|string|max:100',
+            'editDateOfAdmission'  => 'required|date|before_or_equal:today',
+            'editReligion'         => 'nullable|string|max:100',
+            'editLocalAddress'     => 'nullable|string|max:500',
+            'editPermanentAddress' => 'nullable|string|max:500',
+            'editPincode'          => 'nullable|digits:6',
+            'editAadharNo'         => 'nullable|digits:12',
+            'editStandardId'       => 'nullable|integer|exists:standards,id',
+            'editSectionId'        => 'nullable|integer|exists:sections,id',
+        ]);
+
+        User::where('id', $this->editUserId)->update([
+            'name'            => $this->editName,
+            'email'           => $this->editEmail,
+            'mobile_number'   => $this->editMobile,
+            'organization_id' => $this->editOrgId,
+        ]);
+
+        StudentDetail::where('id', $this->editDetailId)->update([
+            'organization_id'         => $this->editOrgId,
+            'standard_id'             => $this->editStandardId ?: null,
+            'section_id'              => $this->editSectionId ?: null,
+            'full_name'               => $this->editName,
+            'father_name'             => $this->editFatherName,
+            'mother_name'             => $this->editMotherName,
+            'email'                   => $this->editEmail,
+            'dob'                     => $this->editDob,
+            'gender'                  => $this->editGender,
+            'religion'                => $this->editReligion ?: null,
+            'phone'                   => $this->editMobile,
+            'local_address'           => $this->editLocalAddress ?: null,
+            'permanent_address'       => $this->editPermanentAddress ?: null,
+            'state'                   => $this->editState ?: null,
+            'city'                    => $this->editCity ?: null,
+            'pincode'                 => $this->editPincode ?: null,
+            'aadhar_no'               => $this->editAadharNo ?: null,
+            'board'                   => $this->editBoard,
+            'date_of_admission'       => $this->editDateOfAdmission,
+            'transportation_required' => $this->editTransportation,
+            'appar_id'                => $this->editApparId ?: null,
+            'registration_number'     => $this->editRegNo ?: null,
+        ]);
+
+        $this->closeEditPanel();
+        $this->loadStats();
+        $this->notification()->success('Student updated successfully!');
     }
 
     public function exportStudents()

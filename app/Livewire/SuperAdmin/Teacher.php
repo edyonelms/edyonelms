@@ -55,6 +55,31 @@ class Teacher extends Component
     public        $addStates          = [];
     public        $addCities          = [];
 
+    // ─── Delete Confirm ───────────────────────────────────────────────────────
+    public bool $showDeleteConfirm = false;
+    public      $deleteTargetId    = null;
+
+    // ─── Edit Teacher Panel ───────────────────────────────────────────────────
+    public bool   $showEditPanel          = false;
+    public        $editDetailId           = null;
+    public        $editUserId             = null;
+    public string $editOrgId              = '';
+    public string $editName               = '';
+    public string $editEmail              = '';
+    public string $editMobile             = '';
+    public string $editDob                = '';
+    public string $editGender             = '';
+    public string $editEmployeeId         = '';
+    public string $editDateOfJoining      = '';
+    public string $editQualification      = '';
+    public string $editAddress            = '';
+    public string $editPincode            = '';
+    public string $editEmergencyContact   = '';
+    public string $editState              = '';
+    public string $editCity               = '';
+    public        $editStates             = [];
+    public        $editCities             = [];
+
     protected $queryString = [
         'search'             => ['except' => ''],
         'filterOrganization' => ['except' => ''],
@@ -171,19 +196,14 @@ class Teacher extends Component
 
     public function onDeleteTeacherSuperAdmin($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this teacher? This action cannot be undone.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDeleteTeacher',
-                'params' => $id,
-                'color'  => 'negative',
-            ],
-            'reject' => ['label' => 'No'],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
     }
 
     public function doDeleteTeacher($id): void
@@ -193,12 +213,112 @@ class Teacher extends Component
             $user = User::find($detail->user_id);
             $detail->delete();
             $user?->delete();
+            $this->showDeleteConfirm = false;
+            $this->deleteTargetId    = null;
             $this->loadStats();
             $this->resetPage();
             $this->notification()->success('Teacher deleted successfully!');
         } else {
             $this->notification()->error('Teacher not found!');
         }
+    }
+
+    // ─── Edit Teacher Panel ────────────────────────────────────────────────────
+
+    public function openEditPanel($id): void
+    {
+        $detail = TeacherDetail::with(['user'])->find($id);
+        if (!$detail) {
+            $this->notification()->error('Teacher not found!');
+            return;
+        }
+
+        $this->editStates = (new CityGetHelper())->getState();
+
+        $this->editDetailId         = $detail->id;
+        $this->editUserId           = $detail->user_id;
+        $this->editOrgId            = (string) ($detail->organization_id ?? '');
+        $this->editName             = $detail->user?->name ?? '';
+        $this->editEmail            = $detail->user?->email ?? '';
+        $this->editMobile           = $detail->user?->mobile_number ?? '';
+        $this->editDob              = $detail->user?->dob ?? '';
+        $this->editGender           = $detail->user?->gender ?? '';
+        $this->editEmployeeId       = $detail->employee_id ?? '';
+        $this->editDateOfJoining    = $detail->date_of_joining
+            ? \Carbon\Carbon::parse($detail->date_of_joining)->format('Y-m-d')
+            : '';
+        $this->editQualification    = $detail->qualification ?? '';
+        $this->editAddress          = $detail->address ?? '';
+        $this->editState            = $detail->state ?? '';
+        $this->editCity             = $detail->city ?? '';
+        $this->editPincode          = $detail->pincode ?? '';
+        $this->editEmergencyContact = $detail->emergency_contact ?? '';
+
+        $this->editCities = $this->editState
+            ? (new CityGetHelper())->cityGetByState($this->editState)
+            : [];
+
+        $this->resetValidation();
+        $this->showEditPanel = true;
+    }
+
+    public function closeEditPanel(): void
+    {
+        $this->showEditPanel = false;
+        $this->resetValidation();
+    }
+
+    public function updatedEditState(): void
+    {
+        $this->editCity   = '';
+        $this->editCities = $this->editState
+            ? (new CityGetHelper())->cityGetByState($this->editState)
+            : [];
+    }
+
+    public function saveEditTeacher(): void
+    {
+        $this->validate([
+            'editOrgId'            => 'required|integer|exists:organizations,id',
+            'editName'             => 'required|string|max:255',
+            'editEmail'            => 'required|email|max:100|unique:users,email,' . $this->editUserId,
+            'editMobile'           => 'required|digits:10',
+            'editDob'              => 'required|date|before:today',
+            'editGender'           => 'required|in:male,female,other',
+            'editEmployeeId'       => 'required|string|max:50',
+            'editDateOfJoining'    => 'required|date|before_or_equal:today',
+            'editQualification'    => 'required|string|max:255',
+            'editAddress'          => 'required|string|max:500',
+            'editPincode'          => 'required|digits:6',
+            'editEmergencyContact' => 'required|digits:10',
+        ]);
+
+        User::where('id', $this->editUserId)->update([
+            'name'            => $this->editName,
+            'email'           => $this->editEmail,
+            'mobile_number'   => $this->editMobile,
+            'dob'             => $this->editDob,
+            'gender'          => $this->editGender,
+            'organization_id' => $this->editOrgId,
+        ]);
+
+        TeacherDetail::where('id', $this->editDetailId)->update([
+            'organization_id'   => $this->editOrgId,
+            'employee_id'       => $this->editEmployeeId,
+            'date_of_joining'   => $this->editDateOfJoining,
+            'qualification'     => $this->editQualification,
+            'phone'             => $this->editMobile,
+            'address'           => $this->editAddress,
+            'city'              => $this->editCity ?: null,
+            'state'             => $this->editState ?: null,
+            'pincode'           => $this->editPincode,
+            'emergency_contact' => $this->editEmergencyContact,
+        ]);
+
+        $this->closeEditPanel();
+        $this->loadStats();
+        $this->resetPage();
+        $this->notification()->success('Teacher updated successfully!');
     }
 
     // ─── Export ───────────────────────────────────────────────────────────────
