@@ -365,6 +365,8 @@
                         @if ($feeType === 'one_time')
                             @php
                                 $oneTimeTotalStudents = \App\Models\Student\StudentDetail::where('organization_id', $selectedSchool->id)->count();
+                                $oneTimeTotalAmt  = (float)($oneTimeTotalAmount ?: 0);
+                                $oneTimePerStudent = $oneTimeTotalStudents > 0 ? round($oneTimeTotalAmt / $oneTimeTotalStudents, 2) : 0;
                             @endphp
                             <div class="space-y-4">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -376,30 +378,41 @@
                                                    focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Amount per Student (₹) *</label>
-                                        <input wire:model.defer="oneTimeAmount" type="number" placeholder="0" min="0"
+                                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Total School Fee (₹) *</label>
+                                        <input wire:model.defer="oneTimeTotalAmount" type="number" placeholder="e.g. 10000" min="1"
                                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
                                                    focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                                     </div>
                                 </div>
 
-                                {{-- Preview card --}}
-                                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
+                                {{-- Calculation preview --}}
+                                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-indigo-600 font-semibold">Per Student Fee</p>
+                                                <p class="text-xs text-indigo-400 mt-0.5">
+                                                    ₹{{ number_format($oneTimeTotalAmt, 0) }} ÷ {{ $oneTimeTotalStudents }} students
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="text-xs text-indigo-600 font-medium">Total to collect</p>
-                                            <p class="text-xs text-indigo-500 mt-0.5">{{ $oneTimeTotalStudents }} students × ₹{{ number_format((float)($oneTimeAmount ?: 0), 0) }}</p>
-                                        </div>
+                                        <p class="text-xl font-bold text-indigo-700 flex-shrink-0">
+                                            ₹{{ number_format($oneTimePerStudent, 2) }}
+                                            <span class="text-xs font-normal text-indigo-400">/student</span>
+                                        </p>
                                     </div>
-                                    <p class="text-lg font-bold text-indigo-700">
-                                        ₹{{ number_format($oneTimeTotalStudents * (float)($oneTimeAmount ?: 0), 0) }}
-                                    </p>
+                                    @if ($oneTimeTotalAmt > 0 && $oneTimeTotalStudents > 0)
+                                        <div class="mt-3 pt-3 border-t border-indigo-100 flex items-center justify-between text-xs text-indigo-500">
+                                            <span>Total to collect</span>
+                                            <span class="font-bold text-indigo-700">₹{{ number_format($oneTimeTotalAmt, 0) }}</span>
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <p class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">

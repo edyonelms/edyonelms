@@ -41,9 +41,9 @@ class Fees extends Component
     // ─── Fee Structure Form ───────────────────────────────────────────────────
     public        $standards    = [];
     public array  $feeInputs    = [];
-    public string $feeType      = 'class_wise';   // 'class_wise' | 'one_time'
-    public string $oneTimeAmount = '';
-    public string $oneTimeLabel  = 'Annual Platform Fee';
+    public string $feeType           = 'class_wise';   // 'class_wise' | 'one_time'
+    public string $oneTimeTotalAmount = '';
+    public string $oneTimeLabel       = 'Annual Platform Fee';
 
     // ─── Edit Fee Modal ───────────────────────────────────────────────────────
     public bool   $showEditModal = false;
@@ -149,13 +149,13 @@ class Fees extends Component
     {
         $this->activeView     = 'list';
         $this->selectedSchool = null;
-        $this->feeInputs      = [];
-        $this->standards      = [];
-        $this->studentFeeList = [];
-        $this->schoolStats    = [];
-        $this->feeType        = 'class_wise';
-        $this->oneTimeAmount  = '';
-        $this->oneTimeLabel   = 'Annual Platform Fee';
+        $this->feeInputs          = [];
+        $this->standards          = [];
+        $this->studentFeeList     = [];
+        $this->schoolStats        = [];
+        $this->feeType            = 'class_wise';
+        $this->oneTimeTotalAmount = '';
+        $this->oneTimeLabel       = 'Annual Platform Fee';
         $this->search         = '';
     }
 
@@ -181,16 +181,17 @@ class Fees extends Component
             ->first();
 
         if ($oneTime) {
-            $this->feeType       = 'one_time';
-            $this->oneTimeAmount = (string) $oneTime->amount;
-            $this->oneTimeLabel  = $oneTime->fee_label ?? 'Annual Platform Fee';
-            $this->feeInputs     = [];
+            $this->feeType            = 'one_time';
+            $totalStudents            = StudentDetail::where('organization_id', $this->selectedSchool->id)->count();
+            $this->oneTimeTotalAmount = (string) ($oneTime->amount * $totalStudents);
+            $this->oneTimeLabel       = $oneTime->fee_label ?? 'Annual Platform Fee';
+            $this->feeInputs          = [];
             return;
         }
 
-        $this->feeType       = 'class_wise';
-        $this->oneTimeAmount = '';
-        $this->oneTimeLabel  = 'Annual Platform Fee';
+        $this->feeType            = 'class_wise';
+        $this->oneTimeTotalAmount = '';
+        $this->oneTimeLabel       = 'Annual Platform Fee';
         $this->feeInputs     = [];
 
         foreach ($this->standards as $standard) {
@@ -270,9 +271,18 @@ class Fees extends Component
     {
         if ($this->feeType === 'one_time') {
             $this->validate([
-                'oneTimeAmount' => 'required|numeric|min:0',
-                'oneTimeLabel'  => 'required|string|max:100',
+                'oneTimeTotalAmount' => 'required|numeric|min:1',
+                'oneTimeLabel'       => 'required|string|max:100',
             ]);
+
+            $totalStudents = StudentDetail::where('organization_id', $this->selectedSchool->id)->count();
+
+            if ($totalStudents <= 0) {
+                $this->notification()->error('Cannot set One Time fee', 'This school has no students.');
+                return;
+            }
+
+            $perStudentAmount = round((float) $this->oneTimeTotalAmount / $totalStudents, 2);
 
             // Remove any class_wise structures for this org/year
             SuperAdminFeeStructure::where('organization_id', $this->selectedSchool->id)
@@ -288,7 +298,7 @@ class Fees extends Component
 
             if ($existing) {
                 $existing->update([
-                    'amount'    => $this->oneTimeAmount,
+                    'amount'    => $perStudentAmount,
                     'fee_label' => $this->oneTimeLabel,
                     'is_active' => true,
                 ]);
@@ -298,7 +308,7 @@ class Fees extends Component
                     'fee_type'        => 'one_time',
                     'standard_id'     => null,
                     'academic_year'   => $this->academicYear,
-                    'amount'          => $this->oneTimeAmount,
+                    'amount'          => $perStudentAmount,
                     'fee_label'       => $this->oneTimeLabel,
                     'is_active'       => true,
                 ]);
