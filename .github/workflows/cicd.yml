@@ -245,6 +245,28 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # ─── Free disk space BEFORE build ─────────────────────────────────
+            # Builder cache + dangling images + stopped containers accumulate
+            # fast on small EC2 instances and can fill the disk (previous deploy
+            # failed with "no space left on device" during COPY layer). Clean up
+            # aggressively BEFORE building, but NEVER touch named volumes
+            # (those hold MySQL data).
+            echo "==> disk space before cleanup"
+            df -h / || true
+
+            echo "==> prune docker builder cache, dangling images, stopped containers"
+            docker builder prune -af || true
+            docker image prune -af || true
+            docker container prune -f || true
+            docker network prune -f || true
+            # NOTE: deliberately NOT pruning volumes — that would wipe MySQL data.
+
+            echo "==> truncate large log files (keep last 1MB)"
+            find /var/log -type f -name "*.log" -size +50M -exec truncate -s 1M {} + 2>/dev/null || true
+
+            echo "==> disk space after cleanup"
+            df -h / || true
+
             # Build new app image while old container keeps serving traffic.
             # Compose only recreates services whose image/config changed —
             # nginx, mysql, redis stay untouched (no DB/cache downtime).
