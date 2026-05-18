@@ -43,6 +43,12 @@ class Credit extends Component
     public string $newStatus       = '';
     public string $statusRemark    = '';
 
+    // ── Mark as Collected modal ───────────────────────────────────────────────
+    public bool   $showCollectModal   = false;
+    public ?int   $collectQueryId     = null;
+    public string $collectQueryAmount = '';
+    public string $collectQuerySchool = '';
+
     // ── Policy form (edit policies tab) ──────────────────────────────────────
     public bool   $showPolicyForm  = false;
     public ?int   $editPolicyId    = null;
@@ -165,6 +171,46 @@ class Credit extends Component
         CreditQuery::where('id', $this->statusQueryId)->update($data);
         $this->closeStatusModal();
         $this->notification()->success('Updated', 'Status updated successfully.');
+    }
+
+    // ── Mark as Collected modal ───────────────────────────────────────────────
+    public function openCollectModal(int $id): void
+    {
+        $query = CreditQuery::with('organization')->find($id);
+
+        if (!$query) {
+            $this->notification()->error('Not found', 'Credit query not found.');
+            return;
+        }
+
+        $this->collectQueryId     = $query->id;
+        $this->collectQueryAmount = (string) ($query->amount ?? '0');
+        $this->collectQuerySchool = (string) ($query->organization->name ?? 'this school');
+        $this->showCollectModal   = true;
+    }
+
+    public function closeCollectModal(): void
+    {
+        $this->showCollectModal   = false;
+        $this->collectQueryId     = null;
+        $this->collectQueryAmount = '';
+        $this->collectQuerySchool = '';
+    }
+
+    public function markAsCollected(): void
+    {
+        if (!$this->collectQueryId) {
+            $this->closeCollectModal();
+            return;
+        }
+
+        CreditQuery::where('id', $this->collectQueryId)->update([
+            'collected_at' => now(),
+        ]);
+
+        $school = $this->collectQuerySchool;
+        $this->closeCollectModal();
+        $this->notification()->success('Collected', "Payment from {$school} marked as collected.");
     }
 
     // ── Delete query ──────────────────────────────────────────────────────────
