@@ -1018,59 +1018,264 @@
         </div>
     @endif
 
-    {{-- ══════════ ADD / EDIT SCHOOL MODAL ══════════ --}}
-    <x-modal-form :show="$showModal" :title="$editId ? 'Edit School' : 'Add School'" submitAction="saveSchool" :submitButton="$editId ? 'Update' : 'Create'"
-        closeAction="closeModal">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">School Logo</label>
-                @if ($editId && $existingLogo && !$logo)
-                    <div class="flex items-center gap-3 mb-2">
-                        <img src="{{ $existingLogo }}"
-                            class="w-16 h-16 rounded-xl object-cover border border-gray-200">
-                        <span class="text-xs text-gray-400">Current logo</span>
+    {{-- ══════════ ADD / EDIT SCHOOL SLIDE-IN PANEL ══════════ --}}
+    @if ($showModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 z-10 w-full max-w-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ $editId ? 'Edit School' : 'Add School' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ $editId ? 'Update school information' : 'Register a new school' }}</p>
                     </div>
-                @endif
-                <input type="file" wire:model="logo" accept="image/*"
-                    class="block w-full text-sm text-gray-500
-                           file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-                           file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                           hover:file:bg-blue-100 transition-colors">
-                @error('logo')
-                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-            <x-input wire:model.defer="schoolName" label="School Name *" placeholder="Enter school name" />
-            <x-input wire:model.defer="email" label="Email *" placeholder="Enter email" />
-            <x-input wire:model.defer="mobileNumber" label="Mobile Number *" placeholder="Enter mobile number" />
-            <x-input wire:model.defer="state" label="State *" placeholder="Enter state" />
-            <x-input wire:model.defer="educationBoard" label="Education Board *"
-                placeholder="Enter education board" />
-            <x-input wire:model.defer="schoolCode" label="Code *" placeholder="Enter school code" />
-            <x-input wire:model.defer="affiliationNo" label="Affiliation No"
-                placeholder="Enter affiliation number" />
-            <x-input wire:model.defer="udiseNumber" label="UDISE Number" placeholder="Enter UDISE number" />
-            <x-input wire:model.defer="serialNumber" label="Serial Number *" placeholder="Enter serial number" />
-            <div class="sm:col-span-2">
-                <x-textarea wire:model.defer="address" label="Address" placeholder="Enter address" rows="2" />
+                    <button wire:click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                    {{-- Logo --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">School Logo</h3>
+                        @if ($editId && $existingLogo && !$logo)
+                            <div class="flex items-center gap-3 mb-3">
+                                <img src="{{ $existingLogo }}" class="w-16 h-16 rounded-xl object-cover border border-gray-200">
+                                <span class="text-xs text-gray-400">Current logo</span>
+                            </div>
+                        @endif
+                        <input type="file" wire:model="logo" accept="image/*"
+                            class="block w-full text-sm text-gray-500
+                                   file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                                   file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                                   hover:file:bg-blue-100 transition-colors">
+                        @error('logo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- Basic Info --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Basic Information</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">School Name <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="schoolName" type="text" placeholder="Enter school name"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                @error('schoolName') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="email" type="email" placeholder="Enter email"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                @error('email') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="mobileNumber" type="text" placeholder="Enter mobile number"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                @error('mobileNumber') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">State <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="state" type="text" placeholder="Enter state"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                @error('state') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Education Board <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="educationBoard" type="text" placeholder="Enter education board"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                @error('educationBoard') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                <textarea wire:model.defer="address" rows="2" placeholder="Enter address"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                                @error('address') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Registration --}}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Registration Details</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">School Code <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="schoolCode" type="text" placeholder="Enter school code"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                                @error('schoolCode') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number <span class="text-red-500">*</span></label>
+                                <input wire:model.defer="serialNumber" type="text" placeholder="Enter serial number"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                                @error('serialNumber') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Affiliation No</label>
+                                <input wire:model.defer="affiliationNo" type="text" placeholder="Enter affiliation number"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                                @error('affiliationNo') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">UDISE Number</label>
+                                <input wire:model.defer="udiseNumber" type="text" placeholder="Enter UDISE number"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                                @error('udiseNumber') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!$editId)
+                        <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                            <p class="font-semibold mb-0.5">Admin account auto-created</p>
+                            <p class="text-xs text-amber-700">A login password will be generated and emailed to the school's email address.</p>
+                        </div>
+                    @endif
+
+                </div>
+
+                {{-- Footer --}}
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button wire:click="closeModal" type="button"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button wire:click="saveSchool" type="button"
+                        wire:loading.attr="disabled" wire:target="saveSchool,logo"
+                        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                               bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm
+                               disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="saveSchool,logo">{{ $editId ? 'Update School' : 'Create School' }}</span>
+                        <span wire:loading wire:target="saveSchool,logo" class="flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
             </div>
         </div>
-    </x-modal-form>
+    @endif
 
-    {{-- ══════════ BANK DETAILS MODAL ══════════ --}}
-    <x-modal-form :show="$showBankModal" :title="$editBankMode ? 'Edit Bank Details' : 'Add Bank Details'" submitAction="saveBankDetails" :submitButton="$editBankMode ? 'Update' : 'Save'"
-        closeAction="closeBankModal">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <x-input wire:model.defer="bankHolderName" label="Account Holder Name *"
-                placeholder="Enter holder name" />
-            <x-input wire:model.defer="bankName" label="Bank Name *" placeholder="Enter bank name" />
-            <x-input wire:model.defer="bankAccountNo" label="Account Number *" placeholder="Enter account number" />
-            <x-input wire:model.defer="bankIfsc" label="IFSC Code *" placeholder="Enter IFSC code" />
-            <div class="sm:col-span-2">
-                <x-input wire:model.defer="bankBranch" label="Branch *" placeholder="Enter branch name" />
+    {{-- ══════════ BANK DETAILS SLIDE-IN PANEL ══════════ --}}
+    @if ($showBankModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeBankModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col overflow-hidden">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ $editBankMode ? 'Edit Bank Details' : 'Add Bank Details' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">School's bank account information for fee collection</p>
+                    </div>
+                    <button wire:click="closeBankModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name <span class="text-red-500">*</span></label>
+                        <input wire:model.defer="bankHolderName" type="text" placeholder="Enter holder name"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        @error('bankHolderName') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name <span class="text-red-500">*</span></label>
+                        <input wire:model.defer="bankName" type="text" placeholder="Enter bank name"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        @error('bankName') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Account Number <span class="text-red-500">*</span></label>
+                        <input wire:model.defer="bankAccountNo" type="text" placeholder="Enter account number"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                        @error('bankAccountNo') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">IFSC Code <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="bankIfsc" type="text" placeholder="e.g. SBIN0001234"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono uppercase" />
+                            @error('bankIfsc') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Branch <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="bankBranch" type="text" placeholder="Enter branch name"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                            @error('bankBranch') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button wire:click="closeBankModal" type="button"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button wire:click="saveBankDetails" type="button"
+                        wire:loading.attr="disabled" wire:target="saveBankDetails"
+                        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                               bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm
+                               disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="saveBankDetails">{{ $editBankMode ? 'Update' : 'Save Details' }}</span>
+                        <span wire:loading wire:target="saveBankDetails" class="flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
             </div>
         </div>
-    </x-modal-form>
+    @endif
 
+    {{-- ══════════ DELETE CONFIRMATION ══════════ --}}
+    @if ($showDeleteConfirm)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" wire:click="cancelDelete"></div>
+            <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex flex-col items-center text-center gap-3">
+                    <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900">Delete School?</h3>
+                        <p class="text-sm text-gray-500 mt-1">This will permanently delete the school and its admin account. This action cannot be undone.</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full mt-1">
+                        <button wire:click="cancelDelete"
+                            class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button wire:click="doDelete({{ $deleteTargetId }})"
+                            wire:loading.attr="disabled" wire:target="doDelete"
+                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-60">
+                            <span wire:loading.remove wire:target="doDelete">Yes, Delete</span>
+                            <span wire:loading wire:target="doDelete">Deleting...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
 </div>

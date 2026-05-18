@@ -58,8 +58,11 @@ class Schools extends Component
     public $logo;
     public $existingLogo   = null;
 
-    public bool   $showBankModal  = false;
-    public bool   $editBankMode   = false;
+    public bool   $showBankModal   = false;
+    public bool   $editBankMode    = false;
+
+    public bool   $showDeleteConfirm = false;
+    public        $deleteTargetId    = null;
     public string $bankName       = '';
     public string $bankAccountNo  = '';
     public string $bankIfsc       = '';
@@ -338,19 +341,14 @@ class Schools extends Component
 
     public function onDelete($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'This will permanently delete the school and its admin account.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color'  => 'negative',
-            ],
-            'reject' => ['label' => 'No'],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
     }
 
     // ─── Login as School Admin ────────────────────────────────────────────────
@@ -375,6 +373,9 @@ class Schools extends Component
         Organization::find($id)?->delete();
         User::where('organization_id', $id)->where('role', 'admin')->delete();
         \App\Models\Admin\RateLms::where('organization_id', $id)->delete();
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
 
         if ($this->activeView === 'detail' && $this->detailSchool?->id == $id) {
             $this->backToList();
