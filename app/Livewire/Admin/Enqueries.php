@@ -64,14 +64,22 @@ class Enqueries extends Component
 
     public function loadStats(): void
     {
+        if (!Auth::check() || !Auth::user()->organization_id) {
+            return;
+        }
+
         $orgId = Auth::user()->organization_id;
 
         $this->totalTeacher = ContactAdminTeacher::where('organization_id', $orgId)->count();
         $this->totalStudent = ContactAdminStudent::where('organization_id', $orgId)->count();
 
-        $model = $this->activeTab === 'teacher' ? ContactAdminTeacher::class : ContactAdminStudent::class;
-        $this->pendingCount = $model::where('organization_id', $orgId)->whereNull('admin_reply')->count();
-        $this->repliedCount = $model::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+        if ($this->activeTab === 'teacher') {
+            $this->pendingCount = ContactAdminTeacher::where('organization_id', $orgId)->whereNull('admin_reply')->count();
+            $this->repliedCount = ContactAdminTeacher::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+        } else {
+            $this->pendingCount = ContactAdminStudent::where('organization_id', $orgId)->whereNull('admin_reply')->count();
+            $this->repliedCount = ContactAdminStudent::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+        }
     }
 
     public function render()

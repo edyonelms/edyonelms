@@ -156,10 +156,10 @@
                                                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
-                                                <span class="font-medium text-gray-600">{{ $enquiry->user->name ?? 'Unknown' }}</span>
+                                                <span class="font-medium text-gray-600">{{ $enquiry->user?->name ?? 'Unknown' }}</span>
                                             </span>
                                             <span class="text-gray-300">•</span>
-                                            <span class="text-gray-500">{{ $enquiry->user->email ?? '' }}</span>
+                                            <span class="text-gray-500">{{ $enquiry->user?->email ?? '' }}</span>
                                             <span class="text-gray-300">•</span>
                                             <span class="inline-flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -244,12 +244,12 @@
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">From</p>
-                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->user->name ?? '—' }}</p>
-                            <p class="text-xs text-gray-400 truncate">{{ $selectedEnquiry->user->email ?? '' }}</p>
+                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->user?->name ?? '—' }}</p>
+                            <p class="text-xs text-gray-400 truncate">{{ $selectedEnquiry->user?->email ?? '' }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Organization</p>
-                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->organization->name ?? '—' }}</p>
+                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->organization?->name ?? '—' }}</p>
                         </div>
                     </div>
 
@@ -324,7 +324,7 @@
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">{{ $selectedEnquiry->admin_reply ? 'Edit Reply' : 'Send Reply' }}</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">Replying to {{ $selectedEnquiry->user->name ?? '—' }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Replying to {{ $selectedEnquiry->user?->name ?? '—' }}</p>
                     </div>
                     <button wire:click="closeReplyModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
