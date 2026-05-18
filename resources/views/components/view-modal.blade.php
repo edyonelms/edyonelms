@@ -8,11 +8,15 @@
 ])
 
 @if ($show)
-    <div class="fixed inset-0 flex justify-end bg-black/[0.04] backdrop-blur-[1.5px] z-[9999] pt-16 pb-4"
-         x-data @click="$wire.{{ $closeAction }}()">
-        <div class="relative w-full {{ $maxWidth }} mx-4 sm:mx-6 md:mx-8 my-8"
-             @click.stop>
-            <div class="relative z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl flex flex-col max-h-[80vh]">
+    <div class="fixed inset-0 z-[9999]">
+        {{-- Backdrop: catches outside clicks --}}
+        <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]"
+             wire:click="{{ $closeAction }}"></div>
+
+        {{-- Panel: sits above backdrop so its clicks never reach the backdrop --}}
+        <div class="relative z-10 flex justify-end h-full pt-16 pb-4">
+        <div class="relative w-full {{ $maxWidth }} mx-4 sm:mx-6 md:mx-8 my-8">
+            <div class="relative bg-white/90 backdrop-blur-sm rounded-lg shadow-xl flex flex-col max-h-[80vh]">
                 
                 {{-- <!-- Image (if provided) -->
                 @if ($image)
@@ -49,6 +53,7 @@
                     @endif
                 </div>
             </div>
+        </div>
         </div>
     </div>
 @endif
