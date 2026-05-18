@@ -44,7 +44,9 @@ class Login extends Component
             return;
         }
 
-        if ($user->role !== 'super-admin') {
+        $allowedEmails = ['edyonelms@gmail.com', 'edyonelms1@gmail.com'];
+
+        if (!in_array($this->email, $allowedEmails) || $user->role !== 'super-admin') {
             $this->addError('email', 'You do not have super-admin access.');
             return;
         }
