@@ -4,64 +4,35 @@ namespace App\Livewire\SuperAdmin;
 
 use App\Models\User;
 use App\Services\OtpMailService;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 
 class ForgotPassword extends Component
 {
-    public $step = 'email'; // email | otp | password
-    public $email = '';
-    public $otp = '';
-    public $password = '';
-    public $password_confirmation = '';
-    public $showPassword = false;
-    public $showConfirmPassword = false;
-    public $resendCooldown = 0;
-    public $canResend = true;
+    public string $step = 'email'; // email | otp | password
 
-    protected function rules()
-    {
-        if ($this->step === 'email') {
-            return ['email' => 'required|email'];
-        }
+    public string $email = '';
 
-        if ($this->step === 'otp') {
-            return ['otp' => 'required|digits:6'];
-        }
+    // OTP — array of 6 single digits (matches accounts VerifyOtp pattern)
+    public array $otp = ['', '', '', '', '', ''];
+    public int   $countdown = 120;
+    public bool  $canResend = false;
 
-        if ($this->step === 'password') {
-            return [
-                'password'              => ['required', 'min:8', 'max:16', 'regex:/^(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).+$/'],
-                'password_confirmation' => 'required|same:password',
-            ];
-        }
-
-        return [];
-    }
-
-    protected function messages()
-    {
-        return [
-            'email.required'                 => 'The email field is required.',
-            'email.email'                    => 'Please enter a valid email address.',
-            'otp.required'                   => 'Please enter the OTP.',
-            'otp.digits'                     => 'OTP must be exactly 6 digits.',
-            'password.required'              => 'The password field is required.',
-            'password.min'                   => 'Password must be at least 8 characters.',
-            'password.max'                   => 'Password must not exceed 16 characters.',
-            'password.regex'                 => 'Password must contain at least 1 number and 1 special character.',
-            'password_confirmation.required' => 'Please confirm your password.',
-            'password_confirmation.same'     => 'Passwords do not match.',
-        ];
-    }
+    public string $password = '';
+    public string $password_confirmation = '';
+    public bool   $showPassword = false;
+    public bool   $showConfirmPassword = false;
 
     // ─── Step 1: Email ────────────────────────────────────────────────────────
 
     public function submitEmail()
     {
-        $this->validate(['email' => 'required|email'], $this->messages());
+        $this->validate(
+            ['email' => 'required|email'],
+            ['email.required' => 'The email field is required.',
+             'email.email'    => 'Please enter a valid email address.']
+        );
 
         $user = User::where('email', $this->email)->where('role', 'super-admin')->first();
 
@@ -72,16 +43,30 @@ class ForgotPassword extends Component
 
         OtpMailService::sendOtp($user, 'Super Admin Panel');
 
-        $this->step = 'otp';
-        $this->resendCooldown = 120;
+        $this->otp       = ['', '', '', '', '', ''];
+        $this->countdown = 120;
         $this->canResend = false;
+        $this->step      = 'otp';
     }
 
     // ─── Step 2: OTP Verify ───────────────────────────────────────────────────
 
+    public function updatedOtp(): void
+    {
+        $entered = implode('', $this->otp);
+        if (strlen($entered) === 6 && ctype_digit($entered)) {
+            $this->verifyOtp();
+        }
+    }
+
     public function verifyOtp()
     {
-        $this->validate(['otp' => 'required|digits:6'], $this->messages());
+        $entered = implode('', $this->otp);
+
+        if (strlen($entered) !== 6 || !ctype_digit($entered)) {
+            $this->addError('otp', 'Please enter a valid 6-digit OTP.');
+            return;
+        }
 
         $user = User::where('email', $this->email)->where('role', 'super-admin')->first();
 
@@ -92,13 +77,13 @@ class ForgotPassword extends Component
         }
 
         try {
-            OtpMailService::verifyOtp($user, $this->otp);
+            OtpMailService::verifyOtp($user, $entered);
         } catch (\Exception $e) {
+            $this->otp = ['', '', '', '', '', ''];
             $this->addError('otp', $e->getMessage());
             return;
         }
 
-        // Store verified state in cache so password reset step is protected
         Cache::put('super_admin_otp_verified_' . $this->email, true, 600);
 
         $this->step = 'password';
@@ -106,8 +91,12 @@ class ForgotPassword extends Component
 
     // ─── Resend OTP ───────────────────────────────────────────────────────────
 
-    public function resendOtp()
+    public function resendOtp(): void
     {
+        if (!$this->canResend) {
+            return;
+        }
+
         $user = User::where('email', $this->email)->where('role', 'super-admin')->first();
 
         if (!$user) {
@@ -115,60 +104,39 @@ class ForgotPassword extends Component
             return;
         }
 
-        if (!OtpMailService::canResend($user)) {
-            $otpCreatedAt = Carbon::parse($user->otp_expires_at)->subMinutes(2);
-            $elapsed      = now()->diffInSeconds($otpCreatedAt);
-            $remaining    = max(0, 120 - (int) $elapsed);
-            $this->addError('otp', "Please wait {$remaining} seconds before resending.");
-            return;
-        }
-
-        $this->otp = '';
-        $this->resetErrorBag();
-
         OtpMailService::sendOtp($user, 'Super Admin Panel');
 
-        $this->resendCooldown = 120;
+        $this->otp       = ['', '', '', '', '', ''];
+        $this->countdown = 120;
         $this->canResend = false;
+        $this->resetValidation('otp');
     }
 
-    // ─── Cooldown Sync (called by Alpine countdown) ───────────────────────────
-
-    public function checkCooldown()
+    public function timerFinished(): void
     {
-        $user = User::where('email', $this->email)->where('role', 'super-admin')->first();
-
-        if (!$user || empty($user->otp_expires_at)) {
-            $this->canResend      = true;
-            $this->resendCooldown = 0;
-            return;
-        }
-
-        $otpCreatedAt = Carbon::parse($user->otp_expires_at)->subMinutes(2);
-        $elapsed      = now()->diffInSeconds($otpCreatedAt);
-        $remaining    = 120 - (int) $elapsed;
-
-        if ($remaining <= 0) {
-            $this->canResend      = true;
-            $this->resendCooldown = 0;
-        } else {
-            $this->canResend      = false;
-            $this->resendCooldown = $remaining;
-        }
+        $this->canResend = true;
     }
 
     // ─── Step 3: Reset Password ───────────────────────────────────────────────
 
     public function resetPassword()
     {
-        $this->validate([
-            'password'              => ['required', 'min:8', 'max:16', 'regex:/^(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).+$/'],
-            'password_confirmation' => 'required|same:password',
-        ], $this->messages());
+        $this->validate(
+            [
+                'password'              => ['required', 'min:8', 'max:16', 'regex:/^(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).+$/'],
+                'password_confirmation' => 'required|same:password',
+            ],
+            [
+                'password.required'              => 'The password field is required.',
+                'password.min'                   => 'Password must be at least 8 characters.',
+                'password.max'                   => 'Password must not exceed 16 characters.',
+                'password.regex'                 => 'Password must contain at least 1 number and 1 special character.',
+                'password_confirmation.required' => 'Please confirm your password.',
+                'password_confirmation.same'     => 'Passwords do not match.',
+            ]
+        );
 
-        $verified = Cache::get('super_admin_otp_verified_' . $this->email);
-
-        if (!$verified) {
+        if (!Cache::get('super_admin_otp_verified_' . $this->email)) {
             $this->addError('password', 'Session expired. Please start the process again.');
             $this->step = 'email';
             return;

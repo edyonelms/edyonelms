@@ -56,125 +56,85 @@
 
             {{-- ========== STEP 2: OTP ========== --}}
             @if ($step === 'otp')
-                <div class="text-center mb-8">
+                <div class="text-center mb-6">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Verify OTP</h1>
-                    <p class="text-gray-500 mt-2">We sent a 6-digit OTP to <span class="font-medium text-purple-600">{{ $email }}</span></p>
+                    <p class="text-gray-500 mt-2 text-sm">Enter the 6-digit code sent to your email</p>
+                    <p class="text-purple-600 text-sm font-medium mt-1">{{ $email }}</p>
                 </div>
 
                 <div class="w-full max-w-sm">
-                    <!-- OTP Input: single field styled as 6 boxes -->
-                    <div class="mb-2">
-                        <label class="block text-gray-700 text-sm font-medium mb-3 text-center">Enter OTP</label>
-                        <div
-                            x-data="{
-                                otp: ['', '', '', '', '', ''],
-                                handleInput(index, event) {
-                                    const val = event.target.value.replace(/\D/g, '');
-                                    if (val.length > 1) {
-                                        // Handle paste
-                                        const digits = val.slice(0, 6).split('');
-                                        digits.forEach((d, i) => { this.otp[i] = d; });
-                                        this.$nextTick(() => {
-                                            const last = Math.min(digits.length - 1, 5);
-                                            const inputs = this.$el.querySelectorAll('input');
-                                            inputs[last].focus();
-                                            this.syncOtp();
-                                        });
-                                        return;
-                                    }
-                                    this.otp[index] = val;
-                                    this.$nextTick(() => {
-                                        if (val && index < 5) {
-                                            this.$el.querySelectorAll('input')[index + 1].focus();
-                                        }
-                                        this.syncOtp();
-                                    });
-                                },
-                                handleKeydown(index, event) {
-                                    if (event.key === 'Backspace' && !this.otp[index] && index > 0) {
-                                        this.$el.querySelectorAll('input')[index - 1].focus();
-                                    }
-                                },
-                                syncOtp() {
-                                    @this.set('otp', this.otp.join(''));
+                    {{-- 6-box OTP input — @entangle keeps array in sync with Livewire --}}
+                    <div x-data="{
+                            otp: @entangle('otp'),
+                            focusNext(index) {
+                                if (this.otp[index] && index < 5) {
+                                    this.$refs['otp' + (index + 1)].focus();
                                 }
-                            }"
-                            class="flex gap-2 justify-center"
-                        >
-                            <template x-for="(digit, index) in otp" :key="index">
-                                <input
-                                    type="text"
-                                    inputmode="numeric"
-                                    maxlength="6"
-                                    :value="digit"
-                                    @input="handleInput(index, $event)"
-                                    @keydown="handleKeydown(index, $event)"
-                                    @focus="$event.target.select()"
-                                    class="w-11 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                >
-                            </template>
-                        </div>
-                        @error('otp') <span class="text-red-500 text-xs mt-2 block text-center">{{ $message }}</span> @enderror
+                            },
+                            focusPrev(index, event) {
+                                if (event.key === 'Backspace' && !this.otp[index] && index > 0) {
+                                    this.$refs['otp' + (index - 1)].focus();
+                                }
+                            }
+                        }" class="flex justify-center gap-3 mb-4">
+                        @for ($i = 0; $i < 6; $i++)
+                            <input type="text" maxlength="1"
+                                x-ref="otp{{ $i }}"
+                                x-model="otp[{{ $i }}]"
+                                x-on:input="focusNext({{ $i }})"
+                                x-on:keydown="focusPrev({{ $i }}, $event)"
+                                inputmode="numeric"
+                                class="w-11 h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-xl
+                                       focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                                @if ($i === 0) autofocus @endif>
+                        @endfor
                     </div>
 
-                    <button
-                        wire:click="verifyOtp"
-                        wire:loading.attr="disabled"
-                        class="w-full py-3 mt-4 bg-gradient-3 text-white rounded-lg hover:bg-gradient-3-hover transition duration-300 shadow-md hover:shadow-lg"
-                    >
+                    @error('otp')
+                        <p class="text-red-500 text-xs text-center mb-3">{{ $message }}</p>
+                    @enderror
+
+                    <button wire:click="verifyOtp" wire:loading.attr="disabled"
+                        class="w-full py-3 bg-gradient-3 text-white rounded-lg hover:opacity-90 transition duration-300 shadow-md disabled:opacity-60 mb-4">
                         <span wire:loading.remove wire:target="verifyOtp">Verify OTP</span>
                         <span wire:loading wire:target="verifyOtp">Verifying...</span>
                     </button>
 
-                    <!-- Resend OTP with countdown -->
-                    <div class="mt-4 text-center"
-                        x-data="{
-                            countdown: {{ $resendCooldown }},
+                    {{-- Countdown + Resend --}}
+                    <div class="text-center" x-data="{
+                            countdown: @entangle('countdown'),
+                            canResend: @entangle('canResend'),
                             timer: null,
-                            init() {
-                                if (this.countdown > 0) {
-                                    this.startTimer();
-                                }
-                                this.$watch('countdown', val => {
-                                    if (val > 0 && !this.timer) {
-                                        this.startTimer();
-                                    }
-                                });
-                            },
                             startTimer() {
                                 this.timer = setInterval(() => {
                                     if (this.countdown > 0) {
                                         this.countdown--;
                                     } else {
+                                        this.canResend = true;
                                         clearInterval(this.timer);
-                                        this.timer = null;
-                                        @this.checkCooldown();
+                                        $wire.timerFinished();
                                     }
                                 }, 1000);
                             }
-                        }"
-                        x-init="init()"
-                    >
-                        <template x-if="countdown > 0">
+                        }" x-init="startTimer()">
+                        <template x-if="!canResend">
                             <p class="text-sm text-gray-500">
-                                Resend OTP in <span class="font-semibold text-purple-600" x-text="countdown + 's'"></span>
+                                Resend OTP in
+                                <span class="font-semibold text-purple-600"
+                                    x-text="Math.floor(countdown / 60) + ':' + String(countdown % 60).padStart(2, '0')"></span>
                             </p>
                         </template>
-                        <template x-if="countdown <= 0">
-                            <button
-                                wire:click="resendOtp"
-                                wire:loading.attr="disabled"
-                                @click="countdown = 120; startTimer();"
-                                class="text-sm text-purple-600 hover:text-purple-800 hover:underline font-medium"
-                            >
-                                <span wire:loading.remove wire:target="resendOtp">Resend OTP</span>
-                                <span wire:loading wire:target="resendOtp">Resending...</span>
+                        <template x-if="canResend">
+                            <button wire:click="resendOtp"
+                                class="text-sm text-purple-600 hover:text-purple-800 font-medium hover:underline">
+                                Resend OTP
                             </button>
                         </template>
                     </div>
 
                     <div class="text-center mt-3">
-                        <button wire:click="$set('step', 'email')" class="text-sm text-gray-500 hover:text-gray-700 hover:underline">
+                        <button wire:click="$set('step', 'email')"
+                            class="text-sm text-gray-400 hover:text-gray-600 hover:underline">
                             &larr; Change Email
                         </button>
                     </div>
