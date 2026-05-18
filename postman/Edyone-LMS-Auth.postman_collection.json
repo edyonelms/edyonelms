@@ -322,6 +322,22 @@
             },
             "description": "Public endpoint. Returns Terms of Use metadata and last updated date."
           }
+        },
+        {
+          "name": "Rules and Regulations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/rules-and-regulation",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "rules-and-regulation"]
+            },
+            "description": "**Authenticated.** Returns rules and regulations for the logged-in user's organization.\n\n**Headers:** `Authorization: Bearer {{token}}`\n\n**Response fields:**\n- `id` — record id\n- `organization_id` — org this belongs to\n- `sections[]` — array of rule sections (title, body, etc. as set by admin)\n- `additional_info[]` — extra metadata fields\n- `files[]` — uploaded documents `{ title, file_path (S3 URL), file_type, file_size (bytes) }`\n- `last_updated` — when admin last updated the content\n- `created_at`, `updated_at`"
+          }
         }
       ]
     }

@@ -493,8 +493,19 @@ class AuthController extends Controller
                 );
             }
 
+            $content = $rules->content ?? [];
+
             return $this->responseService->success(
-                $rules,
+                [
+                    'id'              => $rules->id,
+                    'organization_id' => $rules->organization_id,
+                    'sections'        => $content['sections'] ?? [],
+                    'additional_info' => $content['additional_info'] ?? [],
+                    'files'           => $content['files'] ?? [],
+                    'last_updated'    => $content['last_updated'] ?? null,
+                    'created_at'      => $rules->created_at,
+                    'updated_at'      => $rules->updated_at,
+                ],
                 'Rules and Regulations retrieved successfully'
             );
         } catch (Exception $e) {
