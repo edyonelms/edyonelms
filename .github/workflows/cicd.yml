@@ -316,15 +316,20 @@ jobs:
             # `php artisan key:generate` edits the existing APP_KEY= line; it
             # FAILS if the line is missing entirely. So append an empty
             # APP_KEY= line first when needed, then generate.
+            #
+            # IMPORTANT: appleboy/ssh-action with script_stop:true treats a
+            # raw `grep` no-match (exit 1) as a fatal step error, even when
+            # used inside an `if !` condition. Capture the match in a var
+            # via `|| true` so the action's exit-code guard is satisfied.
             echo "==> ensure APP_KEY is set"
-            if ! grep -qE "^APP_KEY=base64:" .env 2>/dev/null; then
+            APP_KEY_OK=$(grep -E "^APP_KEY=base64:" .env 2>/dev/null || true)
+            if [ -z "$APP_KEY_OK" ]; then
               echo "APP_KEY missing or empty — generating one"
-              # add an empty APP_KEY= line if it's not in the file at all
-              if ! grep -qE "^APP_KEY=" .env 2>/dev/null; then
+              APP_KEY_LINE=$(grep -E "^APP_KEY=" .env 2>/dev/null || true)
+              if [ -z "$APP_KEY_LINE" ]; then
                 echo "APP_KEY=" >> .env
               fi
               docker compose exec -T app php artisan key:generate --force --no-interaction || true
-              # refresh config cache so the new key takes effect immediately
               docker compose exec -T app php artisan config:cache || true
             else
               echo "APP_KEY already present"
