@@ -51,7 +51,7 @@
          CONTENT
     ══════════════════════════════════════════════════ --}}
     <div class="p-4 sm:p-6">
-        <div class="max-w-2xl mx-auto">
+        <div class="{{ $rated ? '' : 'max-w-2xl mx-auto' }}">
 
             @if (!$rated)
                 {{-- ════════ Rating Form ════════ --}}
