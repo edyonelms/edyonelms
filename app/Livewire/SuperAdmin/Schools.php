@@ -255,7 +255,9 @@ class Schools extends Component
             'logo'           => 'nullable|image|max:2048',
         ]);
 
-        DB::transaction(function () {
+        $plainPassword = null;
+
+        DB::transaction(function () use (&$plainPassword) {
             $logoUrl = $this->existingLogo;
 
             if ($this->logo) {
@@ -300,10 +302,16 @@ class Schools extends Component
                     'role'            => 'admin',
                     'password'        => Hash::make($plainPassword),
                 ]);
+            }
+        });
 
+        // Send welcome email after transaction so a mail failure never rolls back the school record
+        if ($plainPassword !== null) {
+            $templateKey = config('services.zeptomail.school_creation_template_key');
+            if ($templateKey) {
                 try {
                     ZeptoMailService::sendTemplate(
-                        config('services.zeptomail.school_creation_template_key'),
+                        $templateKey,
                         $this->email,
                         $this->schoolName . ' Admin',
                         [
@@ -312,14 +320,14 @@ class Schools extends Component
                             'password'    => $plainPassword,
                         ]
                     );
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     Log::error('School creation welcome email failed', [
                         'email' => $this->email,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
-        });
+        }
 
         $this->closeModal();
         $this->loadStats();
