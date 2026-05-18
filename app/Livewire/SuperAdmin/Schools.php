@@ -8,6 +8,7 @@ use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\User;
 use App\Services\ZeptoMailService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -350,6 +351,23 @@ class Schools extends Component
             ],
             'reject' => ['label' => 'No'],
         ]);
+    }
+
+    // ─── Login as School Admin ────────────────────────────────────────────────
+
+    public function loginAsSchool($orgId): mixed
+    {
+        $admin = User::where('organization_id', $orgId)
+            ->where('role', 'admin')
+            ->first();
+
+        if (!$admin) {
+            $this->notification()->error('No admin account found for this school.');
+            return null;
+        }
+
+        Auth::login($admin);
+        return redirect()->route('admin.home');
     }
 
     public function doDelete($id): void

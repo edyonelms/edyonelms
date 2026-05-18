@@ -137,6 +137,15 @@
                                     </svg>
                                     View
                                 </button>
+                                <button wire:click="loginAsSchool({{ $school->id }})"
+                                    class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium
+                                           text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
+                                    Login
+                                </button>
                                 <button wire:click="onEdit({{ $school->id }})"
                                     class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium
                                            text-amber-600 hover:bg-amber-50 transition-colors">
