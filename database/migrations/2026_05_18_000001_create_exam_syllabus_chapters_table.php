@@ -23,7 +23,10 @@ return new class extends Migration
                 'exam_syllabus_unique'
             );
 
-            $table->index(['organization_id', 'exam_id', 'standard_id', 'subject_id']);
+            $table->index(
+                ['organization_id', 'exam_id', 'standard_id', 'subject_id'],
+                'exam_syllabus_lookup_idx'
+            );
         });
     }
 

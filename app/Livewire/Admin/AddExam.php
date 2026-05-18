@@ -9,6 +9,7 @@ use App\Models\Student\Standard;
 use App\Models\Student\Subject;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use Livewire\WithPagination;
 use WireUi\Traits\WireUiActions;
@@ -232,7 +233,7 @@ class AddExam extends Component
                 'updated_by'           => Auth::id(),
             ];
 
-            if (DB::getSchemaBuilder()->hasColumn('exams', 'uses_grading_system')) {
+            if (Schema::hasColumn('exams', 'uses_grading_system')) {
                 $examData['uses_grading_system'] = $this->usesGradingSystem;
             }
 
