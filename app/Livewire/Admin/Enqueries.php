@@ -2,12 +2,10 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\Admin\AdminEnquiry;
 use App\Models\Admin\ContactAdminStudent;
 use App\Models\Admin\ContactAdminTeacher;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Organization;
 use Carbon\Carbon;
 use WireUi\Traits\WireUiActions;
 use Illuminate\Support\Facades\Storage;
@@ -17,73 +15,93 @@ class Enqueries extends Component
 {
     use WithPagination, WireUiActions;
 
-    public $activeTab = 'teacher';
-    public $selectedEnquiry = null;
-    public $showDetailModal = false;
-    public $showReplyModal = false;
-    public $filterDays = null;
-    public $filterMonths = null;
-    public $search = '';
-    public $statusFilter = '';
-    public $adminReply = '';
+    // ─── Tabs ────────────────────────────────────────────────────────────────
+    public string $activeTab = 'teacher'; // 'teacher' | 'student'
+
+    // ─── State ──────────────────────────────────────────────────────────────
+    public $selectedEnquiry  = null;
+    public $showDetailModal  = false;
+    public $showReplyModal   = false;
+
+    public $adminReply       = '';
+
+    // ─── Filters ────────────────────────────────────────────────────────────
+    public $filterDays    = null;
+    public $search        = '';
+    public $statusFilter  = '';
+
+    // ─── Custom delete overlay ──────────────────────────────────────────────
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
+
+    // ─── Stats ──────────────────────────────────────────────────────────────
+    public int $totalTeacher  = 0;
+    public int $totalStudent  = 0;
+    public int $pendingCount  = 0;
+    public int $repliedCount  = 0;
 
     protected $queryString = [
-        'filterDays' => ['except' => ''],
-        'filterMonths' => ['except' => ''],
-        'search' => ['except' => ''],
+        'activeTab'    => ['except' => 'teacher'],
+        'filterDays'   => ['except' => null],
+        'search'       => ['except' => ''],
         'statusFilter' => ['except' => ''],
     ];
 
+    public function mount(): void
+    {
+        $this->loadStats();
+    }
+
+    public function loadStats(): void
+    {
+        $orgId = Auth::user()->organization_id;
+
+        $this->totalTeacher = ContactAdminTeacher::where('organization_id', $orgId)->count();
+        $this->totalStudent = ContactAdminStudent::where('organization_id', $orgId)->count();
+
+        $model = $this->activeTab === 'teacher' ? ContactAdminTeacher::class : ContactAdminStudent::class;
+        $this->pendingCount = $model::where('organization_id', $orgId)->whereNull('admin_reply')->count();
+        $this->repliedCount = $model::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+    }
+
     public function render()
     {
-        // Get enquiries based on active tab
         $enquiries = $this->getEnquiries();
-
         return view('livewire.admin.enqueries', compact('enquiries'));
     }
 
-    public function showTab($tab)
+    public function showTab($tab): void
     {
         $this->activeTab = $tab;
         $this->resetPage();
+        $this->loadStats();
     }
+
+    public function updatedSearch(): void       { $this->resetPage(); }
+    public function updatedStatusFilter(): void { $this->resetPage(); $this->loadStats(); }
+    public function updatedFilterDays(): void   { $this->resetPage(); }
+
+    // ─── Queries ────────────────────────────────────────────────────────────
 
     private function getEnquiries()
     {
-        switch ($this->activeTab) {
-            case 'teacher':
-                return $this->getTeacherEnquiries();
-            case 'student':
-                return $this->getStudentEnquiries();
-            case 'website':
-                return $this->getWebsiteEnquiries();
-            default:
-                return collect();
-        }
+        return $this->activeTab === 'student'
+            ? $this->getStudentEnquiries()
+            : $this->getTeacherEnquiries();
     }
 
     private function getTeacherEnquiries()
     {
         return ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)
             ->with(['user', 'organization', 'teacherDetail'])
-            ->when($this->filterDays, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subDays($this->filterDays));
-            })
-            ->when($this->filterMonths, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subMonths($this->filterMonths));
-            })
+            ->when($this->filterDays, fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays((int) $this->filterDays)))
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('topic', 'like', '%' . $this->search . '%')
                         ->orWhere('teacher_query', 'like', '%' . $this->search . '%')
-                        ->orWhere('admin_text', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('user', function ($userQuery) {
-                            $userQuery->where('name', 'like', '%' . $this->search . '%')
-                                ->orWhere('email', 'like', '%' . $this->search . '%');
-                        })
-                        ->orWhereHas('organization', function ($orgQuery) {
-                            $orgQuery->where('name', 'like', '%' . $this->search . '%');
-                        });
+                        ->orWhere('admin_reply', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('email', 'like', '%' . $this->search . '%'));
                 });
             })
             ->when($this->statusFilter, function ($query) {
@@ -101,24 +119,14 @@ class Enqueries extends Component
     {
         return ContactAdminStudent::where('organization_id', Auth::user()->organization_id)
             ->with(['user', 'organization', 'studentDetail'])
-            ->when($this->filterDays, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subDays($this->filterDays));
-            })
-            ->when($this->filterMonths, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subMonths($this->filterMonths));
-            })
+            ->when($this->filterDays, fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays((int) $this->filterDays)))
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('topic', 'like', '%' . $this->search . '%')
                         ->orWhere('student_query', 'like', '%' . $this->search . '%')
-                        ->orWhere('admin_text', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('user', function ($userQuery) {
-                            $userQuery->where('name', 'like', '%' . $this->search . '%')
-                                ->orWhere('email', 'like', '%' . $this->search . '%');
-                        })
-                        ->orWhereHas('organization', function ($orgQuery) {
-                            $orgQuery->where('name', 'like', '%' . $this->search . '%');
-                        });
+                        ->orWhere('admin_reply', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('email', 'like', '%' . $this->search . '%'));
                 });
             })
             ->when($this->statusFilter, function ($query) {
@@ -132,224 +140,113 @@ class Enqueries extends Component
             ->paginate(10);
     }
 
-    private function getWebsiteEnquiries()
-    {
-        return AdminEnquiry::where('organization_id', Auth::user()->organization_id)
-            ->with(['organization'])
-            ->when($this->filterDays, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subDays($this->filterDays));
-            })
-            ->when($this->filterMonths, function ($query) {
-                $query->where('created_at', '>=', Carbon::now()->subMonths($this->filterMonths));
-            })
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('full_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%')
-                        ->orWhere('mobile_number', 'like', '%' . $this->search . '%')
-                        ->orWhere('description', 'like', '%' . $this->search . '%')
-                        ->orWhere('type', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('organization', function ($orgQuery) {
-                            $orgQuery->where('name', 'like', '%' . $this->search . '%');
-                        });
-                });
-            })
-            ->when($this->statusFilter, function ($query) {
-                // Website enquiries don't have reply status, so we'll handle differently
-                if ($this->statusFilter === 'replied') {
-                    $query->whereNotNull('admin_reply'); // If you add this field later
-                } elseif ($this->statusFilter === 'pending') {
-                    $query->whereNull('admin_reply'); // If you add this field later
-                }
-            })
-            ->latest()
-            ->paginate(10);
-    }
+    // ─── View / Reply ───────────────────────────────────────────────────────
 
-    public function viewEnquiry($id)
+    public function viewEnquiry($id): void
     {
-        switch ($this->activeTab) {
-            case 'teacher':
-                $this->selectedEnquiry = ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)->with(['user', 'organization', 'teacherDetail'])->findOrFail($id);
-                break;
-            case 'student':
-                $this->selectedEnquiry = ContactAdminStudent::where('organization_id', Auth::user()->organization_id)->with(['user', 'organization', 'studentDetail'])->findOrFail($id);
-                break;
-            case 'website':
-                $this->selectedEnquiry = AdminEnquiry::where('organization_id', Auth::user()->organization_id)->with(['organization'])->findOrFail($id);
-                break;
-        }
+        $this->selectedEnquiry = $this->activeTab === 'teacher'
+            ? ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)
+                ->with(['user', 'organization', 'teacherDetail'])->findOrFail($id)
+            : ContactAdminStudent::where('organization_id', Auth::user()->organization_id)
+                ->with(['user', 'organization', 'studentDetail'])->findOrFail($id);
+
         $this->showDetailModal = true;
     }
 
-    public function openReplyModal($id)
+    public function openReplyModal($id): void
     {
-        switch ($this->activeTab) {
-            case 'teacher':
-                $this->selectedEnquiry = ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)->with(['user', 'organization', 'teacherDetail'])->findOrFail($id);
-                $this->adminReply = $this->selectedEnquiry->admin_reply ?? '';
-                break;
-            case 'student':
-                $this->selectedEnquiry = ContactAdminStudent::where('organization_id', Auth::user()->organization_id)->with(['user', 'organization', 'studentDetail'])->findOrFail($id);
-                $this->adminReply = $this->selectedEnquiry->admin_reply ?? '';
-                break;
-            case 'website':
-                // Website enquiries typically don't have replies in the same way
-                $this->selectedEnquiry = AdminEnquiry::where('organization_id', Auth::user()->organization_id)->with(['organization'])->findOrFail($id);
-                $this->adminReply = $this->selectedEnquiry->admin_reply ?? '';
-                break;
-        }
-        $this->showReplyModal = true;
+        $this->viewEnquiry($id);
+        $this->showDetailModal = false;
+        $this->adminReply      = $this->selectedEnquiry->admin_reply ?? '';
+        $this->showReplyModal  = true;
     }
 
-    public function closeDetailModal()
+    public function closeDetailModal(): void
     {
         $this->showDetailModal = false;
         $this->selectedEnquiry = null;
     }
 
-    public function closeReplyModal()
+    public function closeReplyModal(): void
     {
-        $this->showReplyModal = false;
+        $this->showReplyModal  = false;
         $this->selectedEnquiry = null;
-        $this->adminReply = '';
+        $this->adminReply      = '';
     }
 
-    public function sendReply()
+    public function sendReply(): void
     {
         $this->validate([
-            'adminReply' => 'required|string|min:10',
+            'adminReply' => 'required|string|min:5',
         ]);
 
         if ($this->selectedEnquiry) {
-            switch ($this->activeTab) {
-                case 'teacher':
-                    $this->selectedEnquiry->update([
-                        'admin_reply' => $this->adminReply,
-                        'admin_text' => 'Replied by Admin',
-                    ]);
-                    break;
-                case 'student':
-                    $this->selectedEnquiry->update([
-                        'admin_reply' => $this->adminReply,
-                        'admin_text' => 'Replied by Admin',
-                    ]);
-                    break;
-                case 'website':
-                    // If you want to add reply functionality for website enquiries
-                    $this->selectedEnquiry->update([
-                        'admin_reply' => $this->adminReply,
-                    ]);
-                    break;
-            }
+            $this->selectedEnquiry->update([
+                'admin_reply' => $this->adminReply,
+                'admin_text'  => 'Replied by Admin',
+            ]);
 
             $this->closeReplyModal();
-
-            $this->notification()->success(
-                $title = 'Reply Sent',
-                $description = 'Your reply has been sent successfully.'
-            );
+            $this->loadStats();
+            $this->notification()->success('Reply Sent', 'Your reply has been sent successfully.');
         }
     }
 
-    public function applyFilter($type, $value)
+    public function applyFilterDays($days): void
     {
-        if ($type === 'days') {
-            $this->filterDays = $value;
-            $this->filterMonths = null;
-        } elseif ($type === 'months') {
-            $this->filterMonths = $value;
-            $this->filterDays = null;
-        }
-
+        $this->filterDays = $this->filterDays == $days ? null : $days;
         $this->resetPage();
     }
 
-    public function clearFilters()
+    public function clearFilters(): void
     {
-        $this->filterDays = null;
-        $this->filterMonths = null;
-        $this->search = '';
-        $this->statusFilter = '';
+        $this->reset(['filterDays', 'search', 'statusFilter']);
         $this->resetPage();
     }
 
-    public function deleteEnquiry($id)
+    // ─── Delete (custom overlay) ────────────────────────────────────────────
+
+    public function deleteEnquiry($id): void
     {
-        $this->dialog()->confirm([
-            'title' => 'Delete Enquiry?',
-            'icon' => 'exclamation-circle',
-            'iconColor' => 'text-red-500',
-            'description' => 'Are you sure you want to delete this enquiry? This action cannot be undone.',
-            'accept' => [
-                'label' => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color' => 'negative',
-                'size' => 'md',
-            ],
-            'reject' => [
-                'label' => 'Cancel',
-                'size' => 'md',
-            ],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDelete($id)
+    public function cancelDelete(): void
     {
-        switch ($this->activeTab) {
-            case 'teacher':
-                $enquiry = ContactAdminTeacher::find($id);
-                break;
-            case 'student':
-                $enquiry = ContactAdminStudent::find($id);
-                break;
-            case 'website':
-                $enquiry = AdminEnquiry::find($id);
-                break;
-            default:
-                $enquiry = null;
-        }
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        $modelClass = $this->activeTab === 'teacher' ? ContactAdminTeacher::class : ContactAdminStudent::class;
+        $enquiry    = $modelClass::find($this->deleteTargetId);
 
         if ($enquiry) {
-            // Delete associated image if exists
-            if (isset($enquiry->image) && $enquiry->image) {
-                $imagePath = parse_url($enquiry->image, PHP_URL_PATH);
-                Storage::disk('s3')->delete($imagePath);
+            if (!empty($enquiry->image)) {
+                Storage::disk('s3')->delete(parse_url($enquiry->image, PHP_URL_PATH));
             }
-
             $enquiry->delete();
 
-            $this->notification()->success(
-                $title = 'Enquiry Deleted',
-                $description = 'The enquiry has been deleted successfully.'
-            );
+            $this->notification()->success('Enquiry Deleted', 'The enquiry has been deleted successfully.');
+            $this->loadStats();
+
+            if ($this->selectedEnquiry && $this->selectedEnquiry->id == $this->deleteTargetId) {
+                $this->closeDetailModal();
+            }
         } else {
-            $this->notification()->error(
-                $title = 'Error',
-                $description = 'Enquiry not found.'
-            );
+            $this->notification()->error('Error', 'Enquiry not found.');
         }
 
-        if ($this->selectedEnquiry && $this->selectedEnquiry->id == $id) {
-            $this->closeDetailModal();
-        }
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
     }
 
-    // Method to get tab title
-    public function getTabTitle($tab)
-    {
-        return match ($tab) {
-            'teacher' => 'Teacher Enquiries',
-            'student' => 'Student Enquiries',
-            'website' => 'Website Enquiries',
-            default => 'Enquiries'
-        };
-    }
+    // ─── Helpers ────────────────────────────────────────────────────────────
 
-    // Method to check if tab has reply functionality
-    public function hasReplyFunctionality($tab)
+    public function getQueryField(): string
     {
-        return in_array($tab, ['teacher', 'student']);
+        return $this->activeTab === 'teacher' ? 'teacher_query' : 'student_query';
     }
 }
