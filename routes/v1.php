@@ -43,6 +43,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/terms-and-conditions', [AuthController::class, 'termsAndConditions']);
     Route::get('/privacy-policy', [AuthController::class, 'privacyPolicy']);
     Route::get('/terms-of-use', [AuthController::class, 'termsOfUse']);
+
+    // Switch Account — `add` is public (login + return snapshot)
+    Route::post('/switch-account/add', [SwitchAccountController::class, 'add']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -239,6 +242,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Switch Account Api
         Route::prefix('switch-account')->group(function () {
+            Route::get('/me',      [SwitchAccountController::class, 'me']);
+            Route::post('/remove', [SwitchAccountController::class, 'remove']);
             Route::get('/schools', [SwitchAccountController::class, 'schools']);
             Route::post('/switch', [SwitchAccountController::class, 'switch']);
         });

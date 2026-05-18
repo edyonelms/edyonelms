@@ -282,7 +282,119 @@
       ]
     },
     {
-      "name": "5. Legal Documents",
+      "name": "5. Switch Account (Multi-Account)",
+      "item": [
+        {
+          "name": "Add Account (Login + Snapshot)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('added_token', json.data.token);",
+                  "        console.log('Added account token saved');",
+                  "        console.log('Snapshot:', JSON.stringify(json.data.snapshot, null, 2));",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_type\": \"student\",\n  \"admission_number\": \"ADM001\",\n  \"password\": \"Student@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/switch-account/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "switch-account", "add"]
+            },
+            "description": "**Public.** Log in with credentials and return enriched profile snapshot for app's local 'added accounts' list.\n\n**Request body (student):**\n```json\n{\n  \"login_type\": \"student\",\n  \"admission_number\": \"ADM001\",\n  \"password\": \"Student@123\"\n}\n```\n\n**Request body (teacher):**\n```json\n{\n  \"login_type\": \"teacher\",\n  \"email\": \"teacher@example.com\",\n  \"password\": \"Teacher@123\"\n}\n```\n\n**Response:** `{ user, token, token_type, snapshot }`\n\n**Snapshot fields (for switcher UI):**\n- `user_id`, `name`, `email`, `role`, `role_label` (Student/Teacher)\n- `image` (profile pic URL)\n- `organization` `{ id, name, logo }`\n- `class_info` for students: `{ admission_no, roll_no, standard_id, standard_name, section_id, section_name, class_display }`\n- `class_info` for teachers: `{ employee_id, qualification, class_display }`\n\n**App flow:**\n1. User taps 'Add Account' in switcher\n2. App calls this endpoint with new credentials\n3. App stores `{ token, snapshot }` in local storage\n4. App displays all stored snapshots as cards in switcher UI"
+          }
+        },
+        {
+          "name": "Profile Snapshot (Refresh card)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/switch-account/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "switch-account", "me"]
+            },
+            "description": "**Authenticated.** Returns compact profile snapshot for the currently authenticated user.\n\n**Use case:** App periodically calls this for each stored token to refresh the snapshot (so the switcher shows the latest name / image / class after admin updates).\n\n**Returns:** same `snapshot` shape as Add Account response."
+          }
+        },
+        {
+          "name": "Remove Account (Revoke token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{added_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/switch-account/remove",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "switch-account", "remove"]
+            },
+            "description": "**Authenticated.** Revokes ONLY the current access token (the one in the Authorization header).\n\n**Use case:** User removes an account from the device switcher. App sends this with the token-to-remove in Authorization, server revokes only that token (other linked accounts keep working).\n\n**App flow:**\n1. User taps the X / Remove icon on an account card in switcher\n2. App calls this with `Authorization: Bearer <that-account-token>`\n3. On success, app deletes the stored `{ token, snapshot }` entry locally\n\nNote: tries `{{added_token}}` for testing — switch this header to the specific account's token in production."
+          }
+        },
+        {
+          "name": "Cross-Org Accounts (Auto-discovery)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/switch-account/schools",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "switch-account", "schools"]
+            },
+            "description": "**Authenticated.** Auto-discovers all accounts sharing the current user's email + role across organizations.\n\nUseful when a user (same email) is enrolled in multiple schools — they can see all linked schools without manually adding each one.\n\n**Returns:** array of `{ user_id, organization_id, is_current, school: { id, name, logo, active } }`"
+          }
+        },
+        {
+          "name": "Switch to Org",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/switch-account/switch",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "switch-account", "switch"]
+            },
+            "description": "**Authenticated.** Revokes current token and issues a new one for the same user-email in a different organization (used with the auto-discovery flow `/switch-account/schools`).\n\n**Body:** `{ organization_id }`\n\n**Returns:** new token + user data."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Legal Documents",
       "item": [
         {
           "name": "Terms and Conditions",
@@ -360,6 +472,11 @@
     },
     {
       "key": "reset_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "added_token",
       "value": "",
       "type": "string"
     }
