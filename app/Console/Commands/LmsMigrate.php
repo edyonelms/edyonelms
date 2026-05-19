@@ -85,6 +85,20 @@ class LmsMigrate extends Command
             }
         });
 
+        // Chapter image_path / pdf_path were referenced in code + model fillable
+        // but never added by any migration. Add them here so /1/content stops
+        // 500'ing with "Unknown column 'image_path'".
+        Schema::table('chapters', function (Blueprint $table) {
+            if (!Schema::hasColumn('chapters', 'image_path')) {
+                $table->string('image_path')->nullable()->after('file_path');
+                $this->info('adding [image_path] field in [chapters] table');
+            }
+            if (!Schema::hasColumn('chapters', 'pdf_path')) {
+                $table->string('pdf_path')->nullable()->after('image_path');
+                $this->info('adding [pdf_path] field in [chapters] table');
+            }
+        });
+
         Schema::table('teacher_arrangements', function (Blueprint $table) {
             if (!Schema::hasColumn('teacher_arrangements', 'organization_id')) {
                 $table->foreignIdFor(Organization::class)->default(0);
