@@ -1,16 +1,64 @@
-<div>
-    {{-- Tab Bar --}}
-    <div class="flex justify-center items-center px-6 pt-6 pb-4">
-        <div class="flex gap-1 bg-white p-1 rounded-lg shadow-sm border border-gray-100">
-            <button
-                class="px-5 py-2 rounded-md text-sm font-medium transition-all {{ $activeTab === 'profile' ? 'bg-gradient-3 text-white shadow' : 'text-gray-500 hover:bg-gray-100' }}"
-                wire:click="showTab('profile')">School Profile</button>
-            <button
-                class="px-5 py-2 rounded-md text-sm font-medium transition-all {{ $activeTab === 'view' ? 'bg-gradient-3 text-white shadow' : 'text-gray-500 hover:bg-gray-100' }}"
-                wire:click="showTab('view')">View School Info</button>
-            <button
-                class="px-5 py-2 rounded-md text-sm font-medium transition-all {{ $activeTab === 'info' ? 'bg-gradient-3 text-white shadow' : 'text-gray-500 hover:bg-gray-100' }}"
-                wire:click="showTab('info')">Edit School Info</button>
+<div class="min-h-screen bg-gray-50">
+
+    {{-- ══════════════════════════════════════════════════
+         HEADER (full-width, sticky, with tabs)
+    ══════════════════════════════════════════════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    @if ($organization && $organization->logo)
+                        <img src="{{ $organization->logo }}" class="w-11 h-11 rounded-full object-cover border border-gray-200 flex-shrink-0">
+                    @else
+                        <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                    @endif
+                    <div class="min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{{ $organization->name ?? 'School Profile' }}</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">Manage school profile, info, and credentials</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tabs --}}
+        <div class="border-t border-gray-200 px-4 sm:px-6">
+            <div class="flex gap-1">
+                <button wire:click="showTab('profile')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'profile' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        School Profile
+                    </span>
+                </button>
+                <button wire:click="showTab('view')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'view' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View School Info
+                    </span>
+                </button>
+                <button wire:click="showTab('info')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit School Info
+                    </span>
+                </button>
+            </div>
         </div>
     </div>
 
