@@ -254,13 +254,16 @@
           "name": "About App",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }],
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/about-app",
               "host": ["{{baseUrl}}"],
               "path": ["v1", "about-app"]
             },
-            "description": "Public endpoint. Returns app information: heading, content, logo, contact details, address, core team, social media links."
+            "description": "**Authenticated.** Returns app information: heading, sub-heading, logo, content sections, contact details, address, core team, social media links, and documents (PDF/DOC uploads on S3).\n\n**Headers:** `Authorization: Bearer {{token}}`"
           }
         },
         {
@@ -394,7 +397,674 @@
       ]
     },
     {
-      "name": "6. Legal Documents",
+      "name": "6. Contact School (Student & Teacher)",
+      "item": [
+        {
+          "name": "Student → Submit Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Fee Issue\",\n  \"description\": \"I have a question about my fees.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/user/admin/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "user", "admin", "contact"]
+            },
+            "description": "Student raises a query/contact request to the school admin.\n\n**Body:** `{ topic, description }`"
+          }
+        },
+        {
+          "name": "Student → My Contact List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/user/admin/contact-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "user", "admin", "contact-list"]
+            },
+            "description": "Returns the student's own contact requests with admin replies."
+          }
+        },
+        {
+          "name": "Student → Reply to Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_id\": 1,\n  \"reply\": \"Thanks, I understand now.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/user/admin/contact-reply",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "user", "admin", "contact-reply"]
+            },
+            "description": "Student adds a follow-up reply to an existing contact thread."
+          }
+        },
+        {
+          "name": "Teacher → Submit Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Class Schedule\",\n  \"description\": \"Request to update my class timing.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/teacher/admin/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "teacher", "admin", "contact"]
+            },
+            "description": "Teacher raises a query/contact request to the school admin."
+          }
+        },
+        {
+          "name": "Teacher → My Contact List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/teacher/admin/contact-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "teacher", "admin", "contact-list"]
+            },
+            "description": "Returns the teacher's own contact requests with admin replies."
+          }
+        },
+        {
+          "name": "Teacher → Reply to Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_id\": 1,\n  \"reply\": \"Thanks for the clarification.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/teacher/admin/contact-reply",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "teacher", "admin", "contact-reply"]
+            },
+            "description": "Teacher adds a follow-up reply to an existing contact thread."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Announcements",
+      "item": [
+        {
+          "name": "List Announcements",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"per_page\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/announcement",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "announcement"]
+            },
+            "description": "Lists announcements visible to the caller (filtered by their organization, class, section based on role)."
+          }
+        },
+        {
+          "name": "Get Single Announcement",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/announcement/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "announcement", "1"]
+            },
+            "description": "Returns a single announcement with full description, attachments, and target audience."
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Exams & Syllabus",
+      "item": [
+        {
+          "name": "List Exams",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/exams?per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "exams"],
+              "query": [
+                { "key": "per_page", "value": "20" },
+                { "key": "academic_year", "value": "2025-26", "disabled": true },
+                { "key": "exam_type", "value": "Mid-Term", "disabled": true },
+                { "key": "search", "value": "math", "disabled": true }
+              ]
+            },
+            "description": "Lists published exams for the caller's school.\n\n**Optional filters:** `academic_year`, `exam_type`, `search`, `per_page`\n\nReturns paginated list with status (`upcoming`/`ongoing`/`completed`)."
+          }
+        },
+        {
+          "name": "Get Exam Detail (with Syllabus)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/exams/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "exams", "1"]
+            },
+            "description": "Returns full exam detail + role-scoped syllabus embedded.\n\n**Syllabus scoping:**\n- Student → syllabus for their class+section only\n- Teacher → syllabus for their assigned (standard, subject) pairs\n\nSyllabus is grouped by (standard, subject) with chapters and topics."
+          }
+        },
+        {
+          "name": "Get Exam Syllabus Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/exams/1/syllabus",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "exams", "1", "syllabus"],
+              "query": [
+                { "key": "subject_id", "value": "5", "disabled": true }
+              ]
+            },
+            "description": "Returns only the syllabus chapters+topics for an exam, scoped to the caller.\n\n**Optional query:** `subject_id` to filter to one subject.\n\nReturns: `[{ standard_id, standard_name, subject_id, subject_name, chapter_count, chapters: [{ id, name, description, order, topics: [{ id, topic_name }] }] }]`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Books",
+      "item": [
+        {
+          "name": "List Books (role-scoped)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books?per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "books"],
+              "query": [
+                { "key": "per_page", "value": "20" },
+                { "key": "standard_id", "value": "", "disabled": true },
+                { "key": "section_id",  "value": "", "disabled": true },
+                { "key": "subject_id",  "value": "", "disabled": true },
+                { "key": "search",      "value": "", "disabled": true }
+              ]
+            },
+            "description": "Lists books auto-scoped by user role:\n- **Student** → books for their class + (section or class-wide)\n- **Teacher** → books for assigned (standard, subject) pairs\n\n**Optional filters:** `standard_id`, `section_id`, `subject_id`, `search`, `per_page`\n\nReturns: `[{ id, title, logo_url, standard, section, subject }]`"
+          }
+        },
+        {
+          "name": "Get Book Detail (with PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "books", "1"]
+            },
+            "description": "Returns a single book with PDF URL. Same role scoping as list — returns 404 if caller is not entitled to access the book."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Performance & Marks",
+      "item": [
+        {
+          "name": "Performance Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/filters",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "filters"]
+            },
+            "description": "Returns dropdown data for the performance module — exam types, academic years, etc."
+          }
+        },
+        {
+          "name": "Sections by Standard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/sections/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "sections", "1"]
+            },
+            "description": "Returns sections that belong to a given standard (class)."
+          }
+        },
+        {
+          "name": "Students by Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"standard_id\": 1,\n  \"section_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "students"]
+            },
+            "description": "Returns students for a given class+section (used by teacher to mark/upload exam copies)."
+          }
+        },
+        {
+          "name": "Teacher → Get My Subjects",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/teacher-subjects",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "teacher-subjects"]
+            },
+            "description": "Returns subjects the authenticated teacher is assigned to teach."
+          }
+        },
+        {
+          "name": "Teacher → Get My Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/teacher-classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "teacher-classes"]
+            },
+            "description": "Returns classes/sections the authenticated teacher is assigned to."
+          }
+        },
+        {
+          "name": "Teacher → Student Performance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 12,\n  \"exam_id\": 3,\n  \"subject_id\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/student-performance-by-teacher",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "student-performance-by-teacher"]
+            },
+            "description": "Teacher view of an individual student's performance (marks, exam copy, remarks) for their assigned subject."
+          }
+        },
+        {
+          "name": "Student → My Performance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exam_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/student-performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "student-performance"]
+            },
+            "description": "Student view of their own performance for an exam — marks per subject, total, percentage."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Exam Copies (Teacher)",
+      "item": [
+        {
+          "name": "List Exam Copies",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/exam-copies",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "exam-copies"]
+            },
+            "description": "Lists exam copies. Scoped by role (teacher sees only those they uploaded for assigned subjects)."
+          }
+        },
+        {
+          "name": "Get Exam Copy",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/exam-copies/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "exam-copies", "1"]
+            },
+            "description": "Returns single exam copy with file URL (S3) and metadata."
+          }
+        },
+        {
+          "name": "Upload Exam Copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "student_id", "value": "12", "type": "text" },
+                { "key": "exam_id",    "value": "3",  "type": "text" },
+                { "key": "subject_id", "value": "5",  "type": "text" },
+                { "key": "marks",      "value": "85", "type": "text" },
+                { "key": "remarks",    "value": "Good work", "type": "text" },
+                { "key": "copy_file",  "type": "file" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/upload-exam-copies",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "upload-exam-copies"]
+            },
+            "description": "**Teacher only.** Uploads a single exam copy + marks for an assigned subject.\n\n**Form data:** `student_id, exam_id, subject_id, marks, remarks, copy_file (PDF/image)`"
+          }
+        },
+        {
+          "name": "Update Exam Copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "marks",   "value": "90", "type": "text" },
+                { "key": "remarks", "value": "Updated remark", "type": "text" },
+                { "key": "copy_file", "type": "file", "disabled": true }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/update-exam-copies/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "update-exam-copies", "1"]
+            },
+            "description": "**Teacher only.** Updates marks, remarks, or replaces the uploaded copy file."
+          }
+        },
+        {
+          "name": "Bulk Upload Exam Copies",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "exam_id",    "value": "3", "type": "text" },
+                { "key": "subject_id", "value": "5", "type": "text" },
+                { "key": "marks_json", "value": "[{\"student_id\":12,\"marks\":85},{\"student_id\":13,\"marks\":78}]", "type": "text" },
+                { "key": "files[]",    "type": "file" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/bulk-upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "bulk-upload"]
+            },
+            "description": "**Teacher only.** Bulk upload marks and (optionally) exam copy files for many students at once."
+          }
+        },
+        {
+          "name": "Delete Exam Copy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/exam-copies/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "exam-copies", "1"]
+            },
+            "description": "**Teacher only.** Removes the exam copy (and its S3 file)."
+          }
+        },
+        {
+          "name": "Download Single Copy PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/download/exam-copy/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "download", "exam-copy", "1"]
+            },
+            "description": "Returns a downloadable PDF for a single exam copy."
+          }
+        },
+        {
+          "name": "Download Multiple Copies (zip/pdf)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/download/multiple-exam-copies",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "download", "multiple-exam-copies"]
+            },
+            "description": "Bulk download of multiple exam copies (combined PDF / zip)."
+          }
+        },
+        {
+          "name": "Check Copy Exists",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 12,\n  \"exam_id\": 3,\n  \"subject_id\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/performance/check-exists",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "performance", "check-exists"]
+            },
+            "description": "Checks whether an exam copy already exists for a given (student, exam, subject) — useful before upload to avoid duplicates."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Filters (Cascading Dropdowns)",
+      "item": [
+        {
+          "name": "Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/filters/classes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "filters", "classes"]
+            },
+            "description": "Returns classes (standards) the caller can see.\n\n- **Student** → just their own class\n- **Teacher** → only classes they teach\n- **Admin** → all classes in org\n\nResponse: `[{ id, name, code, order }]`"
+          }
+        },
+        {
+          "name": "Sections by Class",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/filters/sections?standard_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "filters", "sections"],
+              "query": [
+                { "key": "standard_id", "value": "1" }
+              ]
+            },
+            "description": "Returns sections of a given class (role-scoped).\n\n**Query:** `standard_id` (required)\n\nResponse: `[{ id, name, standard_id }]`"
+          }
+        },
+        {
+          "name": "Subjects by Class (+Section)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/filters/subjects?standard_id=1&section_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "filters", "subjects"],
+              "query": [
+                { "key": "standard_id", "value": "1" },
+                { "key": "section_id",  "value": "1", "disabled": true }
+              ]
+            },
+            "description": "Returns subjects for a class (and optionally section), role-scoped.\n\n**Query:** `standard_id` (required), `section_id` (optional)\n\n- Without `section_id`: uses `standard_subjects` mapping\n- With `section_id`: uses `section_subjects` mapping\n\nResponse: `[{ id, name }]`"
+          }
+        },
+        {
+          "name": "Exams",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/filters/exams",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "filters", "exams"],
+              "query": [
+                { "key": "academic_year", "value": "2025-26", "disabled": true }
+              ]
+            },
+            "description": "Returns published exams for filter dropdowns.\n\n**Optional query:** `academic_year`\n\nResponse: `[{ id, name, type, academic_year, start_date, end_date }]`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Legal Documents",
       "item": [
         {
           "name": "Terms and Conditions",
