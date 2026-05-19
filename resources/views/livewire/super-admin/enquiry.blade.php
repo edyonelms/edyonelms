@@ -255,9 +255,17 @@
     @if ($showDetailModal && $selectedEnquiry)
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDetailModal"></div>
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col relative">
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                {{-- Floating close icon --}}
+                <button wire:click="closeDetailModal"
+                    class="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 flex-shrink-0">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="block w-2 h-2 rounded-full flex-shrink-0 {{ $selectedEnquiry->remark ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
                         <div class="min-w-0">
@@ -357,9 +365,17 @@
     @if ($showRemarkModal)
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeRemarkModal"></div>
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col relative">
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                {{-- Floating close icon --}}
+                <button wire:click="closeRemarkModal"
+                    class="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Internal Remark</h2>
                         <p class="text-xs text-gray-500 mt-0.5">Add a note for team reference (not sent to user)</p>
