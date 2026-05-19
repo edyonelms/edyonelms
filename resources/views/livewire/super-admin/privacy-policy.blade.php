@@ -48,30 +48,21 @@
                 $viewSections = $metadata['sections'] ?? [];
             @endphp
 
-            {{-- HERO HEADER --}}
-            <div class="bg-white border-b border-gray-200">
-                <div class="max-w-5xl mx-auto px-6 py-10">
-                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div class="flex-shrink-0">
-                            <div class="w-24 h-24 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
-                                <img src="{{ asset('website-image/Group 11525.png') }}" alt="EDYONE LMS"
-                                    class="w-20 h-20 object-contain">
-                            </div>
-                        </div>
-                        <div class="text-center sm:text-left flex-1">
-                            <h1 class="text-3xl font-bold text-gray-900">Privacy Policy</h1>
-                            <p class="text-gray-500 mt-1 text-sm">Please read this privacy policy carefully before using
-                                our platform.</p>
-                            @if ($privacyPolicy->last_updated)
-                                <span
-                                    class="inline-block mt-2 text-xs px-3 py-1 bg-green-50 text-green-600
-                                             rounded-full border border-green-100 font-medium">
-                                    Last Updated: {{ $privacyPolicy->last_updated->format('d M Y') }}
-                                </span>
-                            @endif
-                        </div>
+            {{-- COMPACT HEADER (fees style) --}}
+            <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Privacy Policy</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">Please read this privacy policy carefully before using our platform.</p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        @if ($privacyPolicy->last_updated)
+                            <span class="text-xs px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 font-medium">
+                                Last Updated: {{ $privacyPolicy->last_updated->format('d M Y') }}
+                            </span>
+                        @endif
                         <button wire:click="switchTab('edit')"
-                            class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
                                    text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

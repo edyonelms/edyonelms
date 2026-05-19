@@ -50,29 +50,26 @@
                 $viewFiles = $metadata['files'] ?? [];
             @endphp
 
-            {{-- HERO HEADER --}}
-            <div class="bg-white border-b border-gray-200">
-                <div class="max-w-5xl mx-auto px-6 py-10">
-                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div class="flex-shrink-0">
-                            <img src="{{ asset('website-image/Group 11525.png') }}" alt="EDYONE LMS"
-                                class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
-                        </div>
-                        <div class="text-center sm:text-left flex-1">
-                            <h1 class="text-3xl font-bold text-gray-900">{{ $termsCondition->platform_name }}</h1>
-                            <p class="text-gray-500 mt-1 text-sm">{{ $termsCondition->company_name }}</p>
+            {{-- COMPACT HEADER (fees style) --}}
+            <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">{{ $termsCondition->platform_name ?? 'Terms Of Use' }}</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">
+                            {{ $termsCondition->company_name }}
                             @if ($termsCondition->company_cin)
-                                <p class="text-xs text-gray-400 mt-0.5">CIN: {{ $termsCondition->company_cin }}</p>
+                                · CIN: {{ $termsCondition->company_cin }}
                             @endif
-                            @if ($termsCondition->last_updated)
-                                <span
-                                    class="inline-block mt-2 text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100 font-medium">
-                                    Last Updated: {{ $termsCondition->last_updated->format('d M Y') }}
-                                </span>
-                            @endif
-                        </div>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        @if ($termsCondition->last_updated)
+                            <span class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100 font-medium">
+                                Last Updated: {{ $termsCondition->last_updated->format('d M Y') }}
+                            </span>
+                        @endif
                         <button wire:click="switchTab('edit')"
-                            class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
                                    text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
