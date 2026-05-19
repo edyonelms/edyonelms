@@ -832,7 +832,10 @@
                                                disabled:opacity-50 disabled:cursor-not-allowed">
                                         <option value="">Select City</option>
                                         @foreach ($cities as $city)
-                                            <option value="{{ $city['name'] }}">{{ $city['name'] }}</option>
+                                            @php $cityName = is_array($city) ? ($city['name'] ?? '') : (string) $city; @endphp
+                                            @if ($cityName !== '')
+                                                <option value="{{ $cityName }}">{{ $cityName }}</option>
+                                            @endif
                                         @endforeach
                                     </select>
                                 </div>

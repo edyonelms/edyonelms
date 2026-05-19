@@ -378,21 +378,29 @@ class Teacher extends Component
 
         $this->teacherData      = $user->toArray();
         $this->editId           = $user->id;
-        $this->teacherName      = $user->name;
-        $this->teacherEmail     = $user->email;
-        $this->teacherMobile    = $user->mobile_number;
-        $this->teacherActive    = $user->is_active;
-        $this->dob              = $user->dob;
-        $this->teacherGender    = $user->gender;
-        $this->employeeId       = $detail->employee_id;
-        $this->dateOfJoining    = $detail->date_of_joining;
-        $this->qualification    = $detail->qualification;
-        $this->address          = $detail->address;
-        $this->selectedState    = $detail->state;
-        $this->selectedCity     = $detail->city;
-        $this->pincode          = $detail->pincode;
-        $this->emergencyContact = $detail->emergency_contact;
+        $this->teacherName      = (string) ($user->name ?? '');
+        $this->teacherEmail     = (string) ($user->email ?? '');
+        $this->teacherMobile    = (string) ($user->mobile_number ?? '');
+        $this->teacherActive    = (int) ($user->is_active ?? 0);
+        // dob/gender may be Carbon/null depending on whether lms:migrate added the columns
+        $this->dob = $user->dob
+            ? (is_string($user->dob) ? \Carbon\Carbon::parse($user->dob)->format('Y-m-d') : $user->dob->format('Y-m-d'))
+            : '';
+        $this->teacherGender    = (string) ($user->gender ?? '');
+        $this->employeeId       = (string) ($detail->employee_id ?? '');
+        $this->dateOfJoining    = $detail->date_of_joining ? $detail->date_of_joining->format('Y-m-d') : '';
+        $this->qualification    = (string) ($detail->qualification ?? '');
+        $this->address          = (string) ($detail->address ?? '');
+        $this->selectedState    = $detail->state ?: null;
+        $this->selectedCity     = $detail->city ?: null;
+        $this->pincode          = (string) ($detail->pincode ?? '');
+        $this->emergencyContact = (string) ($detail->emergency_contact ?? '');
         $this->teacherImageUrl  = $user->image;
+
+        // Pre-load cities for the selected state so the City dropdown is populated
+        if ($this->selectedState) {
+            $this->cities = (new CityGetHelper())->cityGetByState($this->selectedState);
+        }
 
         if ($this->selectedState) {
             $this->cities = (new CityGetHelper())->cityGetByState($this->selectedState);
