@@ -50,6 +50,20 @@ class Profile extends Component
     public $usmValues;
     public $usmGoals;
 
+    // ─── Slide-in panel state ────────────────────────────────────────────────
+    public bool  $showMemberPanel = false;
+    public array $newMember       = [];
+    public       $newMemberPhoto;
+    public       $editMemberIndex = null;
+
+    public bool  $showDocumentPanel = false;
+    public array $newDocument       = [];
+    public       $newDocumentFile;
+
+    // ─── Delete confirms ─────────────────────────────────────────────────────
+    public $pendingDeleteMemberIndex = null;
+    public $pendingDeleteDocumentId  = null;
+
     public function mount()
     {
         $this->organization = Organization::with('schoolInfo')
@@ -78,10 +92,167 @@ class Profile extends Component
             $this->usmValues = $this->schoolInfo->usm_values;
             $this->usmGoals = $this->schoolInfo->usm_goals;
         } else {
-            $this->schoolManagement = [
-                ['name' => '', 'designation' => '', 'photo' => null]
-            ];
+            $this->schoolManagement = [];
         }
+    }
+
+    // ─── Management Member Panel ─────────────────────────────────────────────
+
+    public function openMemberPanel($index = null): void
+    {
+        $this->resetErrorBag();
+        $this->editMemberIndex = $index;
+        $this->newMember = $index !== null
+            ? [
+                'name'        => $this->schoolManagement[$index]['name'] ?? '',
+                'designation' => $this->schoolManagement[$index]['designation'] ?? '',
+                'photo_path'  => $this->schoolManagement[$index]['photo_path'] ?? null,
+            ]
+            : ['name' => '', 'designation' => '', 'photo_path' => null];
+        $this->newMemberPhoto = null;
+        $this->showMemberPanel = true;
+    }
+
+    public function closeMemberPanel(): void
+    {
+        $this->showMemberPanel = false;
+        $this->editMemberIndex = null;
+        $this->newMember = [];
+        $this->newMemberPhoto = null;
+    }
+
+    public function saveMember(): void
+    {
+        $this->validate([
+            'newMember.name'        => 'required|string|max:255',
+            'newMember.designation' => 'required|string|max:255',
+            'newMemberPhoto'        => 'nullable|image|max:2048',
+        ], [], [
+            'newMember.name'        => 'Member name',
+            'newMember.designation' => 'Designation',
+            'newMemberPhoto'        => 'Photo',
+        ]);
+
+        $member = [
+            'name'        => $this->newMember['name'],
+            'designation' => $this->newMember['designation'],
+            'photo_path'  => $this->newMember['photo_path'] ?? null,
+        ];
+
+        if ($this->newMemberPhoto instanceof TemporaryUploadedFile) {
+            // delete old image when editing
+            if ($this->editMemberIndex !== null && !empty($this->schoolManagement[$this->editMemberIndex]['photo_path'])) {
+                $oldPath = parse_url($this->schoolManagement[$this->editMemberIndex]['photo_path'], PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($oldPath, '/'));
+            }
+            $path = $this->newMemberPhoto->store('admin/school-management/photos', 's3');
+            Storage::disk('s3')->setVisibility($path, 'public');
+            $member['photo_path'] = Storage::disk('s3')->url($path);
+        }
+
+        if ($this->editMemberIndex !== null) {
+            $this->schoolManagement[$this->editMemberIndex] = $member;
+        } else {
+            $this->schoolManagement[] = $member;
+        }
+
+        $this->closeMemberPanel();
+        $this->notification()->success('Member saved. Click "Save All Changes" to persist.');
+    }
+
+    public function confirmDeleteMember($index): void
+    {
+        $this->pendingDeleteMemberIndex = $index;
+    }
+
+    public function cancelDeleteMember(): void
+    {
+        $this->pendingDeleteMemberIndex = null;
+    }
+
+    public function executeDeleteMember(): void
+    {
+        if ($this->pendingDeleteMemberIndex !== null && isset($this->schoolManagement[$this->pendingDeleteMemberIndex])) {
+            if (!empty($this->schoolManagement[$this->pendingDeleteMemberIndex]['photo_path'])) {
+                $oldPath = parse_url($this->schoolManagement[$this->pendingDeleteMemberIndex]['photo_path'], PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($oldPath, '/'));
+            }
+            unset($this->schoolManagement[$this->pendingDeleteMemberIndex]);
+            $this->schoolManagement = array_values($this->schoolManagement);
+            $this->notification()->success('Member removed. Click "Save All Changes" to persist.');
+        }
+        $this->pendingDeleteMemberIndex = null;
+    }
+
+    // ─── Document Panel ──────────────────────────────────────────────────────
+
+    public function openDocumentPanel(): void
+    {
+        $this->resetErrorBag();
+        $this->newDocument = ['title' => ''];
+        $this->newDocumentFile = null;
+        $this->showDocumentPanel = true;
+    }
+
+    public function closeDocumentPanel(): void
+    {
+        $this->showDocumentPanel = false;
+        $this->newDocument = [];
+        $this->newDocumentFile = null;
+    }
+
+    public function saveDocumentPanel(): void
+    {
+        $this->validate([
+            'newDocument.title' => 'required|string|max:255',
+            'newDocumentFile'   => 'required|file|mimes:pdf|max:2048',
+        ], [
+            'newDocumentFile.mimes' => 'Document must be a PDF file.',
+            'newDocumentFile.max'   => 'Document must not exceed 2 MB.',
+        ], [
+            'newDocument.title' => 'Title',
+            'newDocumentFile'   => 'Document file',
+        ]);
+
+        // Queue as pending — saved to DB only on saveSchoolInfo()
+        $this->pendingDocuments[] = [
+            'file'  => $this->newDocumentFile,
+            'title' => $this->newDocument['title'],
+        ];
+
+        $this->closeDocumentPanel();
+        $this->notification()->success('Document queued. Click "Save All Changes" to upload.');
+    }
+
+    public function removePendingDocument($index): void
+    {
+        unset($this->pendingDocuments[$index]);
+        $this->pendingDocuments = array_values($this->pendingDocuments);
+    }
+
+    public function confirmDeleteDocument($id): void
+    {
+        $this->pendingDeleteDocumentId = $id;
+    }
+
+    public function cancelDeleteDocument(): void
+    {
+        $this->pendingDeleteDocumentId = null;
+    }
+
+    public function executeDeleteDocument(): void
+    {
+        if ($this->pendingDeleteDocumentId) {
+            $document = SchoolDocument::find($this->pendingDeleteDocumentId);
+            if ($document) {
+                $filePath = parse_url($document->file_path, PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($filePath, '/'));
+                $document->delete();
+                $this->loadSchoolInfo();
+                $this->notification()->success('Document deleted.');
+            }
+        }
+        $this->pendingDeleteDocumentId = null;
     }
 
     public function showTab($tab)

@@ -398,29 +398,39 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════════════
-         TAB: Edit School Info
+         TAB: Edit School Info (about-app style)
     ══════════════════════════════════════════════════════════ --}}
     @if ($activeTab === 'info')
-        <div class="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+        <div class="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
 
             {{-- About School --}}
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-                    <h2 class="text-sm font-semibold text-gray-700">About School</h2>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50 flex items-center gap-3">
+                    <div class="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-base font-semibold text-gray-900">About School</h2>
                 </div>
-                <div class="p-5">
+                <div class="p-6">
                     <textarea wire:model="aboutSchool" rows="4"
-                        class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
                         placeholder="Describe your school…"></textarea>
                 </div>
             </div>
 
-            {{-- Vision & Mission --}}
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-                    <h2 class="text-sm font-semibold text-gray-700">Vision, Mission, Values & Goals</h2>
+            {{-- Vision, Mission, Values & Goals --}}
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50 flex items-center gap-3">
+                    <div class="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-base font-semibold text-gray-900">Vision, Mission, Values & Goals</h2>
                 </div>
-                <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach ([
                         ['label' => 'Vision', 'model' => 'usmVision', 'placeholder' => 'Long-term vision for your school…'],
                         ['label' => 'Mission', 'model' => 'usmMission', 'placeholder' => 'Mission statement…'],
@@ -428,9 +438,9 @@
                         ['label' => 'Goals & Objectives', 'model' => 'usmGoals', 'placeholder' => 'Key goals and objectives…'],
                     ] as $item)
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">{{ $item['label'] }}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ $item['label'] }}</label>
                             <textarea wire:model="{{ $item['model'] }}" rows="3"
-                                class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                                class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition"
                                 placeholder="{{ $item['placeholder'] }}"></textarea>
                         </div>
                     @endforeach
@@ -438,9 +448,14 @@
             </div>
 
             {{-- Contact Information --}}
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
-                    <h2 class="text-sm font-semibold text-gray-700">Contact Information</h2>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50 flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-base font-semibold text-gray-900">Contact Information</h2>
                 </div>
                 <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -489,219 +504,352 @@
             </div>
 
             {{-- Management Team --}}
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-gray-700">Management Team</h2>
-                    <span class="text-xs text-gray-400">{{ count($schoolManagement) }} members</span>
-                </div>
-                <div class="p-5 space-y-3">
-                    @forelse ($schoolManagement as $index => $member)
-                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            {{-- Photo --}}
-                            <div class="shrink-0 relative">
-                                @if (isset($member['photo']) && $member['photo'] instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
-                                    <img src="{{ $member['photo']->temporaryUrl() }}"
-                                        class="h-12 w-12 rounded-full object-cover border border-gray-200">
-                                @elseif (!empty($member['photo_path']))
-                                    <img src="{{ $member['photo_path'] }}"
-                                        class="h-12 w-12 rounded-full object-cover border border-gray-200">
-                                @else
-                                    <div
-                                        class="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center border border-gray-300">
-                                        <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                @endif
-                                <label
-                                    class="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 shadow cursor-pointer border border-gray-200">
-                                    <input type="file" class="hidden"
-                                        wire:model="schoolManagement.{{ $index }}.photo">
-                                    <svg class="h-3 w-3 text-blue-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                </label>
-                            </div>
-
-                            {{-- Name + Designation --}}
-                            <div class="flex-1 grid grid-cols-2 gap-2">
-                                <div>
-                                    <input type="text"
-                                        wire:model="schoolManagement.{{ $index }}.name"
-                                        class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-yellow-400 transition"
-                                        placeholder="Name">
-                                    @error("schoolManagement.$index.name")
-                                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <input type="text"
-                                        wire:model="schoolManagement.{{ $index }}.designation"
-                                        class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-yellow-400 transition"
-                                        placeholder="Designation">
-                                    @error("schoolManagement.$index.designation")
-                                        <span class="text-red-500 text-xs">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            {{-- Remove --}}
-                            <button wire:click="removeManagement({{ $index }})"
-                                class="shrink-0 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
                         </div>
-                    @empty
-                        <p class="text-sm text-gray-400 text-center py-4">No members added yet.</p>
-                    @endforelse
-
-                    <button wire:click="addManagement"
-                        class="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-yellow-400 hover:text-yellow-600 hover:bg-yellow-50 transition flex items-center justify-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">Management Team</h2>
+                            <p class="text-xs text-gray-400">{{ count($schoolManagement) }} member(s)</p>
+                        </div>
+                    </div>
+                    <button wire:click="openMemberPanel()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
                         Add Member
                     </button>
                 </div>
+                <div class="p-6 space-y-3">
+                    @forelse ($schoolManagement as $index => $member)
+                        <div class="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-amber-200 transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                @if (!empty($member['photo_path']))
+                                    <img src="{{ $member['photo_path'] }}" class="h-12 w-12 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
+                                @else
+                                    <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center border-2 border-white shadow flex-shrink-0">
+                                        <svg class="h-6 w-6 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $member['name'] }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ $member['designation'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button wire:click="openMemberPanel({{ $index }})"
+                                    class="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition-colors" title="Edit">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button wire:click="confirmDeleteMember({{ $index }})"
+                                    class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Remove">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <p class="text-sm text-gray-400">No members added yet.</p>
+                            <p class="text-xs text-gray-300 mt-1">Click "Add Member" to add team members.</p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
             {{-- School Documents --}}
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-gray-700">School Documents</h2>
-                    <span class="text-xs text-gray-400">{{ count($uploadedDocuments) }} saved</span>
-                </div>
-                <div class="p-5 space-y-4">
-
-                    {{-- Saved documents --}}
-                    @if (count($uploadedDocuments) > 0)
-                        <div class="space-y-2">
-                            <p class="text-xs font-medium text-gray-500">Saved</p>
-                            @foreach ($uploadedDocuments as $document)
-                                <div
-                                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <div
-                                            class="w-7 h-7 bg-red-100 rounded flex items-center justify-center shrink-0">
-                                            <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate">
-                                                {{ $document['title'] }}</p>
-                                            <p class="text-xs text-gray-400">
-                                                {{ strtoupper($document['file_type']) }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2 ml-3 shrink-0">
-                                        <a href="{{ $document['file_path'] }}" target="_blank"
-                                            class="text-xs px-2.5 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">View</a>
-                                        <button wire:click="removeDocument({{ $document['id'] }})"
-                                            class="text-xs px-2.5 py-1 bg-gray-200 text-gray-600 rounded hover:bg-red-100 hover:text-red-600 transition">Delete</button>
-                                    </div>
-                                </div>
-                            @endforeach
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                         </div>
-                    @endif
-
-                    {{-- Pending document slots --}}
-                    @if (count($pendingDocuments) > 0)
-                        <div class="space-y-3">
-                            <p class="text-xs font-medium text-gray-500">New Documents (not saved yet)</p>
-                            @foreach ($pendingDocuments as $index => $pending)
-                                <div class="p-3 bg-amber-50 rounded-lg border border-amber-200"
-                                    x-data="{ sizeError: '' }">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-xs font-medium text-gray-600">Document
-                                            {{ $index + 1 }}</span>
-                                        <button wire:click="removeUploadedFile({{ $index }})"
-                                            class="text-red-400 hover:text-red-600 transition">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <input type="text"
-                                            wire:model="pendingDocuments.{{ $index }}.title"
-                                            class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-amber-400 transition"
-                                            placeholder="Document title">
-                                        <div>
-                                            <input type="file"
-                                                wire:model="pendingDocuments.{{ $index }}.file"
-                                                accept=".pdf"
-                                                class="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
-                                                x-on:change="
-                                                    const f = $event.target.files[0];
-                                                    if (f && f.size > 2097152) {
-                                                        sizeError = 'File is too large (' + (f.size / 1048576).toFixed(1) + ' MB). Maximum allowed size is 2 MB.';
-                                                    } else {
-                                                        sizeError = '';
-                                                    }
-                                                ">
-                                            <p x-show="sizeError !== ''" x-text="sizeError"
-                                                class="text-red-500 text-xs mt-1"></p>
-                                            @error('pendingDocuments.' . $index . '.file')
-                                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                        @if (!empty($pending['file']))
-                                            <p class="text-xs text-green-600 flex items-center gap-1">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                File selected
-                                            </p>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">School Documents</h2>
+                            <p class="text-xs text-gray-400">{{ count($uploadedDocuments) }} saved · {{ count($pendingDocuments) }} pending · Max 2MB PDF</p>
                         </div>
-                    @endif
-
-                    {{-- Add Document button --}}
-                    <button wire:click="addDocumentSlot"
-                        class="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-red-400 hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </div>
+                    <button wire:click="openDocumentPanel"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
                         Add Document
                     </button>
-                    <p class="text-xs text-gray-400">PDF only · max 2 MB per file</p>
-                    @error('pendingDocuments.*.file')
-                        <p class="text-sm text-red-500">{{ $message }}</p>
-                    @enderror
+                </div>
+                <div class="p-6 space-y-3">
+
+                    {{-- Saved documents --}}
+                    @foreach ($uploadedDocuments as $document)
+                        <div class="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-200 transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $document['title'] }}</p>
+                                    <p class="text-xs text-gray-400 uppercase">{{ $document['file_type'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <a href="{{ $document['file_path'] }}" target="_blank"
+                                    class="p-1.5 rounded-lg border border-cyan-200 text-cyan-600 hover:bg-cyan-50 transition-colors" title="View">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </a>
+                                <button wire:click="confirmDeleteDocument({{ $document['id'] }})"
+                                    class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Delete">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    {{-- Pending documents (queued, not yet saved) --}}
+                    @foreach ($pendingDocuments as $index => $pending)
+                        <div class="flex items-center justify-between gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $pending['title'] }}</p>
+                                    <p class="text-xs text-amber-700 uppercase font-semibold">Pending Save</p>
+                                </div>
+                            </div>
+                            <button wire:click="removePendingDocument({{ $index }})"
+                                class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex-shrink-0" title="Remove">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    @endforeach
+
+                    @if (count($uploadedDocuments) === 0 && count($pendingDocuments) === 0)
+                        <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p class="text-sm text-gray-400">No documents uploaded yet.</p>
+                            <p class="text-xs text-gray-300 mt-1">PDF only · max 2 MB per file.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
 
             {{-- Save Button --}}
             <div class="flex justify-end pt-2 pb-6">
-                <button wire:click="saveSchoolInfo"
-                    class="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition shadow flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M5 13l4 4L19 7" />
+                <button wire:click="saveSchoolInfo" wire:loading.attr="disabled"
+                    class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-60">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Save All Information
+                    <span wire:loading.remove wire:target="saveSchoolInfo">Save All Changes</span>
+                    <span wire:loading wire:target="saveSchoolInfo">Saving…</span>
                 </button>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         MANAGEMENT MEMBER SLIDE-IN PANEL
+    ══════════════════════════════════════════════════ --}}
+    @if ($showMemberPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeMemberPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                <button wire:click="closeMemberPanel"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            {{ $editMemberIndex !== null ? 'Edit Member' : 'Add Member' }}
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Fill in the member details below</p>
+                    </div>
+
+                    {{-- Photo --}}
+                    <div class="flex items-center gap-4">
+                        @if ($newMemberPhoto instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+                            <img src="{{ $newMemberPhoto->temporaryUrl() }}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
+                        @elseif (!empty($newMember['photo_path']))
+                            <img src="{{ $newMember['photo_path'] }}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
+                        @else
+                            <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center border-2 border-white shadow flex-shrink-0">
+                                <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                        @endif
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Photo</label>
+                            <input type="file" wire:model="newMemberPhoto" accept="image/*"
+                                class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 border border-gray-300 rounded-md">
+                            <p class="text-xs text-gray-400 mt-1">JPG/PNG up to 2MB. Leave empty to keep current.</p>
+                            <div wire:loading wire:target="newMemberPhoto" class="text-xs text-amber-600 mt-1">Uploading…</div>
+                            @error('newMemberPhoto')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Name <span class="text-red-500">*</span></label>
+                        <input type="text" wire:model.defer="newMember.name" placeholder="e.g. Mr. Sharma"
+                            class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                        @error('newMember.name')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Designation <span class="text-red-500">*</span></label>
+                        <input type="text" wire:model.defer="newMember.designation" placeholder="e.g. Principal"
+                            class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                        @error('newMember.designation')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeMemberPanel" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveMember" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="saveMember">{{ $editMemberIndex !== null ? 'Update' : 'Add Member' }}</span>
+                        <span wire:loading wire:target="saveMember">Saving…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         DOCUMENT SLIDE-IN PANEL
+    ══════════════════════════════════════════════════ --}}
+    @if ($showDocumentPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDocumentPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                <button wire:click="closeDocumentPanel"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Add Document</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Upload a PDF up to 2MB. Will be saved when you click "Save All Changes".</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span class="text-red-500">*</span></label>
+                        <input type="text" wire:model.defer="newDocument.title" placeholder="e.g. Affiliation Certificate"
+                            class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500">
+                        @error('newDocument.title')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                            File <span class="text-red-500">*</span>
+                            <span class="text-gray-400 font-normal">(PDF only — max 2MB)</span>
+                        </label>
+                        <input type="file" wire:model="newDocumentFile" accept=".pdf"
+                            class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 border border-gray-300 rounded-md">
+                        <div wire:loading wire:target="newDocumentFile" class="text-xs text-cyan-600 mt-1.5">Uploading…</div>
+                        @error('newDocumentFile')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeDocumentPanel" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveDocumentPanel" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="saveDocumentPanel">Queue Document</span>
+                        <span wire:loading wire:target="saveDocumentPanel">Queueing…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         DELETE CONFIRMS
+    ══════════════════════════════════════════════════ --}}
+    @if ($pendingDeleteMemberIndex !== null)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteMember"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Remove member?</h3>
+                        <p class="text-sm text-gray-500">
+                            @if (isset($schoolManagement[$pendingDeleteMemberIndex]))
+                                Remove <strong>{{ $schoolManagement[$pendingDeleteMemberIndex]['name'] ?? 'this member' }}</strong>? Their photo on S3 will be deleted.
+                            @else
+                                This action cannot be undone.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDeleteMember" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeDeleteMember" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Remove</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($pendingDeleteDocumentId !== null)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteDocument"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete document?</h3>
+                        <p class="text-sm text-gray-500">The PDF will be permanently removed from S3 and the school records.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDeleteDocument" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeDeleteDocument" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
+                </div>
             </div>
         </div>
     @endif
