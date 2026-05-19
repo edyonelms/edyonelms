@@ -1,653 +1,421 @@
 <div class="min-h-screen bg-gray-50">
 
-    {{-- ══════════════════════════════════════════════════════════
-         STICKY HEADER
-    ══════════════════════════════════════════════════════════ --}}
-    <div class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    {{-- ══════════════════════════════════════════════════
+         HEADER (full-width, sticky, analytics + tabs + filter)
+    ══════════════════════════════════════════════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Website Enquiries</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Manage demo & contact enquiries from website</p>
+                </div>
+                @php
+                    $isDemo  = $activeTab === 'demo';
+                    $totalTab = $isDemo ? $analytics['demo'] : $analytics['contact'];
+                    $pendingTab = $isDemo ? $analytics['demo_pending'] : $analytics['contact_pending'];
+                    $remarkedTab = $isDemo ? $analytics['demo_remarked'] : $analytics['contact_remarked'];
+                    $thisMonthTab = $isDemo ? $analytics['demo_this_month'] : $analytics['contact_this_month'];
+                @endphp
+                <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 divide-x divide-gray-200">
+                    <span class="pr-4">Total: <strong class="text-gray-800">{{ $totalTab }}</strong></span>
+                    <span class="px-4">Pending: <strong class="text-amber-500">{{ $pendingTab }}</strong></span>
+                    <span class="px-4">Remarked: <strong class="text-emerald-600">{{ $remarkedTab }}</strong></span>
+                    <span class="pl-4">This Month: <strong class="text-blue-600">{{ $thisMonthTab }}</strong></span>
+                </div>
+            </div>
 
-        {{-- Title row --}}
-        <div class="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Enquiries</h1>
-                <p class="text-sm text-gray-500 mt-0.5">Manage demo & contact enquiries from website</p>
+            {{-- Mobile/Tablet stats --}}
+            <div class="flex lg:hidden items-center gap-3 sm:gap-4 text-xs text-gray-500 mt-3 flex-wrap">
+                <span>Total: <strong class="text-gray-800">{{ $totalTab }}</strong></span>
+                <span>Pending: <strong class="text-amber-500">{{ $pendingTab }}</strong></span>
+                <span>Remarked: <strong class="text-emerald-600">{{ $remarkedTab }}</strong></span>
+                <span>This Month: <strong class="text-blue-600">{{ $thisMonthTab }}</strong></span>
             </div>
         </div>
 
-        {{-- ── TABS with per-tab analytics ── --}}
-        <div class="px-4 sm:px-6 flex gap-0 border-t border-gray-100">
-
-            {{-- Demo Tab --}}
-            <button wire:click="switchTab('demo')"
-                class="group relative flex flex-col gap-0 px-6 pt-3 pb-0 text-left transition-all duration-150
-                       border-b-2 {{ $activeTab === 'demo' ? 'border-blue-600' : 'border-transparent hover:border-gray-300' }}">
-
-                {{-- Label --}}
-                <div class="flex items-center gap-2 mb-2.5">
-                    <span
-                        class="text-sm font-semibold {{ $activeTab === 'demo' ? 'text-blue-700' : 'text-gray-500 group-hover:text-gray-700' }} transition-colors">
-                        🎬 Demo Enquiries
+        {{-- Tabs --}}
+        <div class="border-t border-gray-200 px-4 sm:px-6">
+            <div class="flex gap-1">
+                <button wire:click="switchTab('demo')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'demo' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Demo Enquiries
+                        <span class="ml-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full {{ $activeTab === 'demo' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500' }}">{{ $analytics['demo'] }}</span>
                     </span>
-                </div>
-
-                {{-- Mini stats --}}
-                <div class="flex items-center gap-5 mb-3 text-xs">
-                    <span class="{{ $activeTab === 'demo' ? 'text-gray-800' : 'text-gray-400' }}">
-                        Total: <strong>{{ $analytics['demo'] }}</strong>
+                </button>
+                <button wire:click="switchTab('contact')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'contact' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Contact Enquiries
+                        <span class="ml-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full {{ $activeTab === 'contact' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500' }}">{{ $analytics['contact'] }}</span>
                     </span>
-                    <span class="{{ $activeTab === 'demo' ? 'text-amber-600' : 'text-gray-400' }}">
-                        Pending: <strong>{{ $analytics['demo_pending'] }}</strong>
-                    </span>
-                    <span class="{{ $activeTab === 'demo' ? 'text-emerald-600' : 'text-gray-400' }}">
-                        Remarked: <strong>{{ $analytics['demo_remarked'] }}</strong>
-                    </span>
-                    <span class="hidden sm:inline {{ $activeTab === 'demo' ? 'text-blue-600' : 'text-gray-400' }}">
-                        This Month: <strong>{{ $analytics['demo_this_month'] }}</strong>
-                    </span>
-                </div>
-            </button>
-
-            {{-- Divider --}}
-            <div class="w-px bg-gray-100 my-3 mx-1"></div>
-
-            {{-- Contact Tab --}}
-            <button wire:click="switchTab('contact')"
-                class="group relative flex flex-col gap-0 px-6 pt-3 pb-0 text-left transition-all duration-150
-                       border-b-2 {{ $activeTab === 'contact' ? 'border-violet-600' : 'border-transparent hover:border-gray-300' }}">
-
-                {{-- Label --}}
-                <div class="flex items-center gap-2 mb-2.5">
-                    <span
-                        class="text-sm font-semibold {{ $activeTab === 'contact' ? 'text-violet-700' : 'text-gray-500 group-hover:text-gray-700' }} transition-colors">
-                        ✉️ Contact Enquiries
-                    </span>
-                </div>
-
-                {{-- Mini stats --}}
-                <div class="flex items-center gap-5 mb-3 text-xs">
-                    <span class="{{ $activeTab === 'contact' ? 'text-gray-800' : 'text-gray-400' }}">
-                        Total: <strong>{{ $analytics['contact'] }}</strong>
-                    </span>
-                    <span class="{{ $activeTab === 'contact' ? 'text-amber-600' : 'text-gray-400' }}">
-                        Pending: <strong>{{ $analytics['contact_pending'] }}</strong>
-                    </span>
-                    <span class="{{ $activeTab === 'contact' ? 'text-emerald-600' : 'text-gray-400' }}">
-                        Remarked: <strong>{{ $analytics['contact_remarked'] }}</strong>
-                    </span>
-                    <span
-                        class="hidden sm:inline {{ $activeTab === 'contact' ? 'text-violet-600' : 'text-gray-400' }}">
-                        This Month: <strong>{{ $analytics['contact_this_month'] }}</strong>
-                    </span>
-                </div>
-            </button>
-
+                </button>
+            </div>
         </div>
 
-        {{-- ── FILTERS ── --}}
-        <div class="px-4 sm:px-6 py-3 border-t border-gray-100">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
-                {{-- Search --}}
-                <div class="sm:col-span-2 relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        {{-- Filter bar --}}
+        <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Search name, email, school..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    Filter by:
                 </div>
 
-                {{-- Status --}}
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search name, email, school..."
+                    class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-56
+                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 hidden sm:inline">Last:</span>
+                    <div class="flex gap-1">
+                        @foreach ([7, 15, 30] as $days)
+                            <button wire:click="$set('filterDays', '{{ $filterDays == $days ? '' : $days }}')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors
+                                       {{ $filterDays == $days
+                                           ? 'bg-blue-600 text-white'
+                                           : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
+                                {{ $days }}d
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="h-5 w-px bg-gray-300 hidden sm:block"></div>
+
                 <select wire:model.live="statusFilter"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                     <option value="">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="remarked">Remarked</option>
                 </select>
 
-                {{-- Date + Clear --}}
-                <div class="flex gap-2">
-                    <select wire:model.live="filterDays"
-                        class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="">All Time</option>
-                        <option value="7">Last 7 days</option>
-                        <option value="15">Last 15 days</option>
-                        <option value="30">Last 30 days</option>
-                    </select>
-                    @if ($search || $statusFilter || $filterDays)
-                        <button wire:click="clearFilters" title="Clear filters"
-                            class="px-3 py-2 text-sm text-red-600 border border-red-200 bg-red-50
-                                   hover:bg-red-100 rounded-lg transition-colors flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    @endif
-                </div>
-
+                @if ($search || $filterDays || $statusFilter)
+                    <button wire:click="clearFilters"
+                        class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        Clear
+                    </button>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- ══════════════════════════════════════════════════════════
-         TABLE
-    ══════════════════════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════════════
+         BODY — Enquiry list
+    ══════════════════════════════════════════════════ --}}
     <div class="p-4 sm:p-6">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                #</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Name</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Contact</th>
-                            @if ($activeTab === 'demo')
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    School / Role</th>
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Students</th>
-                            @else
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    School</th>
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Subject</th>
-                            @endif
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Status</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Date</th>
-                            <th
-                                class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($enquiries as $i => $enquiry)
-                            <tr class="hover:bg-gray-50/70 transition-colors">
+        <div class="space-y-3">
+            @forelse ($enquiries as $enquiry)
+                @php
+                    $isRemarked = !empty($enquiry->remark);
+                    $bodyText   = $activeTab === 'demo'
+                        ? ($enquiry->role ?? '') . ($enquiry->no_of_students ? ' · ' . $enquiry->no_of_students . ' students' : '')
+                        : ($enquiry->description ?? '');
+                @endphp
+                <div class="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+                    <div class="flex items-stretch">
+                        <div class="w-1 flex-shrink-0 {{ $isRemarked ? 'bg-emerald-500' : 'bg-amber-400' }}"></div>
 
-                                {{-- # --}}
-                                <td class="px-4 py-3 text-xs text-gray-400">
-                                    {{ $enquiries->firstItem() + $i }}
-                                </td>
+                        <div class="flex-1 p-4 sm:p-5 min-w-0">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-start gap-3 flex-1 min-w-0">
 
-                                {{-- Name --}}
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2.5">
-                                        <div
-                                            class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                                                    {{ $activeTab === 'demo' ? 'bg-blue-100' : 'bg-violet-100' }}">
-                                            <span
-                                                class="text-xs font-bold {{ $activeTab === 'demo' ? 'text-blue-600' : 'text-violet-600' }}">
-                                                {{ strtoupper(substr($enquiry->full_name, 0, 1)) }}
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 {{ $isRemarked ? 'bg-emerald-50' : 'bg-amber-50' }}">
+                                        @if ($isRemarked)
+                                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        @else
+                                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                                            <h3 class="text-base font-semibold text-gray-900">{{ $enquiry->full_name ?? 'Anonymous' }}</h3>
+                                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide
+                                                {{ $isRemarked ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                                {{ $isRemarked ? 'Remarked' : 'Pending' }}
                                             </span>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-gray-800 truncate max-w-[130px]">
-                                                {{ $enquiry->full_name }}
-                                            </p>
-                                            @if ($activeTab === 'demo' && $enquiry->city)
-                                                <p class="text-xs text-gray-400 truncate max-w-[130px]">
-                                                    {{ $enquiry->city }}</p>
+                                            @if ($enquiry->school_name)
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                    {{ Str::limit($enquiry->school_name, 30) }}
+                                                </span>
                                             @endif
                                         </div>
-                                    </div>
-                                </td>
 
-                                {{-- Contact --}}
-                                <td class="px-4 py-3">
-                                    <p class="text-sm text-gray-700 truncate max-w-[160px]">{{ $enquiry->email }}</p>
-                                    @if ($enquiry->phone_number ?? $enquiry->phone)
-                                        <p class="text-xs text-gray-400">
-                                            {{ $enquiry->phone_number ?? $enquiry->phone }}</p>
-                                    @endif
-                                </td>
+                                        @if ($activeTab === 'contact' && $enquiry->subject)
+                                            <p class="text-sm font-medium text-gray-700 mb-1">{{ $enquiry->subject }}</p>
+                                        @endif
 
-                                {{-- School / Role --}}
-                                <td class="px-4 py-3">
-                                    @if ($enquiry->school_name)
-                                        <p class="text-sm font-medium text-gray-800 truncate max-w-[140px]">
-                                            {{ $enquiry->school_name }}</p>
-                                    @else
-                                        <span class="text-gray-300">—</span>
-                                    @endif
-                                    @if ($activeTab === 'demo' && $enquiry->role)
-                                        <p class="text-xs text-gray-400">{{ $enquiry->role }}</p>
-                                    @endif
-                                </td>
+                                        @if ($bodyText)
+                                            <p class="text-sm text-gray-600 line-clamp-2 mb-2.5 leading-relaxed">
+                                                {{ Str::limit($bodyText, 160) }}
+                                            </p>
+                                        @endif
 
-                                {{-- Students / Subject --}}
-                                <td class="px-4 py-3">
-                                    @if ($activeTab === 'demo')
-                                        @if ($enquiry->no_of_students)
-                                            <span
-                                                class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
-                                                👥 {{ $enquiry->no_of_students }}
+                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                            @if ($enquiry->email)
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <span class="font-medium text-gray-600">{{ $enquiry->email }}</span>
+                                                </span>
+                                                <span class="text-gray-300">•</span>
+                                            @endif
+
+                                            @php
+                                                $phone = $activeTab === 'demo' ? ($enquiry->phone ?? null) : ($enquiry->phone_number ?? null);
+                                            @endphp
+                                            @if ($phone)
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                    </svg>
+                                                    {{ $phone }}
+                                                </span>
+                                                <span class="text-gray-300">•</span>
+                                            @endif
+
+                                            <span class="inline-flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {{ $enquiry->created_at->format('M j, Y · g:i A') }}
                                             </span>
-                                        @else
-                                            <span class="text-gray-300">—</span>
-                                        @endif
-                                    @else
-                                        @if ($enquiry->subject)
-                                            <p class="text-sm text-gray-700 truncate max-w-[140px]">
-                                                {{ $enquiry->subject }}</p>
-                                        @else
-                                            <span class="text-gray-300">—</span>
-                                        @endif
-                                    @endif
-                                </td>
-
-                                {{-- Status --}}
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    @if ($enquiry->remark)
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full
-                                                     font-medium bg-green-50 text-green-700 border border-green-100">
-                                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                                            Remarked
-                                        </span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full
-                                                     font-medium bg-amber-50 text-amber-700 border border-amber-100">
-                                            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
-                                            Pending
-                                        </span>
-                                    @endif
-                                </td>
-
-                                {{-- Date --}}
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <p class="text-xs font-medium text-gray-700">
-                                        {{ $enquiry->created_at->format('d M Y') }}</p>
-                                    <p class="text-xs text-gray-400">{{ $enquiry->created_at->diffForHumans() }}</p>
-                                </td>
-
-                                {{-- Actions --}}
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <button wire:click="viewEnquiry({{ $enquiry->id }})"
-                                            class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="View">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
-                                        <button wire:click="openRemarkModal({{ $enquiry->id }})"
-                                            class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                            title="Add / Edit Remark">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </button>
-                                        <button wire:click="deleteEnquiry({{ $enquiry->id }})"
-                                            class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                            <span class="text-gray-300">•</span>
+                                            <span class="text-gray-400">{{ $enquiry->created_at->diffForHumans() }}</span>
+                                        </div>
                                     </div>
-                                </td>
+                                </div>
 
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-14 text-center">
-                                    <div
-                                        class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                <div class="flex items-center gap-1 flex-shrink-0">
+                                    <button wire:click="viewEnquiry({{ $enquiry->id }})" title="View"
+                                        class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
-                                    </div>
-                                    <p class="text-gray-500 text-sm">No enquiries found</p>
-                                    @if ($search || $statusFilter || $filterDays)
-                                        <button wire:click="clearFilters"
-                                            class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                            Clear filters
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Pagination --}}
-            @if ($enquiries->hasPages())
-                <div
-                    class="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p class="text-sm text-gray-500">
-                        Showing <strong class="text-gray-700">{{ $enquiries->firstItem() }}</strong>
-                        to <strong class="text-gray-700">{{ $enquiries->lastItem() }}</strong>
-                        of <strong class="text-gray-700">{{ $enquiries->total() }}</strong> enquiries
-                    </p>
-                    <div class="flex items-center gap-1">
-                        @if ($enquiries->onFirstPage())
-                            <span
-                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed">&laquo;
-                                Prev</span>
-                        @else
-                            <button wire:click="previousPage"
-                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                &laquo; Prev
-                            </button>
-                        @endif
-                        @foreach ($enquiries->getUrlRange(max(1, $enquiries->currentPage() - 2), min($enquiries->lastPage(), $enquiries->currentPage() + 2)) as $page => $url)
-                            <button wire:click="gotoPage({{ $page }})"
-                                class="px-3 py-1.5 text-sm rounded-lg transition-colors
-                                    {{ $page == $enquiries->currentPage()
-                                        ? 'bg-blue-600 text-white border border-blue-600'
-                                        : 'text-gray-600 border border-gray-300 hover:bg-gray-50' }}">
-                                {{ $page }}
-                            </button>
-                        @endforeach
-                        @if ($enquiries->hasMorePages())
-                            <button wire:click="nextPage"
-                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                Next &raquo;
-                            </button>
-                        @else
-                            <span
-                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed">Next
-                                &raquo;</span>
-                        @endif
+                                    </button>
+                                    <button wire:click="openRemarkModal({{ $enquiry->id }})" title="{{ $isRemarked ? 'Edit Remark' : 'Add Remark' }}"
+                                        class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button wire:click="deleteEnquiry({{ $enquiry->id }})" title="Delete"
+                                        class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            @endif
+            @empty
+                <div class="text-center py-20 bg-white rounded-xl border border-gray-200">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800">No {{ $activeTab === 'demo' ? 'demo' : 'contact' }} enquiries found</p>
+                    <p class="text-sm text-gray-400 mt-1">Website submissions will appear here.</p>
+                </div>
+            @endforelse
         </div>
+
+        @if ($enquiries->hasPages())
+            <div class="mt-6">{{ $enquiries->links() }}</div>
+        @endif
     </div>
 
-
-    {{-- ══════════════════════════════════════════════════════════
-         SLIDE-IN PANEL
-    ══════════════════════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════════════
+         VIEW SLIDE-IN PANEL
+    ══════════════════════════════════════════════════ --}}
     @if ($showDetailModal && $selectedEnquiry)
-        <div class="fixed inset-0 z-[9999]">
-            {{-- Backdrop --}}
-            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]"
-                 wire:click="closeDetailModal"></div>
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDetailModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
-            {{-- Panel --}}
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col z-10">
-
-                {{-- Header --}}
-                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full flex items-center justify-center
-                            {{ $activeTab === 'demo' ? 'bg-blue-100' : 'bg-violet-100' }}">
-                            <span class="text-sm font-bold {{ $activeTab === 'demo' ? 'text-blue-600' : 'text-violet-600' }}">
-                                {{ strtoupper(substr($selectedEnquiry->full_name, 0, 1)) }}
-                            </span>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-gray-900">{{ $selectedEnquiry->full_name }}</p>
-                            <div class="flex items-center gap-1.5 mt-0.5">
-                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold
-                                    {{ $activeTab === 'demo' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700' }}">
-                                    {{ $activeTab === 'demo' ? 'Demo' : 'Contact' }}
-                                </span>
-                                @if ($selectedEnquiry->remark)
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">✓ Remarked</span>
-                                @else
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">⏳ Pending</span>
-                                @endif
-                            </div>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="block w-2 h-2 rounded-full flex-shrink-0 {{ $selectedEnquiry->remark ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-semibold text-gray-900 truncate">Enquiry Details</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                {{ $activeTab === 'demo' ? 'Demo Request' : 'Contact Form' }} · {{ $selectedEnquiry->created_at->format('d M Y') }}
+                            </p>
                         </div>
                     </div>
-                    <button wire:click="closeDetailModal"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
+                    <button wire:click="closeDetailModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
-                {{-- Scrollable body --}}
-                <div class="flex-1 overflow-y-auto p-5 space-y-4">
-
-                    {{-- Contact Information --}}
-                    <div class="bg-gray-50 rounded-xl p-4">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Contact Information</p>
-                        <div class="grid grid-cols-2 gap-3">
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Name</p>
+                            <p class="text-sm text-gray-800">{{ $selectedEnquiry->full_name ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Email</p>
+                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->email ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Phone</p>
+                            <p class="text-sm text-gray-800">{{ $activeTab === 'demo' ? ($selectedEnquiry->phone ?? '—') : ($selectedEnquiry->phone_number ?? '—') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">School</p>
+                            <p class="text-sm text-gray-800 truncate">{{ $selectedEnquiry->school_name ?? '—' }}</p>
+                        </div>
+                        @if ($activeTab === 'demo')
                             <div>
-                                <p class="text-xs text-gray-400 mb-0.5">Email</p>
-                                <p class="text-sm font-medium text-gray-800 break-all">{{ $selectedEnquiry->email }}</p>
+                                <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">City</p>
+                                <p class="text-sm text-gray-800">{{ $selectedEnquiry->city ?? '—' }}</p>
                             </div>
-                            @if ($selectedEnquiry->phone_number ?? $selectedEnquiry->phone)
-                                <div>
-                                    <p class="text-xs text-gray-400 mb-0.5">Phone</p>
-                                    <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->phone_number ?? $selectedEnquiry->phone }}</p>
-                                </div>
-                            @endif
-                            @if ($selectedEnquiry->school_name)
-                                <div class="col-span-2">
-                                    <p class="text-xs text-gray-400 mb-0.5">School / Organisation</p>
-                                    <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->school_name }}</p>
-                                </div>
-                            @endif
                             <div>
-                                <p class="text-xs text-gray-400 mb-0.5">Date</p>
-                                <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->created_at->format('d M Y') }}</p>
-                                <p class="text-xs text-gray-400">{{ $selectedEnquiry->created_at->diffForHumans() }}</p>
+                                <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Role</p>
+                                <p class="text-sm text-gray-800">{{ $selectedEnquiry->role ?? '—' }}</p>
                             </div>
-                        </div>
-                    </div>
-
-                    {{-- Demo / Contact Details --}}
-                    @if ($activeTab === 'demo' && ($selectedEnquiry->city || $selectedEnquiry->no_of_students || $selectedEnquiry->role))
-                        <div class="bg-blue-50 rounded-xl p-4">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Demo Details</p>
-                            <div class="grid grid-cols-3 gap-3">
-                                @if ($selectedEnquiry->city)
-                                    <div>
-                                        <p class="text-xs text-gray-400 mb-0.5">City</p>
-                                        <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->city }}</p>
-                                    </div>
-                                @endif
-                                @if ($selectedEnquiry->no_of_students)
-                                    <div>
-                                        <p class="text-xs text-gray-400 mb-0.5">Students</p>
-                                        <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->no_of_students }}</p>
-                                    </div>
-                                @endif
-                                @if ($selectedEnquiry->role)
-                                    <div>
-                                        <p class="text-xs text-gray-400 mb-0.5">Role</p>
-                                        <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->role }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    @elseif ($activeTab === 'contact' && $selectedEnquiry->subject)
-                        <div class="bg-violet-50 rounded-xl p-4">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Subject</p>
-                            <p class="text-sm font-medium text-gray-800">{{ $selectedEnquiry->subject }}</p>
-                        </div>
-                    @endif
-
-                    {{-- Message --}}
-                    @php $msg = $selectedEnquiry->description ?? $selectedEnquiry->message ?? null; @endphp
-                    @if ($msg)
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Message</p>
-                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $msg }}</p>
-                        </div>
-                    @endif
-
-                    {{-- Remark --}}
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Remark</p>
-                            <button wire:click="openRemarkModal({{ $selectedEnquiry->id }})"
-                                class="flex items-center gap-1 text-xs text-emerald-700 border border-emerald-200
-                                       px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors font-medium">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                </svg>
-                                {{ $selectedEnquiry->remark ? 'Edit Remark' : 'Add Remark' }}
-                            </button>
-                        </div>
-                        @if ($selectedEnquiry->remark)
-                            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                                <p class="text-sm text-emerald-800 leading-relaxed whitespace-pre-line">{{ $selectedEnquiry->remark }}</p>
-                            </div>
-                        @else
-                            <div class="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-4 text-center">
-                                <p class="text-xs text-gray-400">No remark added yet.</p>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Number of Students</p>
+                                <p class="text-sm text-gray-800">{{ $selectedEnquiry->no_of_students ?? '—' }}</p>
                             </div>
                         @endif
                     </div>
 
-                </div>
-
-                {{-- Footer --}}
-                <div class="flex-shrink-0 px-5 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <button wire:click="deleteEnquiry({{ $selectedEnquiry->id }})"
-                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 border border-red-200
-                               rounded-lg hover:bg-red-50 transition-colors font-medium">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                        Delete
-                    </button>
-                    <button wire:click="closeDetailModal"
-                        class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        Close
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    @endif
-
-
-    {{-- ══════════════════════════════════════════════════════════
-         REMARK MODAL
-    ══════════════════════════════════════════════════════════ --}}
-    {{-- ══════════════════════════════════════════════════════════
-         DELETE CONFIRM POPUP
-    ══════════════════════════════════════════════════════════ --}}
-    @if ($pendingDeleteId !== null)
-        <div class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[9999] px-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 bg-red-50 flex items-center gap-3">
-                    <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </div>
-                    <h3 class="text-sm font-bold text-gray-900">Delete Enquiry</h3>
-                </div>
-                <div class="p-5">
-                    <p class="text-sm text-gray-600">Are you sure you want to delete this enquiry? This action cannot be undone.</p>
-                </div>
-                <div class="px-5 pb-5 flex items-center gap-2">
-                    <button wire:click="executeDelete"
-                        class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                        Yes, Delete
-                    </button>
-                    <button wire:click="cancelDelete"
-                        class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-
-    @if ($showRemarkModal)
-        <div class="fixed inset-0 z-[1000] flex items-center justify-center px-4 py-6"
-            style="background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);" wire:click="closeRemarkModal">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]" wire:click.stop>
-
-                <div
-                    class="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-100
-                            bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-2xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                            </svg>
+                    @if ($activeTab === 'contact')
+                        <div class="border-t border-gray-100 pt-6">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Subject</p>
+                            <p class="text-base font-medium text-gray-900">{{ $selectedEnquiry->subject ?? '—' }}</p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-gray-900">Add / Edit Remark</h3>
-                            <p class="text-xs text-gray-400">Internal note for this enquiry</p>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Description</p>
+                            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $selectedEnquiry->description ?? '—' }}</p>
                         </div>
+                    @endif
+
+                    @if ($selectedEnquiry->remark)
+                        <div class="border-t border-gray-100 pt-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs text-gray-400 uppercase tracking-wider">Internal Remark</p>
+                                <span class="text-xs text-gray-400">{{ $selectedEnquiry->updated_at->format('d M Y · g:i A') }}</span>
+                            </div>
+                            <div class="bg-gray-50 border-l-2 border-blue-500 rounded-r-md px-4 py-3">
+                                <p class="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{{ $selectedEnquiry->remark }}</p>
+                            </div>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-2.5 text-sm text-amber-700 border-t border-gray-100 pt-6">
+                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            No remark added yet
+                        </div>
+                    @endif
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <button wire:click="openRemarkModal({{ $selectedEnquiry->id }})"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        {{ $selectedEnquiry->remark ? 'Edit Remark' : 'Add Remark' }}
+                    </button>
+                    <button wire:click="closeDetailModal" class="px-5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md">Close</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         REMARK SLIDE-IN PANEL
+    ══════════════════════════════════════════════════ --}}
+    @if ($showRemarkModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeRemarkModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Internal Remark</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Add a note for team reference (not sent to user)</p>
                     </div>
-                    <button wire:click="closeRemarkModal"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
+                    <button wire:click="closeRemarkModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Remark <span class="text-red-500">*</span></label>
+                        <textarea wire:model.defer="remarkText" rows="8" placeholder="Type your internal note here..."
+                            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm text-gray-800 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        @error('remarkText')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeRemarkModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveRemark" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="saveRemark">Save Remark</span>
+                        <span wire:loading wire:target="saveRemark">Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         DELETE CONFIRM OVERLAY
+    ══════════════════════════════════════════════════ --}}
+    @if ($pendingDeleteId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDelete"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete enquiry?</h3>
+                        <p class="text-sm text-gray-500">This will permanently delete the enquiry record. This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDelete" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeDelete" wire:loading.attr="disabled"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="executeDelete">Delete</span>
+                        <span wire:loading wire:target="executeDelete">Deleting...</span>
                     </button>
                 </div>
-
-                <div class="flex-1 overflow-y-auto p-5">
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">
-                        Your Remark <span class="text-red-500">*</span>
-                    </label>
-                    <textarea wire:model="remarkText" rows="6" placeholder="Write your remark here..."
-                        class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm
-                               focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                               resize-none leading-relaxed
-                               @error('remarkText') border-red-400 @enderror">
-                    </textarea>
-                    @error('remarkText')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                    <p class="text-xs text-gray-400 text-right mt-1">{{ strlen($remarkText) }} / 1000</p>
-                </div>
-
-                <div class="flex-shrink-0 px-5 pb-5 pt-3 border-t border-gray-100 flex items-center gap-2">
-                    <button wire:click="saveRemark"
-                        class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm
-                               font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 13l4 4L19 7" />
-                        </svg>
-                        Save Remark
-                    </button>
-                    <button wire:click="closeRemarkModal"
-                        class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm
-                               font-medium rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                </div>
-
             </div>
         </div>
     @endif
