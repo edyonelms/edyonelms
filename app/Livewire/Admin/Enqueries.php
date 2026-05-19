@@ -110,8 +110,14 @@ class Enqueries extends Component
 
     private function getTeacherEnquiries()
     {
+        // Select only columns the blade reads — avoid eager-loading heavy
+        // relations (teacherDetail has nested assignedSubjects/sections/
+        // classes which would N+1 expand needlessly).
         return ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)
-            ->with(['user', 'organization', 'teacherDetail'])
+            ->with([
+                'user:id,name,email',
+                'organization:id,name',
+            ])
             ->when($this->filterDays, fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays((int) $this->filterDays)))
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -136,7 +142,10 @@ class Enqueries extends Component
     private function getStudentEnquiries()
     {
         return ContactAdminStudent::where('organization_id', Auth::user()->organization_id)
-            ->with(['user', 'organization', 'studentDetail'])
+            ->with([
+                'user:id,name,email',
+                'organization:id,name',
+            ])
             ->when($this->filterDays, fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays((int) $this->filterDays)))
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -164,9 +173,9 @@ class Enqueries extends Component
     {
         $this->selectedEnquiry = $this->activeTab === 'teacher'
             ? ContactAdminTeacher::where('organization_id', Auth::user()->organization_id)
-                ->with(['user', 'organization', 'teacherDetail'])->findOrFail($id)
+                ->with(['user:id,name,email', 'organization:id,name'])->findOrFail($id)
             : ContactAdminStudent::where('organization_id', Auth::user()->organization_id)
-                ->with(['user', 'organization', 'studentDetail'])->findOrFail($id);
+                ->with(['user:id,name,email', 'organization:id,name'])->findOrFail($id);
 
         $this->showDetailModal = true;
     }
