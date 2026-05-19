@@ -42,6 +42,7 @@ use App\Livewire\Admin\TermOfUse;
 use App\Livewire\Admin\TermsAndCondition;
 use App\Livewire\Admin\Transport;
 use App\Livewire\Admin\AccountUsers;
+use App\Livewire\Admin\Admissions;
 use App\Livewire\Components\Notification;
 use App\Livewire\Components\Profile;
 use App\Livewire\ResetPassword;
@@ -59,6 +60,7 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         Route::get('/standard', Standard::class)->name('admin.standard');
         Route::get('/add-exam', AddExam::class)->name('admin.add-exam');
         Route::get('/student', Student::class)->name('admin.student');
+        Route::get('/admissions', Admissions::class)->name('admin.admissions');
         Route::get('/teacher', Teacher::class)->name('admin.teacher');
         Route::get('/announcement', Announcement::class)->name('admin.announcement');
         Route::get('/timetable', TimeTable::class)->name('admin.timetable');
