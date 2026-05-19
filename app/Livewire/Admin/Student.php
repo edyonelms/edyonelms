@@ -79,6 +79,10 @@ class Student extends Component
     public $lastMonthAdmissions = 0;
     public $thisYearAdmissions  = 0;
 
+    // ─── Custom delete overlay (replaces broken WireUI dialog) ──────────
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
+
     public string $search         = '';
     public string $filterClass    = '';
     public string $filterSection  = '';
@@ -115,14 +119,28 @@ class Student extends Component
     {
         $org = Auth::user()->organization_id;
 
-        $base = fn() => StudentDetail::whereHas('user', fn($q) => $q->where('organization_id', $org));
+        // Single aggregate query — was 6 separate COUNT(*) queries with
+        // expensive whereHas('user') subqueries each time. StudentDetail
+        // has its own organization_id column, so use it directly.
+        $stats = StudentDetail::where('organization_id', $org)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN YEAR(created_at) = ? THEN 1 ELSE 0 END) as this_year,
+                SUM(CASE WHEN YEAR(created_at) = ? THEN 1 ELSE 0 END) as last_year,
+                SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as last_month
+            ', [now()->year, now()->subYear()->year, now()->subMonth()])
+            ->first();
 
-        $this->totalStudents       = $base()->count();
-        $this->activeStudents      = $base()->whereHas('user', fn($q) => $q->where('is_active', true))->count();
-        $this->lastYearStudents    = $base()->whereYear('created_at', now()->subYear()->year)->count();
-        $this->thisYearStudents    = $base()->whereYear('created_at', now()->year)->count();
-        $this->lastMonthAdmissions = $base()->where('created_at', '>=', now()->subMonth())->count();
-        $this->thisYearAdmissions  = $base()->whereYear('created_at', now()->year)->count();
+        $this->totalStudents       = (int) ($stats->total ?? 0);
+        $this->thisYearStudents    = (int) ($stats->this_year ?? 0);
+        $this->lastYearStudents    = (int) ($stats->last_year ?? 0);
+        $this->lastMonthAdmissions = (int) ($stats->last_month ?? 0);
+        $this->thisYearAdmissions  = $this->thisYearStudents;
+
+        // Active count needs to join users for is_active — separate query
+        $this->activeStudents = StudentDetail::where('organization_id', $org)
+            ->whereHas('user', fn($q) => $q->where('is_active', true))
+            ->count();
     }
 
     public function updatedSearch(): void
@@ -299,7 +317,7 @@ class Student extends Component
             } else {
                 StudentDetail::create($detailData);
 
-                // Send password email on student creation
+                // Send welcome email with login credentials on student creation
                 try {
                     $templateKey = config('services.zeptomail.student_password_template_key');
                     if ($templateKey) {
@@ -313,11 +331,17 @@ class Student extends Component
                                 'school_name'      => $schoolName,
                                 'admission_number' => $detailData['admission_no'],
                                 'username'         => $student->name,
+                                'name'             => $student->name,
+                                'email'            => $student->email,
+                                'login_url'        => url('/login'),
                             ]
                         );
+                        logger()->info('Student welcome email sent to: ' . $student->email);
+                    } else {
+                        logger()->warning('ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
                     }
                 } catch (\Throwable $e) {
-                    logger()->error('Student password email failed: ' . $e->getMessage());
+                    logger()->error('Student welcome email failed for ' . $student->email . ': ' . $e->getMessage());
                 }
 
                 $this->notification()->success('Student Created Successfully!');
@@ -395,27 +419,26 @@ class Student extends Component
 
     public function onDeleteStudent($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this student? This action cannot be undone.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDeleteStudent',
-                'params' => $id,
-                'color'  => 'negative',
-            ],
-            'reject' => ['label' => 'No'],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDeleteStudent($id): void
+    public function cancelDelete(): void
     {
-        $detail = StudentDetail::find($id);
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        $detail = StudentDetail::find($this->deleteTargetId);
 
         if ($detail) {
             $user = User::find($detail->user_id);
+            if ($user && $user->image) {
+                $oldPath = parse_url($user->image, PHP_URL_PATH);
+                Storage::disk('s3')->delete($oldPath);
+            }
             $detail->delete();
             $user?->delete();
             $this->notification()->success('Student Deleted Successfully!');
@@ -424,6 +447,16 @@ class Student extends Component
         } else {
             $this->notification()->error('Student not found!');
         }
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    // Keep old method as alias in case something still calls it
+    public function doDeleteStudent($id = null): void
+    {
+        if ($id) $this->deleteTargetId = $id;
+        $this->confirmDelete();
     }
 
     public function exportStudents(): StreamedResponse

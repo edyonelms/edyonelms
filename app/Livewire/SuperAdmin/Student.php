@@ -648,7 +648,13 @@ class Student extends Component
                     'school_name'      => $org->name,
                     'admission_number' => $admissionNo,
                     'username'         => $this->addName,
+                    'name'             => $this->addName,
+                    'email'            => $this->addEmail,
+                    'login_url'        => url('/login'),
                 ]);
+                Log::info('SuperAdmin: student welcome email sent', ['email' => $this->addEmail]);
+            } else {
+                Log::warning('ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
             }
         } catch (\Throwable $e) {
             Log::error('Student welcome email failed', ['email' => $this->addEmail, 'error' => $e->getMessage()]);
