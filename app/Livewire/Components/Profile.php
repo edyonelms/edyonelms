@@ -206,6 +206,12 @@ class Profile extends Component
     public function saveSchoolInfo()
     {
         try {
+            // Drop empty management rows so blank defaults don't fail required validation
+            $this->schoolManagement = array_values(array_filter(
+                $this->schoolManagement,
+                fn($m) => !empty(trim($m['name'] ?? '')) || !empty(trim($m['designation'] ?? ''))
+            ));
+
             $this->validate([
                 'aboutSchool' => 'nullable|string',
                 'websiteInfo' => 'nullable|string',
