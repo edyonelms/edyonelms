@@ -20,290 +20,372 @@ class ExamCopy extends Component
 {
     use WireUiActions, WithPagination, WithFileUploads;
 
-    public $activeTab = 'list';
-    public $showSlider = false;
-    public $sliderTitle = '';
-    public $sliderData = [];
+    // ─── Tabs: 'by-subject' (formerly 'list') | 'by-student' (formerly 'view') ──
+    public string $activeTab = 'by-subject';
 
-    // Statistics
-    public $totalExamCopies = 0;
-    public $totalStudents = 0;
-    public $uploadedCopies = 0;
-    public $pendingUploads = 0;
+    // ─── Upload Copies modal (replaces former 'upload' tab) ─────────────────
+    public bool $showUploadModal = false;
+    public string $uploadExam     = '';
+    public string $uploadStandard = '';
+    public string $uploadSection  = '';
+    public string $uploadSubject  = '';
+    public array  $studentPdfs    = [];
+    public array  $uploadedFiles  = [];
 
-    // Filters for list tab
-    #[Url]
-    public $search = '';
+    // ─── Edit single exam copy modal ────────────────────────────────────────
+    public bool $showEditModal  = false;
+    public $editCopyId          = null;
+    public $editCopyMeta        = [];
+    public $editPdf             = null;
+    public string $editRemarks  = '';
 
-    #[Url]
-    public $perPage = 10;
+    // ─── Delete confirm overlay ─────────────────────────────────────────────
+    public bool $showDeleteConfirm = false;
+    public $pendingDeleteId        = null;
 
-    #[Url]
-    public $filterExam = '';
+    // ─── Filters: by-subject tab ────────────────────────────────────────────
+    #[Url] public string $search         = '';
+    #[Url] public int    $perPage        = 10;
+    #[Url] public string $filterExam     = '';
+    #[Url] public string $filterStandard = '';
+    #[Url] public string $filterSection  = '';
+    #[Url] public string $filterSubject  = '';
 
-    #[Url]
-    public $filterStandard = '';
+    // ─── Filters: by-student tab ────────────────────────────────────────────
+    public string $byStudentExam     = '';
+    public string $byStudentStandard = '';
+    public string $byStudentSection  = '';
+    public string $byStudentStudent  = '';
+    public array  $studentResults    = [];
 
-    #[Url]
-    public $filterSection = '';
+    // ─── Stats ──────────────────────────────────────────────────────────────
+    public int $totalExamCopies = 0;
+    public int $totalStudents   = 0;
+    public int $uploadedCopies  = 0;
+    public int $pendingUploads  = 0;
 
-    #[Url]
-    public $filterSubject = '';
-
-    // For view tab filters
-    public $selectedExam = '';
-    public $selectedStandard = '';
-    public $selectedSection = '';
-    public $selectedStudent = '';
-    public $studentPerformance = [];
-
-    // For upload PDF tab
-    public $uploadExam = '';
-    public $uploadStandard = '';
-    public $uploadSection = '';
-    public $uploadSubject = '';
-    public $studentPdfs = [];
-    public $uploadedFiles = [];
-
-    // Data for dropdowns
+    // ─── Dropdown data ──────────────────────────────────────────────────────
     public $exams;
-    public $standards = [];
-    public $sections = [];
-    public $students;
+    public $standards;
+    public $sections;
     public $subjects;
+    public $students;
 
-    public function mount()
+    public function mount(): void
     {
         $this->loadFilters();
-        $this->loadInitialData();
         $this->loadStatistics();
-    }
 
-    public function loadFilters()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $this->exams = Exam::where('organization_id', $organizationId)
-            ->where('is_published', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $this->standards = Standard::where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get();
-
-        $this->subjects = Subject::where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-    }
-
-    public function loadInitialData()
-    {
         if ($this->filterStandard) {
             $this->sections = Section::where('standard_id', $this->filterStandard)
-                ->where('is_active', true)
-                ->get();
-
-            $this->loadSubjectsForStandard($this->filterStandard, $this->filterSection);
+                ->where('is_active', true)->get();
+            $this->loadSubjectsForStandard($this->filterStandard, $this->filterSection ?: null);
         }
     }
 
-    public function loadStatistics()
+    public function loadFilters(): void
     {
-        $organizationId = Auth::user()->organization_id;
+        $orgId = Auth::user()->organization_id;
 
-        $query = ModelsExamCopy::where('organization_id', $organizationId);
+        $this->exams = Exam::where('organization_id', $orgId)
+            ->where('is_published', true)
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'exam_name', 'academic_year']);
 
-        if ($this->filterExam) {
-            $query->where('exam_id', $this->filterExam);
-        }
-        if ($this->filterStandard) {
-            $query->where('standard_id', $this->filterStandard);
-        }
-        if ($this->filterSection) {
-            $query->where('section_id', $this->filterSection);
-        }
-        if ($this->filterSubject) {
-            $query->where('subject_id', $this->filterSubject);
-        }
+        $this->standards = Standard::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get(['id', 'name']);
 
-        $this->totalExamCopies = (clone $query)->count();
-        $this->totalStudents = (clone $query)
+        $this->subjects = Subject::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $this->sections  = collect();
+        $this->students  = collect();
+    }
+
+    public function loadStatistics(): void
+    {
+        $orgId = Auth::user()->organization_id;
+        $q = ModelsExamCopy::where('organization_id', $orgId);
+
+        if ($this->filterExam)     $q->where('exam_id', $this->filterExam);
+        if ($this->filterStandard) $q->where('standard_id', $this->filterStandard);
+        if ($this->filterSection)  $q->where('section_id', $this->filterSection);
+        if ($this->filterSubject)  $q->where('subject_id', $this->filterSubject);
+
+        $this->totalExamCopies = (clone $q)->count();
+        $this->totalStudents   = (clone $q)
             ->whereNotNull('student_detail_id')
             ->distinct('student_detail_id')
             ->count('student_detail_id');
-        $this->uploadedCopies = (clone $query)->whereNotNull('pdf_path')->count();
-        $this->pendingUploads = (clone $query)->whereNull('pdf_path')->count();
+        $this->uploadedCopies  = (clone $q)->whereNotNull('pdf_path')->count();
+        $this->pendingUploads  = (clone $q)->whereNull('pdf_path')->count();
     }
 
-    public function updated($property, $value)
-    {
-        if (in_array($property, ['search', 'filterExam', 'filterStandard', 'filterSection', 'filterSubject'])) {
-            $this->resetPage();
-        }
-
-        if ($property === 'filterStandard' && $value) {
-            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
-            $this->filterSection = '';
-            $this->loadSubjectsForStandard($value);
-            $this->filterSubject = '';
-        } elseif ($property === 'filterStandard' && !$value) {
-            $this->sections = [];
-            $this->filterSection = '';
-            $this->loadFilters();
-            $this->filterSubject = '';
-        }
-
-        if ($property === 'filterSection' && $value && $this->filterStandard) {
-            $this->loadSubjectsForStandard($this->filterStandard, $value);
-            $this->filterSubject = '';
-        } elseif ($property === 'filterSection' && !$value && $this->filterStandard) {
-            $this->loadSubjectsForStandard($this->filterStandard);
-            $this->filterSubject = '';
-        }
-
-        $this->loadStatistics();
-    }
-
-    public function updatedSelectedStandard($value)
-    {
-        $this->selectedSection = '';
-        $this->selectedStudent = '';
-        $this->students = [];
-        $this->studentPerformance = [];
-
-        if ($value) {
-            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
-            $this->loadSubjectsForStandard($value);
-        } else {
-            $this->sections = [];
-            $organizationId = Auth::user()->organization_id;
-            $this->subjects = Subject::where('organization_id', $organizationId)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
-        }
-    }
-
-    public function updatedSelectedSection($value)
-    {
-        $this->selectedStudent = '';
-        $this->studentPerformance = [];
-
-        if ($value && $this->selectedStandard) {
-            $this->loadStudents($this->selectedStandard, $value);
-            $this->loadSubjectsForStandard($this->selectedStandard, $value);
-        } else {
-            $this->students = [];
-            if ($this->selectedStandard) {
-                $this->loadSubjectsForStandard($this->selectedStandard);
-            }
-        }
-    }
-
-    public function updatedSelectedStudent($value)
-    {
-        $this->studentPerformance = [];
-        if ($value && $this->selectedExam && $this->selectedStandard && $this->selectedSection) {
-            $this->searchPerformance();
-        }
-    }
-
-    public function updatedUploadStandard($value)
-    {
-        $this->uploadSection = '';
-        $this->uploadSubject = '';
-
-        if ($value) {
-            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
-            $this->loadSubjectsForStandard($value);
-        } else {
-            $this->sections = [];
-            $organizationId = Auth::user()->organization_id;
-            $this->subjects = Subject::where('organization_id', $organizationId)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
-        }
-        $this->resetStudentPdfs();
-    }
-
-    public function updatedUploadSection($value)
-    {
-        if ($value && $this->uploadStandard) {
-            $this->loadStudents($this->uploadStandard, $value);
-            $this->loadSubjectsForStandard($this->uploadStandard, $value);
-        } else {
-            $this->students = [];
-            if ($this->uploadStandard) {
-                $this->loadSubjectsForStandard($this->uploadStandard);
-            }
-        }
-        $this->resetStudentPdfs();
-    }
-
-    public function updatedUploadSubject()
-    {
-        $this->loadStudentPdfs();
-    }
-
-    public function updatedUploadExam()
-    {
-        $this->loadStudentPdfs();
-    }
-
-    public function showTab($tab)
+    public function showTab(string $tab): void
     {
         $this->activeTab = $tab;
+        $this->resetPage();
 
-        if ($tab === 'view') {
-            $this->reset(['selectedExam', 'selectedStandard', 'selectedSection', 'selectedStudent', 'studentPerformance']);
-            $this->sections = [];
-            $this->students = [];
-            $this->loadFilters();
-        } elseif ($tab === 'upload') {
-            $this->reset(['uploadExam', 'uploadStandard', 'uploadSection', 'uploadSubject', 'studentPdfs', 'uploadedFiles']);
-            $this->sections = [];
-            $this->students = [];
-            $this->loadFilters();
+        if ($tab === 'by-student') {
+            $this->reset(['byStudentExam', 'byStudentStandard', 'byStudentSection', 'byStudentStudent', 'studentResults']);
+            $this->sections = collect();
+            $this->students = collect();
         } else {
-            $this->resetPage();
-            $this->loadFilters();
             $this->loadStatistics();
         }
     }
 
-    private function loadStudents($standardId, $sectionId)
+    // ═══════════════════════════════════════════════════════════════
+    //  FILTER CASCADES (by-subject tab)
+    // ═══════════════════════════════════════════════════════════════
+
+    public function updatedFilterStandard($value): void
     {
-        $this->students = StudentDetail::where('standard_id', $standardId)
-            ->where('section_id', $sectionId)
-            ->with('user')
-            ->orderBy('roll_no')
-            ->get();
+        $this->filterSection = '';
+        $this->filterSubject = '';
+        $this->resetPage();
+
+        if ($value) {
+            $this->sections = Section::where('standard_id', $value)
+                ->where('is_active', true)->get();
+            $this->loadSubjectsForStandard($value);
+        } else {
+            $this->sections = collect();
+            $this->loadFilters();
+        }
+        $this->loadStatistics();
     }
 
-    private function loadSubjectsForStandard($standardId, $sectionId = null)
+    public function updatedFilterSection($value): void
     {
-        $organizationId = Auth::user()->organization_id;
+        $this->filterSubject = '';
+        $this->resetPage();
+
+        if ($value && $this->filterStandard) {
+            $this->loadSubjectsForStandard($this->filterStandard, $value);
+        } elseif ($this->filterStandard) {
+            $this->loadSubjectsForStandard($this->filterStandard);
+        }
+        $this->loadStatistics();
+    }
+
+    public function updatedFilterSubject(): void { $this->resetPage(); $this->loadStatistics(); }
+    public function updatedFilterExam(): void    { $this->resetPage(); $this->loadStatistics(); }
+    public function updatedSearch(): void        { $this->resetPage(); }
+
+    public function clearSubjectFilters(): void
+    {
+        $this->reset(['search', 'filterExam', 'filterStandard', 'filterSection', 'filterSubject']);
+        $this->sections = collect();
+        $this->resetPage();
+        $this->loadFilters();
+        $this->loadStatistics();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  BY-STUDENT TAB cascades
+    // ═══════════════════════════════════════════════════════════════
+
+    public function updatedByStudentStandard($value): void
+    {
+        $this->byStudentSection = '';
+        $this->byStudentStudent = '';
+        $this->studentResults   = [];
+
+        if ($value) {
+            $this->sections = Section::where('standard_id', $value)
+                ->where('is_active', true)->get();
+        } else {
+            $this->sections = collect();
+            $this->students = collect();
+        }
+    }
+
+    public function updatedByStudentSection($value): void
+    {
+        $this->byStudentStudent = '';
+        $this->studentResults   = [];
+
+        if ($value && $this->byStudentStandard) {
+            $this->students = StudentDetail::where('standard_id', $this->byStudentStandard)
+                ->where('section_id', $value)
+                ->with('user:id,name')
+                ->orderBy('roll_no')
+                ->get(['id', 'user_id', 'roll_no', 'admission_no']);
+        } else {
+            $this->students = collect();
+        }
+    }
+
+    public function updatedByStudentStudent(): void { $this->studentResults = []; }
+    public function updatedByStudentExam(): void    { $this->studentResults = []; }
+
+    public function clearStudentFilters(): void
+    {
+        $this->reset(['byStudentExam', 'byStudentStandard', 'byStudentSection', 'byStudentStudent', 'studentResults']);
+        $this->sections = collect();
+        $this->students = collect();
+    }
+
+    public function searchPerformance(): void
+    {
+        $this->validate([
+            'byStudentExam'     => 'required',
+            'byStudentStandard' => 'required',
+            'byStudentSection'  => 'required',
+            'byStudentStudent'  => 'required',
+        ], [
+            'byStudentExam.required'     => 'Please select an exam',
+            'byStudentStandard.required' => 'Please select a class',
+            'byStudentSection.required'  => 'Please select a section',
+            'byStudentStudent.required'  => 'Please select a student',
+        ]);
+
+        $results = ModelsExamCopy::with([
+                'exam:id,exam_name',
+                'standard:id,name',
+                'section:id,name',
+                'subject:id,name',
+                'studentDetail:id,user_id,roll_no,admission_no',
+                'studentDetail.user:id,name',
+            ])
+            ->where('exam_id', $this->byStudentExam)
+            ->where('standard_id', $this->byStudentStandard)
+            ->where('section_id', $this->byStudentSection)
+            ->where('student_detail_id', $this->byStudentStudent)
+            ->get();
+
+        if ($results->isEmpty()) {
+            $this->studentResults = [];
+            $this->notification()->warning('No Results', 'No exam copies found for the selected student.');
+            return;
+        }
+
+        $this->studentResults = $results->toArray();
+        $this->notification()->success('Loaded', count($this->studentResults) . ' record(s) found.');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  UPLOAD COPIES modal
+    // ═══════════════════════════════════════════════════════════════
+
+    public function openUploadModal(): void
+    {
+        $this->reset(['uploadExam', 'uploadStandard', 'uploadSection', 'uploadSubject', 'studentPdfs', 'uploadedFiles']);
+        $this->sections = collect();
+        $this->students = collect();
+        $this->showUploadModal = true;
+    }
+
+    public function closeUploadModal(): void
+    {
+        $this->showUploadModal = false;
+        $this->reset(['uploadExam', 'uploadStandard', 'uploadSection', 'uploadSubject', 'studentPdfs', 'uploadedFiles']);
+    }
+
+    public function updatedUploadStandard($value): void
+    {
+        $this->uploadSection = '';
+        $this->uploadSubject = '';
+        $this->students      = collect();
+        $this->resetStudentPdfs();
+
+        if ($value) {
+            $this->sections = Section::where('standard_id', $value)
+                ->where('is_active', true)->get();
+            $this->loadSubjectsForStandard($value);
+        } else {
+            $this->sections = collect();
+        }
+    }
+
+    public function updatedUploadSection($value): void
+    {
+        $this->uploadSubject = '';
+        $this->resetStudentPdfs();
+
+        if ($value && $this->uploadStandard) {
+            $this->students = StudentDetail::where('standard_id', $this->uploadStandard)
+                ->where('section_id', $value)
+                ->with('user:id,name')
+                ->orderBy('roll_no')
+                ->get(['id', 'user_id', 'roll_no', 'admission_no']);
+            $this->loadSubjectsForStandard($this->uploadStandard, $value);
+        } else {
+            $this->students = collect();
+        }
+    }
+
+    public function updatedUploadSubject(): void { $this->loadStudentPdfs(); }
+    public function updatedUploadExam(): void    { $this->loadStudentPdfs(); }
+
+    private function loadStudentPdfs(): void
+    {
+        $this->studentPdfs   = [];
+        $this->uploadedFiles = [];
+
+        if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection || !$this->uploadSubject) {
+            return;
+        }
+
+        $standardName = optional($this->standards->firstWhere('id', (int) $this->uploadStandard))->name;
+        $sectionName  = optional($this->sections->firstWhere('id', (int) $this->uploadSection))->name;
+        $subjectName  = optional($this->subjects->firstWhere('id', (int) $this->uploadSubject))->name;
+
+        foreach ($this->students as $student) {
+            $existing = ModelsExamCopy::where('exam_id', $this->uploadExam)
+                ->where('standard_id', $this->uploadStandard)
+                ->where('section_id', $this->uploadSection)
+                ->where('subject_id', $this->uploadSubject)
+                ->where('student_detail_id', $student->id)
+                ->first();
+
+            $this->studentPdfs[$student->id] = [
+                'copy_id'       => $existing ? $existing->id : null,
+                'student_id'    => $student->id,
+                'student_name'  => $student->user->name ?? '—',
+                'roll_no'       => $student->roll_no,
+                'admission_no'  => $student->admission_no,
+                'standard_name' => $standardName,
+                'section_name'  => $sectionName,
+                'subject_name'  => $subjectName,
+                'pdf_path'      => $existing?->pdf_path,
+                'remarks'       => $existing?->remarks ?? '',
+                'has_pdf'       => $existing && $existing->pdf_path,
+            ];
+        }
+    }
+
+    private function resetStudentPdfs(): void
+    {
+        $this->studentPdfs   = [];
+        $this->uploadedFiles = [];
+    }
+
+    private function loadSubjectsForStandard($standardId, $sectionId = null): void
+    {
+        $orgId = Auth::user()->organization_id;
 
         if ($sectionId) {
             $this->subjects = Subject::join('section_subjects', 'subjects.id', '=', 'section_subjects.subject_id')
                 ->where('section_subjects.section_id', $sectionId)
                 ->where('section_subjects.standard_id', $standardId)
-                ->where('subjects.organization_id', $organizationId)
+                ->where('subjects.organization_id', $orgId)
                 ->where('subjects.is_active', true)
-                ->select('subjects.*')
+                ->select('subjects.id', 'subjects.name')
                 ->distinct()
                 ->orderBy('subjects.name')
                 ->get();
         } else {
             $this->subjects = Subject::join('standard_subjects', 'subjects.id', '=', 'standard_subjects.subject_id')
                 ->where('standard_subjects.standard_id', $standardId)
-                ->where('subjects.organization_id', $organizationId)
+                ->where('subjects.organization_id', $orgId)
                 ->where('subjects.is_active', true)
-                ->select('subjects.*')
+                ->select('subjects.id', 'subjects.name')
                 ->distinct()
                 ->orderBy('subjects.name')
                 ->get();
@@ -314,91 +396,13 @@ class ExamCopy extends Component
         }
     }
 
-    private function loadStudentPdfs()
-    {
-        $this->studentPdfs = [];
-        $this->uploadedFiles = [];
-
-        if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection || !$this->uploadSubject) {
-            return;
-        }
-
-        foreach ($this->students as $student) {
-            $existingCopy = ModelsExamCopy::where('exam_id', $this->uploadExam)
-                ->where('standard_id', $this->uploadStandard)
-                ->where('section_id', $this->uploadSection)
-                ->where('subject_id', $this->uploadSubject)
-                ->where('student_detail_id', $student->id)
-                ->first();
-
-            $this->studentPdfs[$student->id] = [
-                'student_id' => $student->id,
-                'student_name' => $student->user->name,
-                'roll_no' => $student->roll_no,
-                'pdf_path' => $existingCopy ? $existingCopy->pdf_path : null,
-                'uploaded_at' => $existingCopy ? $existingCopy->updated_at : null,
-                'remarks' => $existingCopy ? $existingCopy->remarks : '',
-            ];
-        }
-    }
-
-    private function resetStudentPdfs()
-    {
-        $this->studentPdfs = [];
-        $this->uploadedFiles = [];
-    }
-
-    public function searchPerformance()
-    {
-        try {
-            $this->validate([
-                'selectedExam' => 'required',
-                'selectedStandard' => 'required',
-                'selectedSection' => 'required',
-                'selectedStudent' => 'required',
-            ], [
-                'selectedExam.required' => 'Please select an exam',
-                'selectedStandard.required' => 'Please select a standard',
-                'selectedSection.required' => 'Please select a section',
-                'selectedStudent.required' => 'Please select a student',
-            ]);
-
-            $results = ModelsExamCopy::with([
-                'exam',
-                'standard',
-                'section',
-                'subject',
-                'studentDetail.user'
-            ])
-                ->where('exam_id', $this->selectedExam)
-                ->where('standard_id', $this->selectedStandard)
-                ->where('section_id', $this->selectedSection)
-                ->where('student_detail_id', $this->selectedStudent)
-                ->get();
-
-            if ($results->isEmpty()) {
-                $this->studentPerformance = [];
-                $this->notification()->warning('No Results', 'No exam copy records found for the selected criteria.');
-                return;
-            }
-
-            $this->studentPerformance = $results->toArray();
-            $this->notification()->success('Success', count($this->studentPerformance) . ' exam copy record(s) loaded successfully.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            $this->studentPerformance = [];
-            $this->notification()->error('Error', 'An error occurred while searching. Please try again.');
-        }
-    }
-
-    public function uploadPdfs()
+    public function uploadPdfs(): void
     {
         $this->validate([
-            'uploadExam' => 'required',
+            'uploadExam'     => 'required',
             'uploadStandard' => 'required',
-            'uploadSection' => 'required',
-            'uploadSubject' => 'required',
+            'uploadSection'  => 'required',
+            'uploadSubject'  => 'required',
         ]);
 
         $rules = [];
@@ -407,190 +411,214 @@ class ExamCopy extends Component
                 $rules["uploadedFiles.$studentId"] = 'file|mimes:pdf|max:5120';
             }
         }
-
-        if (!empty($rules)) {
-            $this->validate($rules);
-        }
+        if (!empty($rules)) $this->validate($rules);
 
         try {
             $savedCount = 0;
-
             foreach ($this->uploadedFiles as $studentId => $file) {
-                if ($file) {
-                    $existingCopy = ModelsExamCopy::where('exam_id', $this->uploadExam)
-                        ->where('standard_id', $this->uploadStandard)
-                        ->where('section_id', $this->uploadSection)
-                        ->where('subject_id', $this->uploadSubject)
-                        ->where('student_detail_id', $studentId)
-                        ->first();
+                if (!$file) continue;
 
-                    if ($existingCopy && $existingCopy->pdf_path) {
-                        Storage::disk('s3')->delete($existingCopy->pdf_path);
-                    }
+                $existing = ModelsExamCopy::where('exam_id', $this->uploadExam)
+                    ->where('standard_id', $this->uploadStandard)
+                    ->where('section_id', $this->uploadSection)
+                    ->where('subject_id', $this->uploadSubject)
+                    ->where('student_detail_id', $studentId)
+                    ->first();
 
-                    $student = $this->students->firstWhere('id', $studentId);
-                    $exam = $this->exams->firstWhere('id', $this->uploadExam);
-                    $subject = $this->subjects->firstWhere('id', $this->uploadSubject);
-
-                    $fileName = 'exam_copies/' .
-                        $exam->id . '_' .
-                        $subject->id . '_' .
-                        $student->id . '_' .
-                        time() . '.pdf';
-
-                    $path = $file->storeAs('admin/exam-copies', basename($fileName), 's3');
-                    Storage::disk('s3')->setVisibility($path, 'public');
-
-                    $remarks = $this->studentPdfs[$studentId]['remarks'] ?? '';
-
-                    ModelsExamCopy::updateOrCreate(
-                        [
-                            'exam_id' => $this->uploadExam,
-                            'standard_id' => $this->uploadStandard,
-                            'section_id' => $this->uploadSection,
-                            'subject_id' => $this->uploadSubject,
-                            'student_detail_id' => $studentId,
-                        ],
-                        [
-                            'organization_id' => Auth::user()->organization_id,
-                            'pdf_path' => $path,
-                            'remarks' => $remarks,
-                            'uploaded_by' => Auth::id(),
-                        ]
-                    );
-
-                    $savedCount++;
+                if ($existing && $existing->pdf_path) {
+                    Storage::disk('s3')->delete($existing->pdf_path);
                 }
+
+                $path = $file->store('admin/exam-copies', 's3');
+                Storage::disk('s3')->setVisibility($path, 'public');
+
+                $remarks = $this->studentPdfs[$studentId]['remarks'] ?? '';
+
+                ModelsExamCopy::updateOrCreate(
+                    [
+                        'exam_id'           => $this->uploadExam,
+                        'standard_id'       => $this->uploadStandard,
+                        'section_id'        => $this->uploadSection,
+                        'subject_id'        => $this->uploadSubject,
+                        'student_detail_id' => $studentId,
+                    ],
+                    [
+                        'organization_id' => Auth::user()->organization_id,
+                        'pdf_path'        => $path,
+                        'remarks'         => $remarks,
+                        'uploaded_by'     => Auth::id(),
+                    ]
+                );
+                $savedCount++;
             }
 
             if ($savedCount > 0) {
-                $this->notification()->success('PDFs Uploaded Successfully', "PDFs for $savedCount students have been uploaded.");
+                $this->notification()->success('Uploaded', "$savedCount PDF(s) uploaded successfully.");
                 $this->uploadedFiles = [];
                 $this->loadStudentPdfs();
                 $this->loadStatistics();
             } else {
-                $this->notification()->warning('No PDFs Uploaded', 'Please select at least one PDF file to upload.');
+                $this->notification()->warning('Nothing to upload', 'Please select at least one PDF.');
             }
         } catch (\Exception $e) {
-            $this->notification()->error('Error uploading PDFs', $e->getMessage());
+            $this->notification()->error('Upload failed', $e->getMessage());
         }
     }
 
-    public function deletePdf($studentId)
+    public function deletePdfInUpload(int $studentId): void
     {
-        try {
-            $examCopy = ModelsExamCopy::where('exam_id', $this->uploadExam)
-                ->where('standard_id', $this->uploadStandard)
-                ->where('section_id', $this->uploadSection)
-                ->where('subject_id', $this->uploadSubject)
-                ->where('student_detail_id', $studentId)
-                ->first();
+        $copy = ModelsExamCopy::where('exam_id', $this->uploadExam)
+            ->where('standard_id', $this->uploadStandard)
+            ->where('section_id', $this->uploadSection)
+            ->where('subject_id', $this->uploadSubject)
+            ->where('student_detail_id', $studentId)
+            ->first();
 
-            if ($examCopy && $examCopy->pdf_path) {
-                Storage::disk('s3')->delete($examCopy->pdf_path);
-                $examCopy->pdf_path = null;
-                $examCopy->save();
-
-                $this->notification()->success('PDF deleted successfully!');
-                $this->loadStudentPdfs();
-                $this->loadStatistics();
-            }
-        } catch (\Exception $e) {
-            $this->notification()->error('Error deleting PDF', $e->getMessage());
+        if ($copy && $copy->pdf_path) {
+            Storage::disk('s3')->delete($copy->pdf_path);
+            $copy->pdf_path = null;
+            $copy->save();
+            $this->notification()->success('PDF removed.');
+            $this->loadStudentPdfs();
+            $this->loadStatistics();
         }
     }
 
-    public function onView($id)
+    public function viewPdfInUpload(int $studentId): mixed
     {
-        try {
-            $examCopy = ModelsExamCopy::with([
-                'exam',
-                'standard',
-                'section',
-                'subject',
-                'studentDetail.user'
+        $copy = ModelsExamCopy::where('exam_id', $this->uploadExam)
+            ->where('standard_id', $this->uploadStandard)
+            ->where('section_id', $this->uploadSection)
+            ->where('subject_id', $this->uploadSubject)
+            ->where('student_detail_id', $studentId)
+            ->first();
+
+        if (!$copy || !$copy->pdf_path) {
+            $this->notification()->error('PDF not found.');
+            return null;
+        }
+        $this->dispatch('open-in-new-tab', url: Storage::disk('s3')->url($copy->pdf_path));
+        return null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  EDIT single copy
+    // ═══════════════════════════════════════════════════════════════
+
+    public function openEditModal(int $id): void
+    {
+        $copy = ModelsExamCopy::with([
+                'exam:id,exam_name',
+                'standard:id,name',
+                'section:id,name',
+                'subject:id,name',
+                'studentDetail:id,user_id,roll_no,admission_no',
+                'studentDetail.user:id,name',
             ])->find($id);
 
-            if (!$examCopy) {
-                $this->notification()->error('Exam copy record not found!');
-                return;
-            }
+        if (!$copy) return;
 
-            $this->sliderTitle = 'Exam Copy Details';
-            $this->sliderData = [
-                'exam_copy' => $examCopy
-            ];
-
-            $this->showSlider = true;
-        } catch (\Exception $e) {
-            $this->notification()->error('Error loading details', $e->getMessage());
-        }
+        $this->editCopyId = $id;
+        $this->editCopyMeta = [
+            'student_name'  => $copy->studentDetail->user->name ?? '—',
+            'admission_no'  => $copy->studentDetail->admission_no ?? '—',
+            'standard_name' => $copy->standard->name ?? '—',
+            'section_name'  => $copy->section->name ?? '—',
+            'subject_name'  => $copy->subject->name ?? '—',
+            'exam_name'     => $copy->exam->exam_name ?? '—',
+            'pdf_path'      => $copy->pdf_path,
+            'pdf_url'       => $copy->pdf_path ? Storage::disk('s3')->url($copy->pdf_path) : null,
+        ];
+        $this->editRemarks = (string) ($copy->remarks ?? '');
+        $this->editPdf     = null;
+        $this->showEditModal = true;
     }
 
-    public function closeSlider()
+    public function closeEditModal(): void
     {
-        $this->showSlider = false;
-        $this->sliderData = [];
-        $this->sliderTitle = '';
+        $this->showEditModal = false;
+        $this->editCopyId    = null;
+        $this->editCopyMeta  = [];
+        $this->editRemarks   = '';
+        $this->editPdf       = null;
     }
 
-    public function onDownloadPdf($examCopyId)
+    public function saveEdit(): void
     {
-        try {
-            $examCopy = ModelsExamCopy::find($examCopyId);
-
-            if (!$examCopy || !$examCopy->pdf_path) {
-                $this->notification()->error('PDF not found!');
-                return;
-            }
-
-            if (!Storage::disk('s3')->exists($examCopy->pdf_path)) {
-                $this->notification()->error('PDF file does not exist!');
-                return;
-            }
-
-            return redirect(Storage::disk('s3')->url($examCopy->pdf_path));
-        } catch (\Exception $e) {
-            $this->notification()->error('Error downloading PDF', $e->getMessage());
-        }
-    }
-
-    public function onDelete($id)
-    {
-        $this->dialog()->confirm([
-            'title' => 'Are you Sure?',
-            'icon' => 'exclamation-circle',
-            'iconColor' => 'text-red-500',
-            'description' => 'Are you sure you want to delete this exam copy record? The PDF file will also be deleted.',
-            'accept' => [
-                'label' => 'Yes, delete it',
-                'method' => 'doDelete',
-                'params' => $id,
-                'color' => 'negative',
-            ],
-            'reject' => [
-                'label' => 'No',
-            ],
+        $this->validate([
+            'editRemarks' => 'nullable|string|max:1000',
+            'editPdf'     => 'nullable|file|mimes:pdf|max:5120',
         ]);
+
+        try {
+            $copy = ModelsExamCopy::find($this->editCopyId);
+            if (!$copy) return;
+
+            $data = ['remarks' => $this->editRemarks ?: null];
+
+            if ($this->editPdf) {
+                if ($copy->pdf_path) {
+                    Storage::disk('s3')->delete($copy->pdf_path);
+                }
+                $path = $this->editPdf->store('admin/exam-copies', 's3');
+                Storage::disk('s3')->setVisibility($path, 'public');
+                $data['pdf_path']    = $path;
+                $data['uploaded_by'] = Auth::id();
+            }
+
+            $copy->update($data);
+            $this->notification()->success('Updated', 'Exam copy updated successfully.');
+            $this->closeEditModal();
+            $this->loadStatistics();
+        } catch (\Exception $e) {
+            $this->notification()->error('Update failed', $e->getMessage());
+        }
     }
 
-    public function doDelete($id)
+    // ═══════════════════════════════════════════════════════════════
+    //  DELETE (custom overlay)
+    // ═══════════════════════════════════════════════════════════════
+
+    public function onDelete(int $id): void
+    {
+        $this->pendingDeleteId    = $id;
+        $this->showDeleteConfirm  = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->pendingDeleteId   = null;
+    }
+
+    public function confirmDelete(): void
     {
         try {
-            $examCopy = ModelsExamCopy::find($id);
-
-            if ($examCopy) {
-                if ($examCopy->pdf_path) {
-                    Storage::disk('s3')->delete($examCopy->pdf_path);
+            $copy = ModelsExamCopy::find($this->pendingDeleteId);
+            if ($copy) {
+                if ($copy->pdf_path) {
+                    Storage::disk('s3')->delete($copy->pdf_path);
                 }
-
-                $examCopy->delete();
-                $this->notification()->success('Exam copy record deleted successfully!');
+                $copy->delete();
+                $this->notification()->success('Deleted', 'Exam copy deleted successfully.');
                 $this->loadStatistics();
             }
         } catch (\Exception $e) {
-            $this->notification()->error('Error deleting record', $e->getMessage());
+            $this->notification()->error('Delete failed', $e->getMessage());
         }
+
+        $this->showDeleteConfirm = false;
+        $this->pendingDeleteId   = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Helpers — PDF URL
+    // ═══════════════════════════════════════════════════════════════
+
+    public function getPdfUrl(?string $path): ?string
+    {
+        if (!$path) return null;
+        return Storage::disk('s3')->url($path);
     }
 
     public function render()
@@ -601,50 +629,34 @@ class ExamCopy extends Component
 
     private function getExamCopies()
     {
-        if ($this->activeTab !== 'list') {
+        if ($this->activeTab !== 'by-subject') {
             return collect();
         }
 
+        $orgId = Auth::user()->organization_id;
+
         $query = ModelsExamCopy::with([
-            'exam',
-            'standard',
-            'section',
-            'subject',
-            'studentDetail.user'
-        ])
-            ->where('organization_id', Auth::user()->organization_id);
+                'exam:id,exam_name',
+                'standard:id,name',
+                'section:id,name',
+                'subject:id,name',
+                'studentDetail:id,user_id,roll_no,admission_no',
+                'studentDetail.user:id,name',
+            ])
+            ->where('organization_id', $orgId);
 
         if ($this->search) {
             $query->where(function ($q) {
-                $q->whereHas('studentDetail.user', function ($userQuery) {
-                    $userQuery->where('name', 'like', '%' . $this->search . '%');
-                })
-                    ->orWhereHas('exam', function ($examQuery) {
-                        $examQuery->where('exam_name', 'like', '%' . $this->search . '%');
-                    })
-                    ->orWhereHas('subject', function ($subjectQuery) {
-                        $subjectQuery->where('name', 'like', '%' . $this->search . '%');
-                    });
+                $q->whereHas('studentDetail.user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'))
+                  ->orWhereHas('studentDetail', fn($s) => $s->where('admission_no', 'like', '%' . $this->search . '%'))
+                  ->orWhereHas('subject', fn($s) => $s->where('name', 'like', '%' . $this->search . '%'));
             });
         }
+        if ($this->filterExam)     $query->where('exam_id', $this->filterExam);
+        if ($this->filterStandard) $query->where('standard_id', $this->filterStandard);
+        if ($this->filterSection)  $query->where('section_id', $this->filterSection);
+        if ($this->filterSubject)  $query->where('subject_id', $this->filterSubject);
 
-        if ($this->filterExam) {
-            $query->where('exam_id', $this->filterExam);
-        }
-
-        if ($this->filterStandard) {
-            $query->where('standard_id', $this->filterStandard);
-        }
-
-        if ($this->filterSection) {
-            $query->where('section_id', $this->filterSection);
-        }
-
-        if ($this->filterSubject) {
-            $query->where('subject_id', $this->filterSubject);
-        }
-
-        return $query->orderBy('created_at', 'desc')
-            ->paginate($this->perPage);
+        return $query->orderByDesc('created_at')->paginate($this->perPage);
     }
 }
