@@ -257,30 +257,15 @@
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDetailModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
-                <div class="relative flex-shrink-0 border-b border-gray-200">
-                    <button wire:click="closeDetailModal"
-                        class="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <div class="flex items-center justify-between px-6 py-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="block w-2 h-2 rounded-full flex-shrink-0 {{ $selectedEnquiry->remark ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
-                            <div class="min-w-0">
-                                <h2 class="text-lg font-semibold text-gray-900 truncate">Enquiry Details</h2>
-                                <p class="text-xs text-gray-500 mt-0.5">
-                                    {{ $activeTab === 'demo' ? 'Demo Request' : 'Contact Form' }} · {{ $selectedEnquiry->created_at->format('d M Y') }}
-                                </p>
-                            </div>
-                        </div>
-                        <button wire:click="closeDetailModal" class="mr-9 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-transparent hover:border-gray-200 flex-shrink-0 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                </div>
+                {{-- Floating close button (top right of panel) --}}
+                <button wire:click="closeDetailModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-6">
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-6">
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Name</p>
@@ -367,25 +352,15 @@
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeRemarkModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
-                <div class="relative flex-shrink-0 border-b border-gray-200">
-                    <button wire:click="closeRemarkModal"
-                        class="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <div class="flex items-center justify-between px-6 py-3">
-                        <div>
-                            <h2 class="text-lg font-semibold text-gray-900">Internal Remark</h2>
-                            <p class="text-xs text-gray-500 mt-0.5">Add a note for team reference (not sent to user)</p>
-                        </div>
-                        <button wire:click="closeRemarkModal" class="mr-9 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                </div>
+                {{-- Floating close button (top right of panel) --}}
+                <button wire:click="closeRemarkModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Remark <span class="text-red-500">*</span></label>
                         <textarea wire:model.defer="remarkText" rows="8" placeholder="Type your internal note here..."
