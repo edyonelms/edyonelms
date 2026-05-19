@@ -468,7 +468,12 @@ class Teacher extends Component
                     'email_address' => $this->addEmail,
                     'school_name'   => $org->name,
                     'username'      => $this->addName,
+                    'name'          => $this->addName,
+                    'login_url'     => url('/login'),
                 ]);
+                Log::info('SuperAdmin: teacher welcome email sent', ['email' => $this->addEmail]);
+            } else {
+                Log::warning('ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
             }
         } catch (\Throwable $e) {
             Log::error('Teacher welcome email failed', ['email' => $this->addEmail, 'error' => $e->getMessage()]);

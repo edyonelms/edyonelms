@@ -419,75 +419,154 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════
-         ADD / EDIT TEACHER MODAL
+         ADD / EDIT TEACHER SLIDE-IN PANEL (Exams style)
     ══════════════════════════════════════════════════ --}}
-    <x-modal-form show="{{ $open }}" title="{{ $editId ? 'Edit Teacher' : 'Add Teacher' }}"
-        submitAction="onSave" submitButton="{{ $editId ? 'Update' : 'Create' }}" closeAction="closeModal">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
-            <div class="sm:col-span-3">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    @if ($open)
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col">
+
+                {{-- Fixed header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Teacher Profile Image</label>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ $editId ? 'Edit Teacher' : 'New Teacher' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ $editId ? 'Update teacher details' : 'Welcome email with login credentials will be sent on save' }}</p>
+                    </div>
+                    <button wire:click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                {{-- Scrollable body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+
+                    {{-- Profile image --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Teacher Profile Image <span class="text-gray-400 font-normal">(Optional, max 2 MB)</span></label>
                         @if ($editId && !$teacherImage)
                             @php $user = \App\Models\User::find($editId) @endphp
                             @if ($user?->image)
-                                <div class="flex items-center gap-2 mb-2">
-                                    <img src="{{ $user->image }}" class="h-16 w-16 rounded-full object-cover">
-                                    <button wire:click="$set('teacherImage', null)" type="button"
-                                        class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                <div class="flex items-center gap-3 mb-2 border border-gray-200 rounded-md p-3">
+                                    <img src="{{ $user->image }}" class="h-14 w-14 rounded-full object-cover border border-gray-200">
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-700">Current photo</p>
+                                        <button wire:click="$set('teacherImage', null)" type="button" class="text-xs text-red-600 hover:text-red-700">Remove</button>
+                                    </div>
                                 </div>
                             @endif
                         @endif
-                        <input type="file" wire:model="teacherImage"
-                            class="block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
-                                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                                hover:file:bg-blue-100">
-                        @error('teacherImage')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                        @enderror
+                        <input type="file" wire:model="teacherImage" accept="image/*" class="w-full text-sm">
+                        <div wire:loading wire:target="teacherImage" class="text-xs text-blue-600 mt-1">Uploading...</div>
+                        @error('teacherImage')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                     </div>
+
+                    {{-- Personal info grid --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Full Name <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="teacherName" type="text" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            @error('teacherName')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="teacherEmail" type="email" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            @error('teacherEmail')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Mobile <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="teacherMobile" type="tel" maxlength="10" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('teacherMobile')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Employee ID <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="employeeId" type="text" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('employeeId')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="dob" type="date" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('dob')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Joining <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="dateOfJoining" type="date" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('dateOfJoining')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Gender <span class="text-red-500">*</span></label>
+                            <select wire:model.defer="teacherGender" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                            @error('teacherGender')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Qualification <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="qualification" type="text" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('qualification')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Emergency Contact <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="emergencyContact" type="tel" maxlength="10" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('emergencyContact')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Pincode <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="pincode" type="text" maxlength="6" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                            @error('pincode')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">State</label>
+                            <select wire:model.live="selectedState" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
+                                <option value="">Select State</option>
+                                @foreach ($states as $state)
+                                    <option value="{{ $state }}">{{ $state }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">City</label>
+                            <select wire:model.live="selectedCity" @disabled(empty($cities))
+                                class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm disabled:opacity-50">
+                                <option value="">Select City</option>
+                                @foreach ($cities as $city)
+                                    @php $cityName = is_array($city) ? ($city['name'] ?? '') : $city; @endphp
+                                    @if ($cityName !== '')
+                                        <option value="{{ $cityName }}">{{ $cityName }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Address --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Address <span class="text-red-500">*</span></label>
+                        <textarea wire:model.defer="address" rows="3" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        @error('address')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                    </div>
+
+                    {{-- Active toggle --}}
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.defer="teacherActive" class="rounded">
+                        <span class="text-sm text-gray-700">Active (can log in)</span>
+                    </label>
+                </div>
+
+                {{-- Fixed footer --}}
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeModal" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="onSave" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="onSave">{{ $editId ? 'Update Teacher' : 'Create Teacher' }}</span>
+                        <span wire:loading wire:target="onSave">Saving...</span>
+                    </button>
                 </div>
             </div>
-
-            <x-input wire:model.defer="teacherName" label="Full Name" required />
-            <x-input wire:model.defer="teacherEmail" label="Email" required />
-            <x-input wire:model.defer="teacherMobile" label="Mobile Number" required />
-            <x-input wire:model.defer="employeeId" label="Employee ID" required />
-            <x-datetime-picker label="Date Of Birth" without-time required wire:model.defer="dob" />
-            <x-datetime-picker label="Date Of Joining" without-time required wire:model.defer="dateOfJoining" />
-            <x-input wire:model.defer="qualification" label="Qualification" required />
-            <x-input wire:model.defer="emergencyContact" label="Emergency Contact" required />
-
-            <x-native-select label="Gender" wire:model.defer="teacherGender" required>
-                <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-            </x-native-select>
-            <x-native-select label="State" wire:model.live="selectedState">
-                <option value="">Select State</option>
-                @foreach ($states as $state)
-                    <option value="{{ $state }}">{{ $state }}</option>
-                @endforeach
-            </x-native-select>
-            <x-native-select label="City" wire:model.live="selectedCity">
-                <option value="">Select City</option>
-                @foreach ($cities as $city)
-                    <option value="{{ $city['name'] }}">{{ $city['name'] }}</option>
-                @endforeach
-            </x-native-select>
         </div>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-            <x-input wire:model.defer="pincode" label="Pincode" required />
-            <x-textarea wire:model.defer="address" label="Address" required />
-        </div>
-
-        <div class="flex gap-4 py-4">
-            <x-toggle label="Active" wire:model.defer="teacherActive" />
-        </div>
-    </x-modal-form>
+    @endif
 
     {{-- ══════════════════════════════════════════════════
          VIEW MODAL
@@ -627,5 +706,35 @@
             </div>
         @endif
     </x-view-modal>
+
+    {{-- ══════════════════════════════════════════════════
+         DELETE CONFIRM OVERLAY (replaces broken WireUI dialog)
+    ══════════════════════════════════════════════════ --}}
+    @if ($showDeleteConfirm)
+        <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDelete"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete teacher?</h3>
+                        <p class="text-sm text-gray-500">This will permanently delete the teacher account, profile, class assignments, and uploaded photo. This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDelete" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors">Cancel</button>
+                    <button wire:click="confirmDelete" wire:loading.attr="disabled"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="confirmDelete">Delete Teacher</span>
+                        <span wire:loading wire:target="confirmDelete">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
 </div>

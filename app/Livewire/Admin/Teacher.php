@@ -12,6 +12,7 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -67,6 +68,10 @@ class Teacher extends Component
     public $inactiveTeachers = 0;
     public $lastMonthJoining = 0;
     public $thisYearJoining  = 0;
+
+    // ─── Custom delete overlay (replaces broken WireUI dialog) ──────────
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
 
     // ─── Search & Filters ────────────────────────────────────────────────
     public string $search        = '';
@@ -204,20 +209,20 @@ class Teacher extends Component
     {
         $rules = [
             'teacherName'      => 'required|string|max:255',
-            'teacherEmail'     => 'required|email|max:50',
+            'teacherEmail'     => 'required|email|max:191',
             'teacherMobile'    => 'required|string|digits:10',
             'dob'              => 'required|date|before:today',
             'teacherGender'    => 'required|string|in:male,female,other',
             'employeeId'       => 'required|string|max:50',
             'dateOfJoining'    => 'required|date|before_or_equal:today',
             'qualification'    => 'required|string|max:255',
-            'address'          => 'required|string',
+            'address'          => 'required|string|max:1000',
             'pincode'          => 'required|digits:6',
             'emergencyContact' => 'required|string|digits:10',
             'teacherImage'     => 'nullable|image|max:2048',
         ];
 
-        // Unique email: exclude current user when editing, allow same email as student
+        // Unique email (exclude current user when editing, scope to role=teacher)
         if ($this->editId) {
             $rules['teacherEmail'] .= '|unique:users,email,' . $this->editId . ',id,role,teacher';
         } else {
@@ -231,23 +236,22 @@ class Teacher extends Component
         $this->validate($rules);
 
         try {
-            $isEdit = false;
+            $isEdit         = (bool) $this->editId;
+            $plainPassword  = null;
+            $teacher        = $isEdit ? User::findOrFail($this->editId) : new User();
 
-            if ($this->editId) {
-                $teacher = User::findOrFail($this->editId);
-                $isEdit  = true;
-            } else {
-                $teacher = new User();
-            }
-
-            $teacher->name            = $this->teacherName;
-            $teacher->email           = $this->teacherEmail;
-            $teacher->mobile_number   = $this->teacherMobile;
-            $teacher->dob             = $this->dob;
-            $teacher->gender          = $this->teacherGender;
-            $teacher->role            = 'teacher';
-            $teacher->is_active       = $this->teacherActive ?? 0;
-            $teacher->organization_id = Auth::user()->organization_id;
+            // Build base user payload (only User-table columns!)
+            // dob + gender are added below via direct property set IFF the
+            // columns exist on the users table — lms:migrate adds them but
+            // we guard against a DB that's never had that command run.
+            $userData = [
+                'name'            => $this->teacherName,
+                'email'           => $this->teacherEmail,
+                'mobile_number'   => $this->teacherMobile,
+                'role'            => 'teacher',
+                'is_active'       => $this->teacherActive ?? 0,
+                'organization_id' => Auth::user()->organization_id,
+            ];
 
             if ($this->teacherImage) {
                 if ($teacher->image) {
@@ -255,36 +259,29 @@ class Teacher extends Component
                 }
                 $path = $this->teacherImage->store('admin/teachers/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
-                $teacher->image = Storage::disk('s3')->url($path);
+                $userData['image'] = Storage::disk('s3')->url($path);
             }
 
             if (!$isEdit) {
-                $plainPassword = substr(str_shuffle('abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789@#$!'), 0, 10);
-                $teacher->password = Hash::make($plainPassword);
+                $plainPassword       = substr(str_shuffle('abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789@#$!'), 0, 10);
+                $userData['password'] = Hash::make($plainPassword);
+            }
+
+            $teacher->fill($userData);
+
+            // dob/gender are added by `php artisan lms:migrate` — set them
+            // only if those columns actually exist. Prevents
+            // SQLSTATE[42S22] Unknown column 'dob' if migrate never ran.
+            if (Schema::hasColumn('users', 'dob')) {
+                $teacher->dob = $this->dob;
+            }
+            if (Schema::hasColumn('users', 'gender')) {
+                $teacher->gender = $this->teacherGender;
             }
 
             $teacher->save();
 
-            // Send password email only on creation
-            if (!$isEdit) {
-                try {
-                    $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
-                    \App\Services\ZeptoMailService::sendTemplate(
-                        config('services.zeptomail.teacher_password_template_key'),
-                        $teacher->email,
-                        $teacher->name,
-                        [
-                            'password'      => $plainPassword,
-                            'email_address' => $teacher->email,
-                            'school_name'   => $schoolName,
-                            'username'      => $teacher->name,
-                        ]
-                    );
-                } catch (\Exception $e) {
-                    logger()->error('Teacher password email failed: ' . $e->getMessage());
-                }
-            }
-
+            // TeacherDetail upsert
             TeacherDetail::updateOrCreate(
                 ['user_id' => $teacher->id],
                 [
@@ -294,12 +291,40 @@ class Teacher extends Component
                     'qualification'     => $this->qualification,
                     'phone'             => $this->teacherMobile,
                     'address'           => $this->address,
-                    'city'              => $this->selectedCity,
-                    'state'             => $this->selectedState,
+                    'city'              => $this->selectedCity ?: null,
+                    'state'             => $this->selectedState ?: null,
                     'pincode'           => $this->pincode,
                     'emergency_contact' => $this->emergencyContact,
                 ]
             );
+
+            // Send welcome email on creation only — never blocks save
+            if (!$isEdit && $plainPassword) {
+                try {
+                    $templateKey = config('services.zeptomail.teacher_password_template_key');
+                    if ($templateKey) {
+                        $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
+                        \App\Services\ZeptoMailService::sendTemplate(
+                            $templateKey,
+                            $teacher->email,
+                            $teacher->name,
+                            [
+                                'password'      => $plainPassword,
+                                'email_address' => $teacher->email,
+                                'school_name'   => $schoolName,
+                                'username'      => $teacher->name,
+                                'name'          => $teacher->name,
+                                'login_url'     => url('/login'),
+                            ]
+                        );
+                        logger()->info('Teacher welcome email sent to: ' . $teacher->email);
+                    } else {
+                        logger()->warning('ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
+                    }
+                } catch (\Throwable $e) {
+                    logger()->error('Teacher welcome email failed for ' . $teacher->email . ': ' . $e->getMessage());
+                }
+            }
 
             $this->notification()->success(
                 $isEdit ? 'Teacher Updated Successfully!' : 'Teacher Created Successfully!'
@@ -309,9 +334,9 @@ class Teacher extends Component
             $this->loadTeacherDashboardData();
             $this->resetPage();
             $this->dispatch('onTeacherAddUpdate');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->notification()->error('Error Saving Teacher', $e->getMessage());
-            logger()->error('Teacher save error: ' . $e->getMessage());
+            logger()->error('Teacher save error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
         }
     }
 
@@ -377,31 +402,29 @@ class Teacher extends Component
         $this->dispatch('onUserAddUpdate');
     }
 
-    // ─── Delete ──────────────────────────────────────────────────────────
+    // ─── Delete (custom overlay — replaces broken WireUI dialog) ────────
     public function onDeleteTeacher($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Are you Sure?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure you want to delete this teacher? This action cannot be undone.',
-            'accept'      => [
-                'label'  => 'Yes, delete it',
-                'method' => 'doDeleteTeacher',
-                'params' => $id,
-                'color'  => 'negative',
-            ],
-            'reject' => ['label' => 'No'],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDeleteTeacher($id): void
+    public function cancelDelete(): void
     {
-        $detail = TeacherDetail::find($id);
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        $detail = TeacherDetail::find($this->deleteTargetId);
 
         if ($detail) {
             AssignTeacherStandard::where('teacher_detail_id', $detail->id)->delete();
             $user = User::find($detail->user_id);
+            if ($user && $user->image) {
+                Storage::disk('s3')->delete(parse_url($user->image, PHP_URL_PATH));
+            }
             $detail->delete();
             $user?->delete();
             $this->notification()->success('Teacher Deleted Successfully!');
@@ -411,6 +434,16 @@ class Teacher extends Component
         } else {
             $this->notification()->error('Teacher not found!');
         }
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    // Keep alias for any legacy callers
+    public function doDeleteTeacher($id = null): void
+    {
+        if ($id) $this->deleteTargetId = $id;
+        $this->confirmDelete();
     }
 
     // ─── Export ──────────────────────────────────────────────────────────
