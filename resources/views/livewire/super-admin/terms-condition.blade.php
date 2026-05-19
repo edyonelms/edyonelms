@@ -481,36 +481,48 @@
                 </div>
                 <div class="p-6 space-y-3">
                     @forelse ($additional_info as $index => $info)
-                        <div
-                            class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start
-                                    border border-gray-200 rounded-xl p-4 hover:border-purple-200 transition-colors">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Key</label>
-                                <input type="text" wire:model="additional_info.{{ $index }}.key"
-                                    placeholder="e.g., Jurisdiction"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                           focus:ring-2 focus:ring-purple-400 focus:border-purple-400">
+                        <div class="border border-gray-200 rounded-xl p-4 hover:border-purple-200 transition-colors bg-white">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="flex items-center gap-2">
+                                    <span class="w-6 h-6 bg-purple-100 text-purple-700 text-xs font-bold rounded-full flex items-center justify-center">
+                                        {{ $index + 1 }}
+                                    </span>
+                                    <span class="text-sm font-medium text-gray-700">Info {{ $index + 1 }}</span>
+                                </span>
+                                <button wire:click="confirmRemoveAdditionalInfo({{ $index }})"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
                             </div>
-                            <div class="md:col-span-2">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-xs font-medium text-gray-600">Value</label>
-                                    <button wire:click="confirmRemoveAdditionalInfo({{ $index }})"
-                                        class="p-1 text-red-500 hover:bg-red-50 rounded transition-colors">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Key</label>
+                                    <input type="text" wire:model="additional_info.{{ $index }}.key"
+                                        placeholder="e.g., Jurisdiction"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                               focus:ring-2 focus:ring-purple-400 focus:border-purple-400">
                                 </div>
-                                <textarea wire:model="additional_info.{{ $index }}.value" rows="2"
-                                    placeholder="Detailed information..."
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                                           focus:ring-2 focus:ring-purple-400 focus:border-purple-400"></textarea>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Value</label>
+                                    <textarea wire:model="additional_info.{{ $index }}.value" rows="2"
+                                        placeholder="Detailed information..."
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                               focus:ring-2 focus:ring-purple-400 focus:border-purple-400 resize-y"></textarea>
+                                </div>
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-gray-400 text-center py-4">No additional info added yet.</p>
+                        <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="text-sm text-gray-400">No additional info added yet.</p>
+                            <p class="text-xs text-gray-300 mt-1">Click "Add Info" to add key-value pairs.</p>
+                        </div>
                     @endforelse
                 </div>
             </div>
@@ -585,13 +597,26 @@
                     @endif
 
                     @forelse ($files as $index => $file)
-                        <div
-                            class="border border-gray-200 rounded-xl p-4 bg-yellow-50 border-yellow-200
-                                    hover:border-yellow-300 transition-colors">
+                        <div class="border border-gray-200 rounded-xl p-4 bg-white hover:border-blue-200 transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="flex items-center gap-2">
+                                    <span class="w-6 h-6 bg-blue-100 text-blue-700 text-xs font-bold rounded-full flex items-center justify-center">
+                                        {{ $index + 1 }}
+                                    </span>
+                                    <span class="text-sm font-medium text-gray-700">New Document</span>
+                                    <span class="text-[10px] uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Pending Upload</span>
+                                </span>
+                                <button wire:click="removeFileField({{ $index }})"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Document Title
-                                        *</label>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Document Title <span class="text-red-500">*</span></label>
                                     <input type="text" wire:model="file_titles.{{ $index }}"
                                         placeholder="e.g., Privacy Policy PDF"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
@@ -601,20 +626,13 @@
                                     @enderror
                                 </div>
                                 <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block text-xs font-medium text-gray-600">PDF / Doc File (max
-                                            2MB)</label>
-                                        <button wire:click="removeFileField({{ $index }})"
-                                            class="text-xs text-red-600 hover:text-red-800 transition-colors">
-                                            Remove
-                                        </button>
-                                    </div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">PDF / Doc File <span class="text-gray-400 font-normal">(max 2MB)</span></label>
                                     <input type="file" wire:model="files.{{ $index }}"
                                         accept=".pdf,.doc,.docx"
                                         class="block w-full text-sm text-gray-500
                                                file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
                                                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                                               hover:file:bg-blue-100 bg-white transition-colors">
+                                               hover:file:bg-blue-100 bg-white border border-gray-300 rounded-lg transition-colors">
                                     @error("files.{$index}")
                                         <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
                                     @enderror
@@ -632,9 +650,16 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-gray-400 text-center py-4">
-                            No documents attached. Click "Add Document" to upload.
-                        </p>
+                        @if (count($savedFiles) === 0)
+                            <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                                <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p class="text-sm text-gray-400">No documents attached.</p>
+                                <p class="text-xs text-gray-300 mt-1">Click "Add Document" to upload.</p>
+                            </div>
+                        @endif
                     @endforelse
                 </div>
             </div>
