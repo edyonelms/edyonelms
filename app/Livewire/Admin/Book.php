@@ -67,12 +67,23 @@ class Book extends Component
     public $filterSections = [];
     public $filterSubjects = [];
 
+    // Custom delete overlay (replaces broken WireUI dialog)
+    public bool $showDeleteConfirm = false;
+    public $deleteTargetId         = null;
+
+    // Stats
+    public int $totalBooks    = 0;
+    public int $activeBooks   = 0;
+    public int $inactiveBooks = 0;
+    public int $withPdfCount  = 0;
+
     protected $listeners = ['refresh-book-list' => '$refresh'];
 
     public function mount()
     {
         $this->loadStandards();
         $this->loadFilterData();
+        $this->loadStats();
     }
 
     public function loadStandards()
@@ -320,6 +331,7 @@ class Book extends Component
                 $this->notification()->success('Book added successfully!');
             }
 
+            $this->loadStats();
             $this->closeModal();
         } catch (\Exception $e) {
             $this->notification()->error(
@@ -374,49 +386,60 @@ class Book extends Component
 
     public function onDeleteBook($id)
     {
-        $this->dialog()->confirm([
-            'title' => 'Are you Sure?',
-            'icon' => 'exclamation-circle',
-            'iconColor' => 'text-red-500',
-            'description' => 'Are you sure you want to delete this book? The action cannot be undone.',
-            'accept' => [
-                'label' => 'Yes, delete it',
-                'method' => 'doDeleteBook',
-                'params' => $id,
-                'color' => 'negative',
-                'size' => 'md',
-            ],
-            'reject' => [
-                'label' => 'No',
-                'size' => 'md',
-            ],
-        ]);
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function doDeleteBook($id)
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
     {
         try {
-            $book = ModalBook::findOrFail($id);
+            $book = ModalBook::findOrFail($this->deleteTargetId);
 
             if ($book->book_logo) {
-                $logoPath = parse_url($book->book_logo, PHP_URL_PATH);
-                Storage::disk('s3')->delete($logoPath);
+                Storage::disk('s3')->delete(parse_url($book->book_logo, PHP_URL_PATH));
             }
-
             if ($book->pdf_file) {
-                $pdfPath = parse_url($book->pdf_file, PHP_URL_PATH);
-                Storage::disk('s3')->delete($pdfPath);
+                Storage::disk('s3')->delete(parse_url($book->pdf_file, PHP_URL_PATH));
             }
 
             $book->delete();
-
             $this->notification()->success('Book deleted successfully!');
+            $this->loadStats();
         } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error Deleting Book',
-                $e->getMessage()
-            );
+            $this->notification()->error('Error Deleting Book', $e->getMessage());
         }
+
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetId    = null;
+    }
+
+    public function doDeleteBook($id = null): void
+    {
+        if ($id) $this->deleteTargetId = $id;
+        $this->confirmDelete();
+    }
+
+    private function loadStats(): void
+    {
+        $orgId = Auth::user()->organization_id;
+        $stats = ModalBook::where('organization_id', $orgId)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive,
+                SUM(CASE WHEN pdf_file IS NOT NULL AND pdf_file != "" THEN 1 ELSE 0 END) as with_pdf
+            ')->first();
+
+        $this->totalBooks    = (int) ($stats->total ?? 0);
+        $this->activeBooks   = (int) ($stats->active ?? 0);
+        $this->inactiveBooks = (int) ($stats->inactive ?? 0);
+        $this->withPdfCount  = (int) ($stats->with_pdf ?? 0);
     }
 
     public function onViewBook($id)
