@@ -40,7 +40,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
-    Route::get('/about-app', [AuthController::class, 'aboutApp']);
     Route::get('/terms-and-conditions', [AuthController::class, 'termsAndConditions']);
     Route::get('/privacy-policy', [AuthController::class, 'privacyPolicy']);
     Route::get('/terms-of-use', [AuthController::class, 'termsOfUse']);
@@ -61,6 +60,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         //Rules and Regulation
         Route::get('/rules-and-regulation', [AuthController::class, 'rulesAndRegulations']);
+
+        //About App (auth-required)
+        Route::get('/about-app', [AuthController::class, 'aboutApp']);
 
         // User routes here
         Route::prefix('user')->group(function () {
