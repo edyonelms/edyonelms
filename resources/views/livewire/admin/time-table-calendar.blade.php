@@ -347,7 +347,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 4v16m8-8H4" />
                         </svg>
-                        Add your first event
+                        Add Upcoming Event
                     </button>
                 </div>
             @endif
@@ -356,72 +356,73 @@
     </div>
 
 
+    {{-- ══════════════════════════════════════════════════
+         RIGHT-SIDE SLIDE-IN PANEL (Add / Edit / View Event)
+    ══════════════════════════════════════════════════ --}}
     @if ($showSlider)
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6">
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeSlider"></div>
 
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+            {{-- Panel (anchored right, full height) --}}
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
-                {{-- ✅ STICKY HEADER --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h3 class="text-lg font-bold text-gray-900">{{ $sliderTitle }}</h3>
+                {{-- ✅ Fixed header (always visible at top of panel) --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        @if (isset($sliderData['mode']) && $sliderData['mode'] === 'view')
+                            <span class="block w-2 h-2 rounded-full flex-shrink-0"
+                                style="background-color: {{ $sliderData['event']['color'] ?? '#3b82f6' }}"></span>
+                        @endif
+                        <h2 class="text-lg font-semibold text-gray-900 truncate">{{ $sliderTitle }}</h2>
+                    </div>
                     <button wire:click="closeSlider"
-                        class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400
-                           hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                {{-- ✅ SCROLLABLE BODY ONLY --}}
-                <div class="overflow-y-auto flex-1 p-6">
+                {{-- ✅ Scrollable body (only this section scrolls — header & footer stay fixed) --}}
+                <div class="flex-1 overflow-y-auto px-6 py-6">
 
                     @if (isset($sliderData['mode']) && $sliderData['mode'] === 'view')
-                        <div class="space-y-4">
+                        {{-- ══ VIEW MODE — clean & minimal (flat layout, no nested cards) ══ --}}
+                        <div class="space-y-6">
 
-                            {{-- Event Title + Type --}}
-                            <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
-                                <div class="w-4 h-4 rounded-full flex-shrink-0"
-                                    style="background-color: {{ $sliderData['event']['color'] ?? '#3b82f6' }}"></div>
-                                <div>
-                                    <h2 class="text-xl font-bold text-gray-900">{{ $sliderData['event']['title'] }}
-                                    </h2>
-                                    <div class="flex flex-wrap gap-2 mt-1">
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs px-2.5 py-1
-                                        bg-blue-50 text-blue-700 rounded-full border border-blue-100">
-                                            {{ ucfirst($sliderData['event']['event_type'] ?? 'Event') }}
+                            {{-- Title + badges --}}
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $sliderData['event']['title'] }}</h3>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide bg-blue-50 text-blue-700">
+                                        {{ ucfirst($sliderData['event']['event_type'] ?? 'Event') }}
+                                    </span>
+                                    @if ($sliderData['event']['is_all_day'] ?? false)
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide bg-emerald-50 text-emerald-700">
+                                            All Day
                                         </span>
-                                        @if ($sliderData['event']['is_all_day'] ?? false)
-                                            <span
-                                                class="inline-flex items-center gap-1 text-xs px-2.5 py-1
-                                            bg-green-50 text-green-700 rounded-full border border-green-100">
-                                                All Day
-                                            </span>
-                                        @endif
-                                    </div>
+                                    @endif
                                 </div>
                             </div>
 
-                            {{-- Date & Time --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Date
-                                    </p>
-                                    <p class="text-sm font-medium text-gray-800">
+                            <div class="border-t border-gray-100"></div>
+
+                            {{-- Date & Time grid --}}
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Date</p>
+                                    <p class="text-sm text-gray-800">
                                         {{ Carbon\Carbon::parse($sliderData['event']['date'] ?? now())->format('l, F d, Y') }}
                                     </p>
                                 </div>
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Time
-                                    </p>
-                                    <p class="text-sm font-medium text-gray-800">
+                                <div>
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Time</p>
+                                    <p class="text-sm text-gray-800">
                                         @if ($sliderData['event']['is_all_day'] ?? false)
                                             All Day Event
                                         @elseif (isset($sliderData['event']['start_time']))
-                                            {{ $sliderData['event']['start_time'] }} –
-                                            {{ $sliderData['event']['end_time'] }}
+                                            {{ $sliderData['event']['start_time'] }} – {{ $sliderData['event']['end_time'] }}
                                         @else
                                             —
                                         @endif
@@ -429,39 +430,36 @@
                                 </div>
                             </div>
 
-                            {{-- Description --}}
                             @if (!empty($sliderData['event']['description']))
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                                        Description</p>
-                                    <p class="text-sm text-gray-700 leading-relaxed">
-                                        {{ $sliderData['event']['description'] }}</p>
+                                <div class="border-t border-gray-100 pt-6">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Description</p>
+                                    <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                                        {{ $sliderData['event']['description'] }}
+                                    </p>
                                 </div>
                             @endif
 
-                            {{-- Location --}}
                             @if (!empty($sliderData['event']['location']))
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                                        Location</p>
-                                    <p class="text-sm font-medium text-gray-800">
-                                        {{ $sliderData['event']['location'] }}</p>
+                                <div class="border-t border-gray-100 pt-6">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Location</p>
+                                    <p class="text-sm text-gray-800 inline-flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        {{ $sliderData['event']['location'] }}
+                                    </p>
                                 </div>
                             @endif
 
-                            {{-- Class Info --}}
-                            @if (
-                                !empty($sliderData['event']['standard']) ||
-                                    !empty($sliderData['event']['subject']) ||
-                                    !empty($sliderData['event']['teacher']))
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Class
-                                        Information</p>
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            @if (!empty($sliderData['event']['standard']) || !empty($sliderData['event']['subject']) || !empty($sliderData['event']['teacher']))
+                                <div class="border-t border-gray-100 pt-6">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Class Information</p>
+                                    <div class="grid grid-cols-2 gap-6">
                                         @if (!empty($sliderData['event']['standard']))
                                             <div>
-                                                <p class="text-xs text-gray-400 mb-0.5">Class</p>
-                                                <p class="text-sm font-medium text-gray-800">
+                                                <p class="text-xs text-gray-500 mb-0.5">Class</p>
+                                                <p class="text-sm text-gray-800">
                                                     {{ $sliderData['event']['standard'] }}
                                                     @if (!empty($sliderData['event']['section']))
                                                         – {{ $sliderData['event']['section'] }}
@@ -471,16 +469,14 @@
                                         @endif
                                         @if (!empty($sliderData['event']['subject']))
                                             <div>
-                                                <p class="text-xs text-gray-400 mb-0.5">Subject</p>
-                                                <p class="text-sm font-medium text-gray-800">
-                                                    {{ $sliderData['event']['subject'] }}</p>
+                                                <p class="text-xs text-gray-500 mb-0.5">Subject</p>
+                                                <p class="text-sm text-gray-800">{{ $sliderData['event']['subject'] }}</p>
                                             </div>
                                         @endif
                                         @if (!empty($sliderData['event']['teacher']))
                                             <div>
-                                                <p class="text-xs text-gray-400 mb-0.5">Teacher</p>
-                                                <p class="text-sm font-medium text-gray-800">
-                                                    {{ $sliderData['event']['teacher'] }}</p>
+                                                <p class="text-xs text-gray-500 mb-0.5">Teacher</p>
+                                                <p class="text-sm text-gray-800">{{ $sliderData['event']['teacher'] }}</p>
                                             </div>
                                         @endif
                                     </div>
@@ -489,31 +485,33 @@
 
                         </div>
                     @else
-                        <livewire:admin.event-form :date="$sliderData['date'] ?? null" :event="$sliderData['event'] ?? null" :mode="$sliderData['mode'] ?? 'create'" />
+                        {{-- ══ ADD / EDIT MODE — Livewire child form ══ --}}
+                        <livewire:admin.event-form
+                            :date="$sliderData['date'] ?? null"
+                            :event="$sliderData['event'] ?? null"
+                            :mode="$sliderData['mode'] ?? 'create'" />
                     @endif
 
                 </div>
 
-                {{-- ✅ STICKY FOOTER --}}
-                <div
-                    class="flex items-center justify-between px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white rounded-b-xl">
+                {{-- ✅ Fixed footer (always at bottom of panel) --}}
+                <div class="flex items-center justify-between px-6 py-3.5 border-t border-gray-200 flex-shrink-0 bg-white">
                     @if (isset($sliderData['mode']) && $sliderData['mode'] === 'view')
-                        <p class="text-xs text-gray-400"># {{ $sliderData['event']['id'] }}</p>
+                        <p class="text-xs text-gray-400">#{{ $sliderData['event']['id'] }}</p>
                         <button wire:click="onEditEvent({{ $sliderData['event']['id'] ?? 0 }})"
-                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700
-                               text-white text-sm font-semibold rounded-lg transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            Edit event
+                            Edit Event
                         </button>
                     @else
                         <button wire:click="closeSlider"
-                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors">
+                            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
                             Cancel
                         </button>
-                        {{-- Save button event-form ke andar se emit hoga --}}
+                        {{-- Save button rendered by child event-form via emit --}}
                     @endif
                 </div>
 
