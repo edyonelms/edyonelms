@@ -267,12 +267,12 @@
                             </p>
                         </div>
                     </div>
-                    <button wire:click="closeDetailModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button wire:click="closeDetailModal" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-transparent hover:border-gray-200 flex-shrink-0 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-6">
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Name</p>
@@ -364,12 +364,12 @@
                         <h2 class="text-lg font-semibold text-gray-900">Internal Remark</h2>
                         <p class="text-xs text-gray-500 mt-0.5">Add a note for team reference (not sent to user)</p>
                     </div>
-                    <button wire:click="closeRemarkModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button wire:click="closeRemarkModal" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Remark <span class="text-red-500">*</span></label>
                         <textarea wire:model.defer="remarkText" rows="8" placeholder="Type your internal note here..."
