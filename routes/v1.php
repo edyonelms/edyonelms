@@ -9,6 +9,7 @@ use App\Http\Controllers\v1\CalendarController;
 use App\Http\Controllers\v1\ContentController;
 use App\Http\Controllers\v1\ExamController;
 use App\Http\Controllers\v1\FeeController;
+use App\Http\Controllers\v1\FilterController;
 use App\Http\Controllers\v1\HomeWorkController;
 use App\Http\Controllers\v1\IdCardController;
 use App\Http\Controllers\v1\InstructorController;
@@ -224,8 +225,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Exams Api
         Route::prefix('exams')->group(function () {
-            Route::get('/',    [ExamController::class, 'index']);
-            Route::get('/{id}', [ExamController::class, 'show']);
+            Route::get('/',              [ExamController::class, 'index']);
+            Route::get('/{id}',          [ExamController::class, 'show']);
+            Route::get('/{id}/syllabus', [ExamController::class, 'syllabus']);
+        });
+
+        // Filters Api (cascading dropdowns for app UI)
+        Route::prefix('filters')->group(function () {
+            Route::get('/classes',  [FilterController::class, 'classes']);
+            Route::get('/sections', [FilterController::class, 'sections']);
+            Route::get('/subjects', [FilterController::class, 'subjects']);
+            Route::get('/exams',    [FilterController::class, 'exams']);
         });
 
         // Seating Plan Api  (student only)

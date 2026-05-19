@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\v1;
 
 use App\Models\Admin\Exam;
+use App\Models\Admin\ExamSyllabusChapter;
+use App\Models\Student\Chapter;
+use App\Models\Student\StudentDetail;
+use App\Models\Teacher\TeacherDetail;
+use App\Models\Teacher\TeacherSubject;
 use Illuminate\Http\Request;
 
 class ExamController extends ApiController
@@ -35,9 +40,9 @@ class ExamController extends ApiController
     /**
      * GET /api/v1/exams/{id}
      *
-     * Single exam detail.
+     * Single exam detail + syllabus scoped to caller (student class/section or teacher assignments).
      */
-    public function show(int $id)
+    public function show(int $id, Request $request)
     {
         [$user, $err] = $this->authUser();
         if ($err) return $err;
@@ -50,7 +55,35 @@ class ExamController extends ApiController
             return $this->error('Exam not found.', 404);
         }
 
-        return $this->success($this->formatExam($exam, full: true), 'Exam fetched successfully.');
+        $data             = $this->formatExam($exam, full: true);
+        $data['syllabus'] = $this->getExamSyllabusForUser($exam, $user, $request);
+
+        return $this->success($data, 'Exam fetched successfully.');
+    }
+
+    /**
+     * GET /api/v1/exams/{id}/syllabus
+     *
+     * Just the syllabus chapters+topics for an exam, scoped to the caller.
+     * Optional ?subject_id= to filter to one subject.
+     */
+    public function syllabus(int $id, Request $request)
+    {
+        [$user, $err] = $this->authUser();
+        if ($err) return $err;
+
+        $exam = Exam::where('organization_id', $user->organization_id)
+            ->where('is_published', true)
+            ->find($id);
+
+        if (!$exam) {
+            return $this->error('Exam not found.', 404);
+        }
+
+        return $this->success(
+            $this->getExamSyllabusForUser($exam, $user, $request),
+            'Exam syllabus fetched successfully.'
+        );
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
@@ -77,13 +110,105 @@ class ExamController extends ApiController
         ];
 
         if ($full) {
-            $data['description'] = $e->description;
-            $data['status_label'] = $status;
-            $data['days_remaining'] = $e->start_date > $now
-                ? $now->diffInDays($e->start_date)
-                : 0;
+            $data['description']    = $e->description;
+            $data['status_label']   = $status;
+            $data['days_remaining'] = $e->start_date > $now ? (int) $now->diffInDays($e->start_date) : 0;
         }
 
         return $data;
+    }
+
+    /**
+     * Build syllabus[] for an exam scoped to the caller:
+     *   - Student → their standard_id + section_id
+     *   - Teacher → all (standard, subject) combos in their TeacherSubject assignments
+     * Optional ?subject_id filter applies to both.
+     *
+     * Returns: [ { subject_id, subject_name, standard_id, standard_name,
+     *             chapter_count, chapters: [ { id, name, description, order,
+     *             topics: [ { id, topic_name } ] } ] } ]
+     */
+    private function getExamSyllabusForUser(Exam $exam, $user, Request $request): array
+    {
+        $orgId     = $user->organization_id;
+        $subjectId = $request->get('subject_id');
+
+        $base = ExamSyllabusChapter::where('organization_id', $orgId)
+            ->where('exam_id', $exam->id);
+
+        if ($user->role === 'user') {
+            $student = StudentDetail::where('user_id', $user->id)->first(['id', 'standard_id', 'section_id']);
+            if (!$student) return [];
+
+            $base->where('standard_id', $student->standard_id);
+            if ($student->section_id) {
+                $base->where(function ($q) use ($student) {
+                    $q->where('section_id', $student->section_id)
+                      ->orWhereNull('section_id');
+                });
+            }
+        } elseif ($user->role === 'teacher') {
+            $teacher = TeacherDetail::where('user_id', $user->id)->first(['id']);
+            if (!$teacher) return [];
+
+            $assignments = TeacherSubject::where('teacher_detail_id', $teacher->id)
+                ->get(['standard_id', 'subject_id'])
+                ->map(fn($r) => $r->standard_id . '-' . $r->subject_id)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (empty($assignments)) return [];
+
+            $base->whereIn(\DB::raw('CONCAT(standard_id, "-", subject_id)'), $assignments);
+        }
+
+        if ($subjectId) {
+            $base->where('subject_id', $subjectId);
+        }
+
+        $rows = $base->with(['standard:id,name', 'subject:id,name'])
+            ->get(['exam_id', 'standard_id', 'subject_id', 'chapter_id']);
+
+        if ($rows->isEmpty()) return [];
+
+        $chapterIds = $rows->pluck('chapter_id')->unique()->values()->toArray();
+
+        $chapters = Chapter::with(['topics:id,chapter_id,topic_name'])
+            ->whereIn('id', $chapterIds)
+            ->orderBy('order')
+            ->get(['id', 'name', 'description', 'order', 'subject_id', 'standard_id'])
+            ->keyBy('id');
+
+        return $rows
+            ->groupBy(fn($r) => $r->standard_id . '-' . $r->subject_id)
+            ->map(function ($group) use ($chapters) {
+                $first = $group->first();
+                $chapterList = $group->pluck('chapter_id')
+                    ->map(fn($cid) => $chapters->get($cid))
+                    ->filter()
+                    ->values()
+                    ->map(fn($ch) => [
+                        'id'          => $ch->id,
+                        'name'        => $ch->name,
+                        'description' => $ch->description,
+                        'order'       => $ch->order,
+                        'topics'      => $ch->topics->map(fn($t) => [
+                            'id'         => $t->id,
+                            'topic_name' => $t->topic_name,
+                        ])->values(),
+                    ]);
+
+                return [
+                    'standard_id'   => $first->standard_id,
+                    'standard_name' => $first->standard->name ?? null,
+                    'subject_id'    => $first->subject_id,
+                    'subject_name'  => $first->subject->name ?? null,
+                    'chapter_count' => $chapterList->count(),
+                    'chapters'      => $chapterList,
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 }
