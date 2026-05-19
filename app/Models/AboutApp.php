@@ -15,6 +15,7 @@ class AboutApp extends Model
         'address',
         'core_team',
         'social_media',
+        'documents',
     ];
 
     protected $casts = [
@@ -22,5 +23,6 @@ class AboutApp extends Model
         'contact_details' => 'array',
         'core_team' => 'array',
         'social_media' => 'array',
+        'documents' => 'array',
     ];
 }

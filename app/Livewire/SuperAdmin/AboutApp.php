@@ -24,6 +24,7 @@ class AboutApp extends Component
     public $address      = '';
     public $core_team    = [];
     public $social_media = [];
+    public $documents    = [];
 
     // ─── Contact Modal ────────────────────────────────────────────────────────
     public bool  $showContactModal = false;
@@ -42,10 +43,17 @@ class AboutApp extends Component
     public       $newSocialMediaIcon;
     public       $editSocialIndex    = null;
 
+    // ─── Document Modal ───────────────────────────────────────────────────────
+    public bool  $showDocumentModal = false;
+    public array $newDocument       = [];
+    public       $newDocumentFile;
+    public       $editDocumentIndex = null;
+
     // ─── Delete Confirmations ─────────────────────────────────────────────────
-    public $pendingDeleteContactIndex = null;
-    public $pendingDeleteTeamIndex    = null;
-    public $pendingDeleteSocialIndex  = null;
+    public $pendingDeleteContactIndex  = null;
+    public $pendingDeleteTeamIndex     = null;
+    public $pendingDeleteSocialIndex   = null;
+    public $pendingDeleteDocumentIndex = null;
 
     protected $rules = [
         'heading'                     => 'required|string|max:255',
@@ -71,6 +79,7 @@ class AboutApp extends Component
             $this->address         = $this->aboutApp->address ?? '';
             $this->core_team       = $this->aboutApp->core_team ?? [];
             $this->social_media    = $this->aboutApp->social_media ?? [];
+            $this->documents       = $this->aboutApp->documents ?? [];
         } else {
             $this->content = [['title' => '', 'description' => '']];
         }
@@ -309,6 +318,94 @@ class AboutApp extends Component
         $this->pendingDeleteSocialIndex = null;
     }
 
+    // ─── Documents ────────────────────────────────────────────────────────────
+
+    public function openDocumentModal($index = null): void
+    {
+        $this->editDocumentIndex = $index;
+        $this->newDocument = $index !== null
+            ? $this->documents[$index]
+            : ['title' => ''];
+        $this->newDocumentFile = null;
+        $this->showDocumentModal = true;
+    }
+
+    public function closeDocumentModal(): void
+    {
+        $this->showDocumentModal = false;
+        $this->editDocumentIndex = null;
+        $this->newDocument = [];
+        $this->newDocumentFile = null;
+    }
+
+    public function saveDocument(): void
+    {
+        $this->validate([
+            'newDocument.title' => 'required|string|max:255',
+            'newDocumentFile'   => $this->editDocumentIndex !== null
+                ? 'nullable|file|mimes:pdf,doc,docx|max:2048'
+                : 'required|file|mimes:pdf,doc,docx|max:2048',
+        ], [], [
+            'newDocument.title' => 'Document title',
+            'newDocumentFile'   => 'Document file',
+        ]);
+
+        $doc = $this->newDocument;
+
+        if ($this->newDocumentFile) {
+            // Delete old file if editing
+            if ($this->editDocumentIndex !== null && !empty($this->documents[$this->editDocumentIndex]['file_path'])) {
+                Storage::disk('s3')->delete(
+                    ltrim(parse_url($this->documents[$this->editDocumentIndex]['file_path'], PHP_URL_PATH), '/')
+                );
+            }
+            $extension = $this->newDocumentFile->getClientOriginalExtension();
+            $path = $this->newDocumentFile->store('superadmin/app/documents', 's3');
+            Storage::disk('s3')->setVisibility($path, 'public');
+            $doc['file_path'] = Storage::disk('s3')->url($path);
+            $doc['file_type'] = strtoupper($extension);
+            $doc['file_size'] = $this->newDocumentFile->getSize();
+        } elseif ($this->editDocumentIndex !== null) {
+            $doc['file_path'] = $this->documents[$this->editDocumentIndex]['file_path'] ?? null;
+            $doc['file_type'] = $this->documents[$this->editDocumentIndex]['file_type'] ?? null;
+            $doc['file_size'] = $this->documents[$this->editDocumentIndex]['file_size'] ?? null;
+        }
+
+        if ($this->editDocumentIndex !== null) {
+            $this->documents[$this->editDocumentIndex] = $doc;
+        } else {
+            $this->documents[] = $doc;
+        }
+
+        $this->closeDocumentModal();
+        $this->notification()->success($this->editDocumentIndex !== null ? 'Document updated!' : 'Document added!');
+    }
+
+    public function removeDocument($index): void
+    {
+        $this->pendingDeleteDocumentIndex = $index;
+    }
+
+    public function executeRemoveDocument(): void
+    {
+        if ($this->pendingDeleteDocumentIndex !== null) {
+            if (!empty($this->documents[$this->pendingDeleteDocumentIndex]['file_path'])) {
+                Storage::disk('s3')->delete(
+                    ltrim(parse_url($this->documents[$this->pendingDeleteDocumentIndex]['file_path'], PHP_URL_PATH), '/')
+                );
+            }
+            unset($this->documents[$this->pendingDeleteDocumentIndex]);
+            $this->documents = array_values($this->documents);
+            $this->notification()->success('Document removed!');
+        }
+        $this->pendingDeleteDocumentIndex = null;
+    }
+
+    public function cancelRemoveDocument(): void
+    {
+        $this->pendingDeleteDocumentIndex = null;
+    }
+
     // ─── Save ─────────────────────────────────────────────────────────────────
 
     public function save(): void
@@ -329,6 +426,7 @@ class AboutApp extends Component
                 'address'         => $this->address,
                 'core_team'       => $this->core_team,
                 'social_media'    => $this->social_media,
+                'documents'       => $this->documents,
             ];
 
             if ($this->logo) {

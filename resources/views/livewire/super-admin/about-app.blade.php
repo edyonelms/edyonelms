@@ -313,6 +313,47 @@
                     </div>
                 @endif
 
+                {{-- Documents --}}
+                @if (!empty($aboutApp->documents))
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h2 class="text-base font-semibold text-gray-900">Documents</h2>
+                            <span class="ml-auto text-xs text-gray-400">{{ count($aboutApp->documents) }} file(s)</span>
+                        </div>
+                        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach ($aboutApp->documents as $doc)
+                                <a href="{{ $doc['file_path'] ?? '#' }}" target="_blank" rel="noopener noreferrer"
+                                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-300 hover:shadow-md transition-all group">
+                                    <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-800 truncate group-hover:text-cyan-700">{{ $doc['title'] ?? 'Document' }}</p>
+                                        <p class="text-xs text-gray-400">
+                                            <span class="uppercase font-medium">{{ $doc['file_type'] ?? 'FILE' }}</span>
+                                            @if (!empty($doc['file_size']))
+                                                · {{ number_format($doc['file_size'] / 1024, 0) }} KB
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-400 group-hover:text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
             </div>
         @endif
     @endif
@@ -692,6 +733,89 @@
                 </div>
             </div>
 
+            {{-- Documents --}}
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">Documents</h2>
+                            <p class="text-xs text-gray-400">{{ count($documents) }} document(s) · Max 2MB per file</p>
+                        </div>
+                    </div>
+                    <button wire:click="openDocumentModal()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 hover:bg-cyan-700
+                               text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Document
+                    </button>
+                </div>
+                <div class="p-6 space-y-3">
+                    @forelse ($documents as $index => $doc)
+                        <div class="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-200 transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $doc['title'] ?? 'Document' }}</p>
+                                    <p class="text-xs text-gray-400">
+                                        <span class="uppercase font-medium">{{ $doc['file_type'] ?? 'FILE' }}</span>
+                                        @if (!empty($doc['file_size']))
+                                            · {{ number_format($doc['file_size'] / 1024, 0) }} KB
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                @if (!empty($doc['file_path']))
+                                    <a href="{{ $doc['file_path'] }}" target="_blank" rel="noopener noreferrer"
+                                        class="p-1.5 rounded-lg border border-cyan-200 text-cyan-600 hover:bg-cyan-50 transition-colors" title="View">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                    </a>
+                                @endif
+                                <button wire:click="openDocumentModal({{ $index }})"
+                                    class="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition-colors" title="Edit">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button wire:click="removeDocument({{ $index }})"
+                                    class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Delete">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p class="text-sm text-gray-400">No documents uploaded.</p>
+                            <p class="text-xs text-gray-300 mt-1">PDF, DOC, DOCX up to 2MB.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
             {{-- Save Button --}}
             <div class="flex justify-end pb-6">
                 <button wire:click="save"
@@ -707,78 +831,83 @@
         </div>
     @endif
 
-    {{-- ══════════ DELETE CONTACT CONFIRM ══════════ --}}
+    {{-- ══════════ DELETE CONFIRMS (standardized) ══════════ --}}
     @if ($pendingDeleteContactIndex !== null)
-        <div class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[9999] px-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 bg-red-50 flex items-center gap-3">
-                    <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelRemoveContact"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
-                    <h3 class="text-sm font-bold text-gray-900">Delete Contact</h3>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete contact?</h3>
+                        <p class="text-sm text-gray-500">Remove this contact detail? This action cannot be undone.</p>
+                    </div>
                 </div>
-                <div class="p-5">
-                    <p class="text-sm text-gray-600">Are you sure you want to remove this contact detail? This action cannot be undone.</p>
-                </div>
-                <div class="px-5 pb-5 flex items-center gap-2">
-                    <button wire:click="executeRemoveContact" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">Yes, Delete</button>
-                    <button wire:click="cancelRemoveContact" class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">Cancel</button>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelRemoveContact" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeRemoveContact" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- ══════════ DELETE TEAM MEMBER CONFIRM ══════════ --}}
     @if ($pendingDeleteTeamIndex !== null)
-        <div class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[9999] px-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 bg-red-50 flex items-center gap-3">
-                    <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelRemoveTeamMember"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
-                    <h3 class="text-sm font-bold text-gray-900">Delete Team Member</h3>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete team member?</h3>
+                        <p class="text-sm text-gray-500">
+                            @if (isset($core_team[$pendingDeleteTeamIndex]))
+                                Remove <strong>{{ $core_team[$pendingDeleteTeamIndex]['name'] ?? 'this member' }}</strong>? Their photo on S3 will also be deleted.
+                            @else
+                                This action cannot be undone.
+                            @endif
+                        </p>
+                    </div>
                 </div>
-                <div class="p-5">
-                    @if ($pendingDeleteTeamIndex !== null && isset($core_team[$pendingDeleteTeamIndex]))
-                        <p class="text-sm text-gray-600">Are you sure you want to remove <strong>{{ $core_team[$pendingDeleteTeamIndex]['name'] ?? 'this member' }}</strong>? This action cannot be undone.</p>
-                    @else
-                        <p class="text-sm text-gray-600">Are you sure you want to remove this team member? This action cannot be undone.</p>
-                    @endif
-                </div>
-                <div class="px-5 pb-5 flex items-center gap-2">
-                    <button wire:click="executeRemoveTeamMember" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">Yes, Delete</button>
-                    <button wire:click="cancelRemoveTeamMember" class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">Cancel</button>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelRemoveTeamMember" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeRemoveTeamMember" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- ══════════ DELETE SOCIAL MEDIA CONFIRM ══════════ --}}
     @if ($pendingDeleteSocialIndex !== null)
-        <div class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[9999] px-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 bg-red-50 flex items-center gap-3">
-                    <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelRemoveSocialMedia"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
-                    <h3 class="text-sm font-bold text-gray-900">Delete Social Media</h3>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete social link?</h3>
+                        <p class="text-sm text-gray-500">
+                            @if (isset($social_media[$pendingDeleteSocialIndex]))
+                                Remove <strong class="capitalize">{{ $social_media[$pendingDeleteSocialIndex]['platform'] ?? 'this link' }}</strong>? This action cannot be undone.
+                            @else
+                                This action cannot be undone.
+                            @endif
+                        </p>
+                    </div>
                 </div>
-                <div class="p-5">
-                    @if ($pendingDeleteSocialIndex !== null && isset($social_media[$pendingDeleteSocialIndex]))
-                        <p class="text-sm text-gray-600">Are you sure you want to remove <strong class="capitalize">{{ $social_media[$pendingDeleteSocialIndex]['platform'] ?? 'this link' }}</strong>? This action cannot be undone.</p>
-                    @else
-                        <p class="text-sm text-gray-600">Are you sure you want to remove this social media link? This action cannot be undone.</p>
-                    @endif
-                </div>
-                <div class="px-5 pb-5 flex items-center gap-2">
-                    <button wire:click="executeRemoveSocialMedia" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">Yes, Delete</button>
-                    <button wire:click="cancelRemoveSocialMedia" class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">Cancel</button>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelRemoveSocialMedia" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeRemoveSocialMedia" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
                 </div>
             </div>
         </div>
@@ -1060,6 +1189,125 @@
                     <button wire:click="saveSocialMedia"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">
                         {{ $editSocialIndex !== null ? 'Update' : 'Add Social Media' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════ DOCUMENT SLIDE-IN PANEL ══════════ --}}
+    @if ($showDocumentModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeDocumentModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                {{-- Floating close --}}
+                <button wire:click="closeDocumentModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            {{ $editDocumentIndex !== null ? 'Edit Document' : 'Add Document' }}
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Upload PDF/DOC/DOCX up to 2MB. Files stored on S3.</p>
+                    </div>
+
+                    @if ($editDocumentIndex !== null && !empty($documents[$editDocumentIndex]['file_path']))
+                        <div class="bg-cyan-50 border border-cyan-100 rounded-lg px-4 py-3 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Current File</p>
+                                <p class="text-sm text-gray-700 truncate">
+                                    {{ strtoupper($documents[$editDocumentIndex]['file_type'] ?? 'FILE') }}
+                                    @if (!empty($documents[$editDocumentIndex]['file_size']))
+                                        · {{ number_format($documents[$editDocumentIndex]['file_size'] / 1024, 0) }} KB
+                                    @endif
+                                </p>
+                            </div>
+                            <a href="{{ $documents[$editDocumentIndex]['file_path'] }}" target="_blank"
+                                class="text-xs text-cyan-700 font-semibold hover:underline">View</a>
+                        </div>
+                    @endif
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span class="text-red-500">*</span></label>
+                        <input type="text" wire:model.defer="newDocument.title" placeholder="e.g. Company Brochure"
+                            class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm
+                                   focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500">
+                        @error('newDocument.title')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                            File <span class="text-red-500">*</span>
+                            <span class="text-gray-400 font-normal">(PDF, DOC, DOCX — max 2MB)</span>
+                        </label>
+                        <input type="file" wire:model="newDocumentFile" accept=".pdf,.doc,.docx"
+                            class="block w-full text-sm text-gray-500
+                                   file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                                   file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700
+                                   hover:file:bg-cyan-100 transition-colors border border-gray-300 rounded-md">
+                        <div wire:loading wire:target="newDocumentFile" class="flex items-center gap-1.5 text-xs text-cyan-600 mt-1.5">
+                            <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Uploading…
+                        </div>
+                        @error('newDocumentFile')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeDocumentModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveDocument" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="saveDocument">{{ $editDocumentIndex !== null ? 'Update' : 'Add Document' }}</span>
+                        <span wire:loading wire:target="saveDocument">Saving…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════ DELETE DOCUMENT CONFIRM ══════════ --}}
+    @if ($pendingDeleteDocumentIndex !== null)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelRemoveDocument"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete document?</h3>
+                        <p class="text-sm text-gray-500">
+                            @if (isset($documents[$pendingDeleteDocumentIndex]))
+                                Remove <strong>"{{ $documents[$pendingDeleteDocumentIndex]['title'] ?? 'this document' }}"</strong>? The S3 file will also be deleted.
+                            @else
+                                This action cannot be undone.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelRemoveDocument" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeRemoveDocument" wire:loading.attr="disabled"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove>Delete</span>
+                        <span wire:loading>Deleting...</span>
                     </button>
                 </div>
             </div>
