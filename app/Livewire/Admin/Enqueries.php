@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use WireUi\Traits\WireUiActions;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Enqueries extends Component
 {
@@ -26,9 +27,9 @@ class Enqueries extends Component
     public $adminReply       = '';
 
     // ─── Filters ────────────────────────────────────────────────────────────
-    public $filterDays    = null;
-    public $search        = '';
-    public $statusFilter  = '';
+    public string $filterDays    = '';
+    public string $search        = '';
+    public string $statusFilter  = '';
 
     // ─── Custom delete overlay ──────────────────────────────────────────────
     public bool $showDeleteConfirm = false;
@@ -47,16 +48,6 @@ class Enqueries extends Component
         'statusFilter' => ['except' => ''],
     ];
 
-    /**
-     * Read the query body off an enquiry record regardless of model
-     * (teacher_query for ContactAdminTeacher, student_query for ContactAdminStudent).
-     */
-    public function getQueryText($enquiry): string
-    {
-        if (!$enquiry) return '';
-        return (string) ($enquiry->teacher_query ?? $enquiry->student_query ?? '');
-    }
-
     public function mount(): void
     {
         $this->loadStats();
@@ -70,15 +61,33 @@ class Enqueries extends Component
 
         $orgId = Auth::user()->organization_id;
 
-        $this->totalTeacher = ContactAdminTeacher::where('organization_id', $orgId)->count();
-        $this->totalStudent = ContactAdminStudent::where('organization_id', $orgId)->count();
+        // Single aggregate query per table (instead of 3 separate COUNTs each)
+        // returns: total, pending (admin_reply IS NULL), replied (NOT NULL)
+        $teacher = ContactAdminTeacher::where('organization_id', $orgId)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN admin_reply IS NULL THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN admin_reply IS NOT NULL THEN 1 ELSE 0 END) as replied
+            ')
+            ->first();
+
+        $student = ContactAdminStudent::where('organization_id', $orgId)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN admin_reply IS NULL THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN admin_reply IS NOT NULL THEN 1 ELSE 0 END) as replied
+            ')
+            ->first();
+
+        $this->totalTeacher = (int) ($teacher->total ?? 0);
+        $this->totalStudent = (int) ($student->total ?? 0);
 
         if ($this->activeTab === 'teacher') {
-            $this->pendingCount = ContactAdminTeacher::where('organization_id', $orgId)->whereNull('admin_reply')->count();
-            $this->repliedCount = ContactAdminTeacher::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+            $this->pendingCount = (int) ($teacher->pending ?? 0);
+            $this->repliedCount = (int) ($teacher->replied ?? 0);
         } else {
-            $this->pendingCount = ContactAdminStudent::where('organization_id', $orgId)->whereNull('admin_reply')->count();
-            $this->repliedCount = ContactAdminStudent::where('organization_id', $orgId)->whereNotNull('admin_reply')->count();
+            $this->pendingCount = (int) ($student->pending ?? 0);
+            $this->repliedCount = (int) ($student->replied ?? 0);
         }
     }
 
@@ -221,7 +230,7 @@ class Enqueries extends Component
 
     public function applyFilterDays($days): void
     {
-        $this->filterDays = $this->filterDays == $days ? null : $days;
+        $this->filterDays = ((string) $this->filterDays === (string) $days) ? '' : (string) $days;
         $this->resetPage();
     }
 
@@ -270,10 +279,4 @@ class Enqueries extends Component
         $this->deleteTargetId    = null;
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────────────
-
-    public function getQueryField(): string
-    {
-        return $this->activeTab === 'teacher' ? 'teacher_query' : 'student_query';
-    }
 }
