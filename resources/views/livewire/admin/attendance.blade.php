@@ -1,1037 +1,492 @@
-<div class="p-4">
-    {{-- Main Tabs --}}
-    <div class="flex justify-center items-center mb-6">
-        <div class="flex gap-2 bg-white p-1 rounded-lg shadow-md">
-            @foreach (array_keys($tabs) as $tabKey)
-                <button
-                    class="px-6 py-2 rounded-md transition-all {{ $activeTab === $tabKey ? 'bg-gradient-3 text-white shadow-md' : 'text-gray-600 hover:bg-pink-200' }}"
-                    wire:click="showTab('{{ $tabKey }}')">
-                    {{ ucwords(str_replace('_', ' ', $tabKey)) }}
-                </button>
-            @endforeach
+<div class="min-h-screen bg-gray-50">
+
+    {{-- ══════════ HEADER + main tabs ══════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Attendance</h1>
+                <p class="text-sm text-gray-500 mt-0.5">Mark &amp; review teacher and student attendance</p>
+            </div>
+            <button wire:click="openAssignPanel"
+                class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Assign Class Teacher
+            </button>
+        </div>
+        <div class="border-t border-gray-200 px-4 sm:px-6">
+            <div class="flex gap-1">
+                <button wire:click="switchMainTab('teacher')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {{ $mainTab === 'teacher' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Teacher Attendance</button>
+                <button wire:click="switchMainTab('student')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {{ $mainTab === 'student' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Student Attendance</button>
+            </div>
         </div>
     </div>
 
-    {{-- Sub Tabs --}}
-    <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-8">
-            @foreach ($tabs[$activeTab] as $subTabKey => $subTabLabel)
-                <button wire:click="setSubTab('{{ $subTabKey }}')"
-                    class="relative whitespace-nowrap py-4 px-1 font-medium text-sm {{ $subTab === $subTabKey ? 'text-gradient-3' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                    {{ $subTabLabel }}
-                    @if ($subTab === $subTabKey)
-                        <div
-                            class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#ff00cc] via-[#cc00ff] to-[#3366ff]">
-                        </div>
-                    @endif
-                </button>
-            @endforeach
-        </nav>
-    </div>
+    @php
+        $statusPill = function ($status) {
+            return match ($status) {
+                'present' => 'bg-emerald-100 text-emerald-700',
+                'absent'  => 'bg-red-100 text-red-700',
+                default   => 'bg-gray-100 text-gray-500',
+            };
+        };
+    @endphp
 
-    {{-- Content Area --}}
-    <div class="py-6">
-        {{-- Teacher Attendance Marking with Checkboxes --}}
-        @if ($activeTab === 'teacher_attendance' && $subTab === 'teacher_attendance')
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Mark Teacher Attendance</h2>
-                    <div class="flex items-center space-x-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Attendance Date</label>
-                            <input type="date" wire:model.live="teacher_attendance_date"
-                                class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <div class="p-4 sm:p-6">
+
+        {{-- ═══════════════════════════════════════════════
+             TEACHER ATTENDANCE
+        ═══════════════════════════════════════════════ --}}
+        @if ($mainTab === 'teacher')
+            <div class="flex flex-wrap gap-2 mb-5">
+                @foreach (['mark' => 'Mark Attendance', 'by_date' => 'By Date', 'by_teacher' => 'By Teacher'] as $k => $label)
+                    <button wire:click="switchTeacherView('{{ $k }}')"
+                        class="px-4 py-2 text-sm font-medium rounded-lg border transition-colors {{ $teacherView === $k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' }}">{{ $label }}</button>
+                @endforeach
+            </div>
+
+            {{-- MARK --}}
+            @if ($teacherView === 'mark')
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600">Date</label>
+                            <input type="date" wire:model.live="markDate" class="text-sm border border-gray-300 rounded-md px-3 py-1.5">
+                            <span class="text-xs text-gray-400">All marked present by default</span>
                         </div>
+                        <button wire:click="submitTeacherAttendance"
+                            class="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            Submit Attendance
+                        </button>
                     </div>
-                </div>
-
-                @if ($teacherAttendanceData->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Teacher</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Attendance Status</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Remarks</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Last Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($teacherAttendanceData as $teacher)
-                                    @php
-                                        $existingAttendance = $teacher->attendance->first();
-                                        $currentDbStatus = $existingAttendance ? $existingAttendance->status : 4;
-                                        $currentStatus = $this->getStatusLabel($currentDbStatus);
-                                    @endphp
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div
-                                                        class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                                                        {{ substr($teacher->user->name, 0, 1) }}
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ $teacher->user->name }}</div>
-                                                    <div class="text-sm text-gray-500">{{ $teacher->user->email }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center space-x-4">
-                                                <!-- Present Checkbox (1) -->
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="radio" name="attendance_{{ $teacher->id }}"
-                                                        value="present"
-                                                        wire:click="updateTeacherAttendance({{ $teacher->id }}, 'present')"
-                                                        {{ $currentStatus === 'present' ? 'checked' : '' }}
-                                                        class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
-                                                    <span
-                                                        class="text-sm text-gray-700 {{ $currentStatus === 'present' ? 'font-semibold text-green-600' : '' }}">Present</span>
-                                                </label>
-
-                                                <!-- Absent Checkbox (0) -->
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="radio" name="attendance_{{ $teacher->id }}"
-                                                        value="absent"
-                                                        wire:click="updateTeacherAttendance({{ $teacher->id }}, 'absent')"
-                                                        {{ $currentStatus === 'absent' ? 'checked' : '' }}
-                                                        class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
-                                                    <span
-                                                        class="text-sm text-gray-700 {{ $currentStatus === 'absent' ? 'font-semibold text-red-600' : '' }}">Absent</span>
-                                                </label>
-
-                                                <!-- Late Checkbox (2) -->
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="radio" name="attendance_{{ $teacher->id }}"
-                                                        value="late"
-                                                        wire:click="updateTeacherAttendance({{ $teacher->id }}, 'late')"
-                                                        {{ $currentStatus === 'late' ? 'checked' : '' }}
-                                                        class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300">
-                                                    <span
-                                                        class="text-sm text-gray-700 {{ $currentStatus === 'late' ? 'font-semibold text-yellow-600' : '' }}">Late</span>
-                                                </label>
-
-                                                <!-- Half Day Checkbox (3) -->
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="radio" name="attendance_{{ $teacher->id }}"
-                                                        value="half_day"
-                                                        wire:click="updateTeacherAttendance({{ $teacher->id }}, 'half_day')"
-                                                        {{ $currentStatus === 'half_day' ? 'checked' : '' }}
-                                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                                                    <span
-                                                        class="text-sm text-gray-700 {{ $currentStatus === 'half_day' ? 'font-semibold text-blue-600' : '' }}">Half
-                                                        Day</span>
-                                                </label>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <input type="text"
-                                                wire:model.live="teacher_attendance_data.{{ $teacher->id }}.remarks"
-                                                wire:change="updateTeacherRemarks({{ $teacher->id }})"
-                                                placeholder="Optional remarks"
-                                                class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            @if ($existingAttendance && $existingAttendance->updated_at)
-                                                {{ $existingAttendance->updated_at->format('d M Y h:i A') }}
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-3 text-left w-12">#</th>
+                                <th class="px-4 py-3 text-left">Teacher</th>
+                                <th class="px-4 py-3 text-center w-48">Status</th>
+                                <th class="px-4 py-3 text-left w-64">Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse ($markTeachers as $i => $t)
+                                <tr wire:key="mark-t-{{ $t->id }}">
+                                    <td class="px-4 py-3 text-gray-400">{{ $i + 1 }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-3">
+                                            @if ($t->user?->image)
+                                                <img src="{{ $t->user->image }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
                                             @else
-                                                Not marked yet
+                                                <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">{{ strtoupper(substr($t->user->name ?? 'T', 0, 1)) }}</div>
                                             @endif
-                                        </td>
-                                    </tr>
+                                            <div class="min-w-0">
+                                                <p class="font-medium text-gray-800 truncate">{{ $t->user->name ?? '—' }}</p>
+                                                <p class="text-xs text-gray-400 truncate">{{ $t->user->email ?? '' }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button wire:click="setTeacherStatus({{ $t->id }}, 'present')"
+                                                class="px-3 py-1.5 text-xs font-semibold rounded-md border {{ ($teacherMark[$t->id]['status'] ?? 'present') === 'present' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200' }}">Present</button>
+                                            <button wire:click="setTeacherStatus({{ $t->id }}, 'absent')"
+                                                class="px-3 py-1.5 text-xs font-semibold rounded-md border {{ ($teacherMark[$t->id]['status'] ?? '') === 'absent' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200' }}">Absent</button>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" wire:model="teacherMark.{{ $t->id }}.remark" placeholder="Optional remark"
+                                            class="w-full text-sm border border-gray-200 rounded-md px-3 py-1.5">
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No teachers found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            {{-- BY DATE --}}
+            @if ($teacherView === 'by_date')
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                        <label class="text-sm text-gray-600">Date</label>
+                        <input type="date" wire:model.live="byDateTeacherDate" class="text-sm border border-gray-300 rounded-md px-3 py-1.5">
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-3 text-left w-12">#</th>
+                                <th class="px-4 py-3 text-left">Teacher</th>
+                                <th class="px-4 py-3 text-center w-32">Status</th>
+                                <th class="px-4 py-3 text-left">Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse ($byDateTeacherRows as $i => $row)
+                                <tr>
+                                    <td class="px-4 py-3 text-gray-400">{{ $i + 1 }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-3">
+                                            @if ($row['image'])
+                                                <img src="{{ $row['image'] }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
+                                            @else
+                                                <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">{{ strtoupper(substr($row['name'], 0, 1)) }}</div>
+                                            @endif
+                                            <div class="min-w-0">
+                                                <p class="font-medium text-gray-800 truncate">{{ $row['name'] }}</p>
+                                                <p class="text-xs text-gray-400 truncate">{{ $row['email'] }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full uppercase {{ $statusPill($row['status']) }}">{{ $row['status'] }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500">{{ $row['remark'] ?: '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No teachers found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            {{-- BY TEACHER (calendar) --}}
+            @if ($teacherView === 'by_teacher')
+                <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Month</label>
+                            <input type="month" wire:model.live="byTeacherMonth" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Teacher</label>
+                            <select wire:model.live="byTeacherId" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select teacher…</option>
+                                @foreach ($teachers->sortBy(fn($t) => $t->user->name ?? '') as $t)
+                                    <option value="{{ $t->id }}">{{ $t->user->name ?? '—' }}</option>
                                 @endforeach
-                            </tbody>
-                        </table>
+                            </select>
+                        </div>
                     </div>
+                </div>
+
+                @if ($teacherCalendar)
+                    @include('livewire.admin._partials.attendance-calendar', ['calendar' => $teacherCalendar])
                 @else
-                    <div class="text-center py-8">
-                        <div class="text-gray-500 text-lg">No teachers found.</div>
-                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 py-12 text-center text-gray-400 text-sm">Select a teacher to view the monthly calendar.</div>
                 @endif
+            @endif
+        @endif
+
+        {{-- ═══════════════════════════════════════════════
+             STUDENT ATTENDANCE
+        ═══════════════════════════════════════════════ --}}
+        @if ($mainTab === 'student')
+            <div class="flex flex-wrap gap-2 mb-5">
+                @foreach (['by_date' => 'By Date', 'by_student' => 'By Student', 'by_class' => 'By Class'] as $k => $label)
+                    <button wire:click="switchStudentView('{{ $k }}')"
+                        class="px-4 py-2 text-sm font-medium rounded-lg border transition-colors {{ $studentView === $k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' }}">{{ $label }}</button>
+                @endforeach
             </div>
 
-            {{-- Teacher Attendance List --}}
-        @elseif ($activeTab === 'teacher_attendance' && $subTab === 'teacher_attendance_list')
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Teacher Attendance List</h2>
-                    <button wire:click="exportTeacherAttendance"
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Export Excel</span>
-                    </button>
-                </div>
-
-                {{-- Filters --}}
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" wire:model.live="filter_date"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
-                        <select wire:model.live="filter_teacher"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Teachers</option>
-                            @foreach ($teachers as $teacher)
-                                <option value="{{ $teacher->id }}">{{ $teacher->user->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model.live="filter_status"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Status</option>
-                            <option value="present">Present</option>
-                            <option value="absent">Absent</option>
-                            <option value="late">Late</option>
-                            <option value="half_day">Half Day</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button wire:click="$set('filter_date', '{{ now()->format('Y-m-d') }}')"
-                            class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Today
-                        </button>
+            {{-- BY DATE (markable) --}}
+            @if ($studentView === 'by_date')
+                <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input type="date" wire:model.live="sdDate" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
+                            <select wire:model.live="sdStandard" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select class…</option>
+                                @foreach ($standards as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
+                            <select wire:model.live="sdSection" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select section…</option>
+                                @foreach ($sdSections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                @if ($teacherAttendanceList->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                @if ($sdStandard && $sdSection)
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <span class="text-sm text-gray-600">{{ $sdStudents->count() }} student(s) · default present</span>
+                            <button wire:click="submitStudentAttendance"
+                                class="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                Submit
+                            </button>
+                        </div>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                                 <tr>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Teacher</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Remarks</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Marked By</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Time</th>
+                                    <th class="px-4 py-3 text-left w-12">#</th>
+                                    <th class="px-4 py-3 text-left">Student</th>
+                                    <th class="px-4 py-3 text-center w-48">Status</th>
+                                    <th class="px-4 py-3 text-left w-64">Remark</th>
                                 </tr>
                             </thead>
-                            @php
-                                // Safe date formatting functions - DECLARE ONCE OUTSIDE LOOP
-                                function formatDateSafe($date)
-                                {
-                                    try {
-                                        if (is_string($date)) {
-                                            return \Carbon\Carbon::parse($date)->format('d M Y');
-                                        }
-                                        return $date->format('d M Y');
-                                    } catch (\Exception $e) {
-                                        return 'Invalid Date';
-                                    }
-                                }
-
-                                function formatTimeSafe($datetime)
-                                {
-                                    try {
-                                        if (is_string($datetime)) {
-                                            return \Carbon\Carbon::parse($datetime)->format('h:i A');
-                                        }
-                                        return $datetime->format('h:i A');
-                                    } catch (\Exception $e) {
-                                        return 'Invalid Time';
-                                    }
-                                }
-                            @endphp
-
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($teacherAttendanceList as $record)
-                                    @php
-                                        // Status mapping
-                                        $statusMap = [
-                                            1 => ['label' => 'Present', 'class' => 'bg-green-100 text-green-800'],
-                                            0 => ['label' => 'Absent', 'class' => 'bg-red-100 text-red-800'],
-                                            2 => ['label' => 'Late', 'class' => 'bg-yellow-100 text-yellow-800'],
-                                            3 => ['label' => 'Half Day', 'class' => 'bg-blue-100 text-blue-800'],
-                                        ];
-                                        $statusInfo = $statusMap[$record->status] ?? [
-                                            'label' => 'Unknown',
-                                            'class' => 'bg-gray-100 text-gray-800',
-                                        ];
-                                    @endphp
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div
-                                                        class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                                                        {{ $record->teacherDetail && $record->teacherDetail->user ? substr($record->teacherDetail->user->name, 0, 1) : 'N' }}
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ $record->teacherDetail && $record->teacherDetail->user ? $record->teacherDetail->user->name : 'Unknown Teacher' }}
-                                                    </div>
-                                                    <div class="text-sm text-gray-500">
-                                                        {{ $record->teacherDetail && $record->teacherDetail->user ? $record->teacherDetail->user->email : 'N/A' }}
-                                                    </div>
+                            <tbody class="divide-y divide-gray-100">
+                                @forelse ($sdStudents as $i => $s)
+                                    <tr wire:key="mark-s-{{ $s->id }}">
+                                        <td class="px-4 py-3 text-gray-400">{{ $i + 1 }}</td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-3">
+                                                @if ($s->user?->image)
+                                                    <img src="{{ $s->user->image }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
+                                                @else
+                                                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">{{ strtoupper(substr($s->user->name ?? 'S', 0, 1)) }}</div>
+                                                @endif
+                                                <div class="min-w-0">
+                                                    <p class="font-medium text-gray-800 truncate">{{ $s->user->name ?? $s->full_name }}</p>
+                                                    <p class="text-xs text-gray-400 truncate">{{ $s->user->email ?? '' }}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ formatDateSafe($record->attendance_date) }}
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <button wire:click="setStudentStatus({{ $s->id }}, 'present')"
+                                                    class="px-3 py-1.5 text-xs font-semibold rounded-md border {{ ($studentMark[$s->id]['status'] ?? 'present') === 'present' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200' }}">Present</button>
+                                                <button wire:click="setStudentStatus({{ $s->id }}, 'absent')"
+                                                    class="px-3 py-1.5 text-xs font-semibold rounded-md border {{ ($studentMark[$s->id]['status'] ?? '') === 'absent' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200' }}">Absent</button>
+                                            </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusInfo['class'] }}">
-                                                {{ $statusInfo['label'] }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $record->remarks ?: 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $record->recordedBy->name ?? 'System' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ formatTimeSafe($record->updated_at) }}
+                                        <td class="px-4 py-3">
+                                            <input type="text" wire:model="studentMark.{{ $s->id }}.remark" placeholder="Optional remark"
+                                                class="w-full text-sm border border-gray-200 rounded-md px-3 py-1.5">
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                                            No attendance records found.
-                                        </td>
-                                    </tr>
+                                    <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No students in this class/section.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="mt-4">
-                        {{ $teacherAttendanceList->links() }}
-                    </div>
                 @else
-                    <div class="text-center py-8">
-                        <div class="text-gray-500 text-lg">No attendance records found.</div>
-                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 py-12 text-center text-gray-400 text-sm">Select class &amp; section to mark attendance.</div>
                 @endif
-            </div>
+            @endif
 
-            {{-- Teacher Attendance Dashboard --}}
-        @elseif ($activeTab === 'teacher_attendance' && $subTab === 'teacher_attendance_dashboard')
-            <div class="space-y-6">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Total Teachers -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Total Teachers</p>
-                                <h3 class="text-2xl font-bold mt-1">
-                                    {{ number_format($teacherStats['total_teachers']['count']) }}</h3>
-                                <p
-                                    class="{{ $teacherStats['total_teachers']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($teacherStats['total_teachers']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($teacherStats['total_teachers']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-blue-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
+            {{-- BY STUDENT (calendar) --}}
+            @if ($studentView === 'by_student')
+                <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Month</label>
+                            <input type="month" wire:model.live="ssMonth" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
                         </div>
-                    </div>
-
-                    <!-- Present Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Present Today</p>
-                                <h3 class="text-2xl font-bold mt-1">
-                                    {{ number_format($teacherStats['present_today']['count']) }}</h3>
-                                <p
-                                    class="{{ $teacherStats['present_today']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($teacherStats['present_today']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($teacherStats['present_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-green-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
+                            <select wire:model.live="ssStandard" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select…</option>
+                                @foreach ($standards as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
+                            </select>
                         </div>
-                    </div>
-
-                    <!-- Absent Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Absent Today</p>
-                                <h3 class="text-2xl font-bold mt-1">{{ $teacherStats['absent_today']['count'] }}</h3>
-                                <p class="text-red-500 text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    {{ abs($teacherStats['absent_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-red-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
+                            <select wire:model.live="ssSection" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select…</option>
+                                @foreach ($ssSections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                            </select>
                         </div>
-                    </div>
-
-                    <!-- Late Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Late Today</p>
-                                <h3 class="text-2xl font-bold mt-1">{{ $teacherStats['late_today']['count'] }}</h3>
-                                <p
-                                    class="{{ $teacherStats['late_today']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($teacherStats['late_today']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($teacherStats['late_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-yellow-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Student</label>
+                            <select wire:model.live="ssStudentId" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select…</option>
+                                @foreach ($ssStudents as $s)<option value="{{ $s->id }}">{{ $s->user->name ?? $s->full_name }}</option>@endforeach
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <!-- Teacher Attendance Trend Chart -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Attendance Trend (Last 6 Months)</h3>
-                        <div class="h-80" wire:ignore>
-                            <canvas id="teacherTrendChart" x-data="{
-                                chart: null,
-                                init() {
-                                    const ctx = this.$el.getContext('2d');
-                                    this.chart = new Chart(ctx, {
-                                        type: 'line',
-                                        data: {
-                                            labels: @js($teacherTrendData['months']),
-                                            datasets: [{
-                                                label: 'Present',
-                                                data: @js($teacherTrendData['present']),
-                                                borderColor: 'rgb(16, 185, 129)',
-                                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                                tension: 0.3,
-                                                fill: true
-                                            }, {
-                                                label: 'Absent',
-                                                data: @js($teacherTrendData['absent']),
-                                                borderColor: 'rgb(239, 68, 68)',
-                                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                                tension: 0.3,
-                                                fill: true
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'top' } }
-                                        }
-                                    });
-                                }
-                            }"></canvas>
-                        </div>
-                    </div>
+                @if ($studentCalendar)
+                    @include('livewire.admin._partials.attendance-calendar', ['calendar' => $studentCalendar])
+                @else
+                    <div class="bg-white rounded-xl border border-gray-200 py-12 text-center text-gray-400 text-sm">Select a student to view the monthly calendar.</div>
+                @endif
+            @endif
 
-                    <!-- Teacher Status Distribution Chart -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Today's Status Distribution</h3>
-                        <div class="h-80" wire:ignore>
-                            <canvas id="teacherStatusChart" x-data="{
-                                chart: null,
-                                init() {
-                                    const ctx = this.$el.getContext('2d');
-                                    this.chart = new Chart(ctx, {
-                                        type: 'doughnut',
-                                        data: {
-                                            labels: @js(array_keys($teacherStatusData)),
-                                            datasets: [{
-                                                data: @js(array_values($teacherStatusData)),
-                                                backgroundColor: [
-                                                    'rgb(16, 185, 129)',
-                                                    'rgb(239, 68, 68)',
-                                                    'rgb(245, 158, 11)',
-                                                    'rgb(59, 130, 246)'
-                                                ],
-                                                borderWidth: 0
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'right' } }
-                                        }
-                                    });
-                                }
-                            }"></canvas>
+            {{-- BY CLASS --}}
+            @if ($studentView === 'by_class')
+                <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
+                            <select wire:model.live="scStandard" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select class…</option>
+                                @foreach ($standards as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
+                            <select wire:model.live="scSection" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white">
+                                <option value="">Select section…</option>
+                                @foreach ($scSections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input type="date" wire:model.live="scDate" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2">
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Student Attendance List --}}
-        @elseif ($activeTab === 'student_attendance' && $subTab === 'student_attendance_list')
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Student Attendance List</h2>
-                    <button wire:click="exportStudentAttendance"
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Export Excel</span>
-                    </button>
-                </div>
-
-                {{-- Filters --}}
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" wire:model.live="filter_date"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Standard</label>
-                        <select wire:model.live="selected_standard"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Standards</option>
-                            @foreach ($standards as $standard)
-                                <option value="{{ $standard->id }}">{{ $standard->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model.live="filter_status"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Status</option>
-                            <option value="present">Present</option>
-                            <option value="absent">Absent</option>
-                            <option value="late">Late</option>
-                            <option value="half_day">Half Day</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button wire:click="$set('filter_date', '{{ now()->format('Y-m-d') }}')"
-                            class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            Today
-                        </button>
-                    </div>
-                </div>
-
-                @if ($studentAttendanceList->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                @if ($scStandard && $scSection)
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                                 <tr>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Student</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Class</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Remarks</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Marked By</th>
+                                    <th class="px-4 py-3 text-left w-12">#</th>
+                                    <th class="px-4 py-3 text-left">Student</th>
+                                    <th class="px-4 py-3 text-center w-32">Status</th>
+                                    <th class="px-4 py-3 text-left">Remark</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($studentAttendanceList as $record)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div
-                                                        class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
-                                                        {{ substr($record->studentDetail->user->name, 0, 1) }}
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ $record->studentDetail->user->name }}</div>
-                                                    <div class="text-sm text-gray-500">Roll:
-                                                        {{ $record->studentDetail->roll_number }}</div>
+                            <tbody class="divide-y divide-gray-100">
+                                @forelse ($byClassRows as $i => $row)
+                                    <tr>
+                                        <td class="px-4 py-3 text-gray-400">{{ $i + 1 }}</td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-3">
+                                                @if ($row['image'])
+                                                    <img src="{{ $row['image'] }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
+                                                @else
+                                                    <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">{{ strtoupper(substr($row['name'], 0, 1)) }}</div>
+                                                @endif
+                                                <div class="min-w-0">
+                                                    <p class="font-medium text-gray-800 truncate">{{ $row['name'] }}</p>
+                                                    <p class="text-xs text-gray-400 truncate">{{ $row['email'] }}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $record->studentDetail->standard->name }} -
-                                            {{ $record->studentDetail->section->name }}
+                                        <td class="px-4 py-3 text-center">
+                                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full uppercase {{ $statusPill($row['status']) }}">{{ $row['status'] }}</span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $record->attendance_date->format('d M Y') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {{ $record->status === 'present'
-                                            ? 'bg-green-100 text-green-800'
-                                            : ($record->status === 'absent'
-                                                ? 'bg-red-100 text-red-800'
-                                                : ($record->status === 'late'
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : 'bg-blue-100 text-blue-800')) }}">
-                                                {{ ucfirst(str_replace('_', ' ', $record->status)) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $record->remarks ?: 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $record->markerdBy->name ?? 'System' }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-4">
-                        {{ $studentAttendanceList->links() }}
-                    </div>
-                @else
-                    <div class="text-center py-8">
-                        <div class="text-gray-500 text-lg">No attendance records found.</div>
-                    </div>
-                @endif
-            </div>
-
-            {{-- Student Attendance Dashboard --}}
-        @elseif ($activeTab === 'student_attendance' && $subTab === 'student_attendance_dashboard')
-            <div class="space-y-6">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Total Students -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Total Students</p>
-                                <h3 class="text-2xl font-bold mt-1">
-                                    {{ number_format($studentStats['total_students']['count']) }}</h3>
-                                <p
-                                    class="{{ $studentStats['total_students']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($studentStats['total_students']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($studentStats['total_students']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-blue-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Present Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Present Today</p>
-                                <h3 class="text-2xl font-bold mt-1">
-                                    {{ number_format($studentStats['present_today']['count']) }}</h3>
-                                <p
-                                    class="{{ $studentStats['present_today']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($studentStats['present_today']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($studentStats['present_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-green-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Absent Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Absent Today</p>
-                                <h3 class="text-2xl font-bold mt-1">{{ $studentStats['absent_today']['count'] }}</h3>
-                                <p class="text-red-500 text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    {{ abs($studentStats['absent_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-red-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Late Today -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Late Today</p>
-                                <h3 class="text-2xl font-bold mt-1">{{ $studentStats['late_today']['count'] }}</h3>
-                                <p
-                                    class="{{ $studentStats['late_today']['trend'] === 'up' ? 'text-green-500' : 'text-red-500' }} text-sm mt-2 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        @if ($studentStats['late_today']['trend'] === 'up')
-                                            <path fill-rule="evenodd"
-                                                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                                                clip-rule="evenodd" />
-                                        @else
-                                            <path fill-rule="evenodd"
-                                                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586l-4.293-4.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
-                                                clip-rule="evenodd" />
-                                        @endif
-                                    </svg>
-                                    {{ abs($studentStats['late_today']['growth']) }}% from yesterday
-                                </p>
-                            </div>
-                            <div class="bg-yellow-100 p-3 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <!-- Student Attendance Trend Chart -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Attendance Trend (Last 6 Months)</h3>
-                        <div class="h-80" wire:ignore>
-                            <canvas id="studentTrendChart" x-data="{
-                                chart: null,
-                                init() {
-                                    const ctx = this.$el.getContext('2d');
-                                    this.chart = new Chart(ctx, {
-                                        type: 'line',
-                                        data: {
-                                            labels: @js($studentTrendData['months']),
-                                            datasets: [{
-                                                label: 'Present',
-                                                data: @js($studentTrendData['present']),
-                                                borderColor: 'rgb(16, 185, 129)',
-                                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                                tension: 0.3,
-                                                fill: true
-                                            }, {
-                                                label: 'Absent',
-                                                data: @js($studentTrendData['absent']),
-                                                borderColor: 'rgb(239, 68, 68)',
-                                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                                tension: 0.3,
-                                                fill: true
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'top' } }
-                                        }
-                                    });
-                                }
-                            }"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Student Status Distribution Chart -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Today's Status Distribution</h3>
-                        <div class="h-80" wire:ignore>
-                            <canvas id="studentStatusChart" x-data="{
-                                chart: null,
-                                init() {
-                                    const ctx = this.$el.getContext('2d');
-                                    this.chart = new Chart(ctx, {
-                                        type: 'doughnut',
-                                        data: {
-                                            labels: @js(array_keys($studentStatusData)),
-                                            datasets: [{
-                                                data: @js(array_values($studentStatusData)),
-                                                backgroundColor: [
-                                                    'rgb(16, 185, 129)',
-                                                    'rgb(239, 68, 68)',
-                                                    'rgb(245, 158, 11)',
-                                                    'rgb(59, 130, 246)'
-                                                ],
-                                                borderWidth: 0
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'right' } }
-                                        }
-                                    });
-                                }
-                            }"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Class-wise Attendance -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Class-wise Attendance (%)</h3>
-                    <div class="h-64" wire:ignore>
-                        <canvas id="classWiseChart" x-data="{
-                            chart: null,
-                            init() {
-                                const ctx = this.$el.getContext('2d');
-                                this.chart = new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: @js(array_keys($classWiseData)),
-                                        datasets: [{
-                                            label: 'Attendance %',
-                                            data: @js(array_values($classWiseData)),
-                                            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-                                            borderColor: 'rgb(79, 70, 229)',
-                                            borderWidth: 1
-                                        }]
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: { legend: { display: false } },
-                                        scales: {
-                                            y: {
-                                                beginAtZero: true,
-                                                max: 100,
-                                                title: {
-                                                    display: true,
-                                                    text: 'Percentage (%)'
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Assign Teacher --}}
-        @elseif ($activeTab === 'assign_teacher_class' && $subTab === 'assign_teacher')
-            <div>
-                <div class="flex justify-end gap-4 p-4 items-center">
-                    <button class="px-4 py-2 bg-gradient-3 hover:bg-gradient-3-hover text-white rounded-lg"
-                        wire:click="openModalAssignTeacher()">Assign Teacher</button>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Teacher
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Class
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Section
-                                    </th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($assignments as $assignment)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $assignment->teacher?->user?->name ?? 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $assignment->standard?->name ?? 'N/A' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {{ $assignment->section?->name ?? 'All Sections' }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button type="button" wire:click="onEdit({{ $assignment->id }})"
-                                                class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                                Edit
-                                            </button>
-                                            <button type="button" wire:click="onDelete({{ $assignment->id }})"
-                                                wire:confirm="Delete this teacher assignment?"
-                                                class="text-red-600 hover:text-red-900">
-                                                Delete
-                                            </button>
-                                        </td>
+                                        <td class="px-4 py-3 text-gray-500">{{ $row['remark'] ?: '—' }}</td>
                                     </tr>
                                 @empty
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
-                                            No teacher assignments found.
-                                        </td>
-                                    </tr>
+                                    <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No students found.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                @else
+                    <div class="bg-white rounded-xl border border-gray-200 py-12 text-center text-gray-400 text-sm">Select class &amp; section to view attendance.</div>
+                @endif
+            @endif
         @endif
     </div>
 
-    <!-- Modal Form Teacher Assign class -->
-    <x-modal-form show="{{ $showModalAssignTeacher }}"
-        title="{{ $editId ? 'Edit Teacher Assignment' : 'Assign Teacher to Class' }}" submitAction="saveAssignment"
-        submitButton="{{ $editId ? 'Update' : 'Assign' }}" closeAction="closeModalAssignTeacher">
-        <div class="grid grid-cols-1 gap-6">
-            <!-- Teacher Select -->
-            <x-native-select wire:model.defer="teacher_detail_id" label="Select Teacher"
-                placeholder="Select a teacher" :options="$teachers
-                    ->map(function ($teacher) {
-                        return [
-                            'value' => $teacher->id,
-                            'label' => $teacher->user->name,
-                        ];
-                    })
-                    ->toArray()" option-value="value" option-label="label" />
+    {{-- ══════════ ASSIGN CLASS TEACHER SLIDE-IN ══════════ --}}
+    @if ($showAssignPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeAssignPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closeAssignPanel"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ $assignEditId ? 'Edit Assignment' : 'Assign Class Teacher' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Map a teacher to a class &amp; section.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Teacher <span class="text-red-500">*</span></label>
+                        <select wire:model="assignTeacherId" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm bg-white">
+                            <option value="">Select teacher…</option>
+                            @foreach ($teachers->sortBy(fn($t) => $t->user->name ?? '') as $t)
+                                <option value="{{ $t->id }}">{{ $t->user->name ?? '—' }}</option>
+                            @endforeach
+                        </select>
+                        @error('assignTeacherId')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Class <span class="text-red-500">*</span></label>
+                            <select wire:model.live="assignStandardId" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm bg-white">
+                                <option value="">Select…</option>
+                                @foreach ($standards as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
+                            </select>
+                            @error('assignStandardId')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Section</label>
+                            <select wire:model="assignSectionId" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm bg-white">
+                                <option value="">All / none</option>
+                                @if ($assignStandardId)
+                                    @foreach (\App\Models\Student\Section::where('standard_id', $assignStandardId)->get() as $sec)
+                                        <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
 
-            <!-- Standard Select -->
-            <x-native-select wire:model.live="standard_id" label="Select Standard/Class"
-                placeholder="Select a standard" :options="$standards
-                    ->map(function ($standard) {
-                        return [
-                            'value' => $standard->id,
-                            'label' => $standard->name,
-                        ];
-                    })
-                    ->toArray()" option-value="value" option-label="label" />
+                    <div class="flex justify-end">
+                        <button wire:click="saveAssign" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">{{ $assignEditId ? 'Update' : 'Assign' }}</button>
+                    </div>
 
-            <!-- Section Select -->
-            <x-native-select wire:model.defer="section_id" label="Select Section"
-                placeholder="{{ count($filteredSections) ? 'Select a section' : 'Please select standard first' }}"
-                :options="$filteredSections" option-value="value" option-label="label" :disabled="!$standard_id" />
+                    <div class="border-t border-gray-100 pt-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Current Assignments</p>
+                        <div class="space-y-2">
+                            @forelse ($assignments as $a)
+                                <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 truncate">{{ $a->teacher->user->name ?? '—' }}</p>
+                                        <p class="text-xs text-gray-500">{{ $a->standard->name ?? '' }}{{ $a->section ? ' · ' . $a->section->name : '' }}</p>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <button wire:click="editAssign({{ $a->id }})" class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600" title="Edit">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        <button wire:click="confirmDeleteAssign({{ $a->id }})" class="p-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50" title="Delete">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-xs text-gray-400">No assignments yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </x-modal-form>
+    @endif
+
+    {{-- ══════════ DELETE ASSIGN CONFIRM ══════════ --}}
+    @if ($pendingDeleteAssignId !== null)
+        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteAssign"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Remove assignment?</h3>
+                        <p class="text-sm text-gray-500">This unassigns the class teacher. This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDeleteAssign" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeDeleteAssign" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Remove</button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

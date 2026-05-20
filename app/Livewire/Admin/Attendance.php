@@ -9,780 +9,416 @@ use App\Models\Student\StudentDetail;
 use App\Models\Teacher\AssignTeacherStandard;
 use App\Models\Teacher\TeacherAttendance;
 use App\Models\Teacher\TeacherDetail;
-use App\Models\Teacher\TeacherSection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
-use Livewire\Component;
-use Livewire\WithPagination;
-use WireUi\Traits\WireUiActions;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
+use WireUi\Traits\WireUiActions;
 
 class Attendance extends Component
 {
-    use WireUiActions, WithPagination;
+    use WireUiActions;
 
-    public $activeTab = 'teacher_attendance';
-    public $subTab = 'teacher_attendance';
+    // present = 1, absent = 0
+    public string $mainTab = 'teacher';        // teacher | student
+    public string $teacherView = 'mark';       // mark | by_date | by_teacher
+    public string $studentView = 'by_date';    // by_date | by_student | by_class
 
-    // For teacher assignment form
-    public $showModalAssignTeacher = false;
-    public $editId = null;
-    public $teacher_detail_id;
-    public $standard_id;
-    public $section_id;
+    // ── Teacher: Mark ────────────────────────────────────────────────────────
+    public string $markDate = '';
+    public array $teacherMark = [];            // [teacher_detail_id => ['status'=>'present'|'absent','remark'=>'']]
 
-    // For teacher attendance
-    public $teacher_attendance_date;
-    public $teacher_attendance_data = [];
+    // ── Teacher: By date ──────────────────────────────────────────────────────
+    public string $byDateTeacherDate = '';
 
-    // For student attendance
-    public $student_attendance_date;
-    public $selected_standard = '';
-    public $selected_section = '';
+    // ── Teacher: By teacher ──────────────────────────────────────────────────
+    public string $byTeacherMonth = '';
+    public $byTeacherId = '';
 
-    // For filtering
-    public $filter_date;
-    public $filter_teacher = '';
-    public $filter_status = '';
-    public $filteredSections = [];
+    // ── Student: By date (markable list) ─────────────────────────────────────
+    public string $sdDate = '';
+    public $sdStandard = '';
+    public $sdSection = '';
+    public array $studentMark = [];
 
-    // Data collections
-    public $teachers = [];
-    public $standards = [];
-    public $sections;
-    public $assignments;
+    // ── Student: By student (calendar) ───────────────────────────────────────
+    public string $ssMonth = '';
+    public $ssStandard = '';
+    public $ssSection = '';
+    public $ssStudentId = '';
 
-    public $tabs = [
-        'teacher_attendance' => [
-            'teacher_attendance' => 'Mark Attendance',
-            'teacher_attendance_list' => 'Attendance List',
-            'teacher_attendance_dashboard' => 'Dashboard',
-        ],
-        'student_attendance' => [
-            'student_attendance_list' => 'Attendance List',
-            'student_attendance_dashboard' => 'Dashboard',
-        ],
-        'assign_teacher_class' => [
-            'assign_teacher' => 'Assign Teacher',
-        ]
-    ];
+    // ── Student: By class ────────────────────────────────────────────────────
+    public $scStandard = '';
+    public $scSection = '';
+    public string $scDate = '';
 
-    public function mount()
+    // ── Assign class teacher panel ───────────────────────────────────────────
+    public bool $showAssignPanel = false;
+    public ?int $assignEditId = null;
+    public $assignTeacherId = '';
+    public $assignStandardId = '';
+    public $assignSectionId = '';
+    public ?int $pendingDeleteAssignId = null;
+
+    public function mount(): void
     {
-        $this->loadData();
-        $this->teacher_attendance_date = now()->format('Y-m-d');
-        $this->student_attendance_date = now()->format('Y-m-d');
-        $this->filter_date = now()->format('Y-m-d');
-        $this->loadTeacherAttendanceData();
+        $today = now()->toDateString();
+        $month = now()->format('Y-m');
+        $this->markDate = $today;
+        $this->byDateTeacherDate = $today;
+        $this->byTeacherMonth = $month;
+        $this->sdDate = $today;
+        $this->ssMonth = $month;
+        $this->scDate = $today;
+        $this->loadTeacherMark();
     }
 
-    protected function loadData()
+    // ═══════════════════════════════ TAB SWITCHING ═══════════════════════════
+    public function switchMainTab(string $tab): void { $this->mainTab = $tab; }
+    public function switchTeacherView(string $v): void
+    {
+        $this->teacherView = $v;
+        if ($v === 'mark') $this->loadTeacherMark();
+    }
+    public function switchStudentView(string $v): void { $this->studentView = $v; }
+
+    // ═══════════════════════════════ TEACHER: MARK ═══════════════════════════
+    public function updatedMarkDate(): void { $this->loadTeacherMark(); }
+
+    public function loadTeacherMark(): void
     {
         $orgId = Auth::user()->organization_id;
-
-        $this->standards = Standard::where('organization_id', $orgId)->get();
-        $this->sections = Section::whereHas('standard', fn($q) => $q->where('organization_id', $orgId))->get();
-        $this->teachers = $this->loadAvailableTeachers();
-    }
-
-    protected function loadAvailableTeachers()
-    {
-        $assignedTeacherIds = AssignTeacherStandard::where('organization_id', Auth::user()->organization_id)
-            ->when($this->editId, function ($q) {
-                $q->where('id', '!=', $this->editId);
-            })
-            ->pluck('teacher_detail_id')
-            ->toArray();
-
-        return TeacherDetail::with('user')
-            ->where('organization_id', Auth::user()->organization_id)
-            ->whereNotIn('id', $assignedTeacherIds)
+        $teachers = TeacherDetail::with('user:id,name,email,image')
+            ->where('organization_id', $orgId)
             ->get();
+
+        $existing = TeacherAttendance::where('organization_id', $orgId)
+            ->whereDate('attendance_date', $this->markDate)
+            ->get()->keyBy('teacher_detail_id');
+
+        $this->teacherMark = [];
+        foreach ($teachers as $t) {
+            $rec = $existing->get($t->id);
+            $this->teacherMark[$t->id] = [
+                'status' => $rec ? ((int) $rec->status === 1 ? 'present' : 'absent') : 'present', // default present
+                'remark' => $rec->remarks ?? '',
+            ];
+        }
     }
 
-    // Teacher Assignment Methods
-    public function updatedStandardId($value)
+    public function setTeacherStatus($teacherId, string $status): void
     {
-        $this->filteredSections = Section::where('standard_id', $value)
-            ->get()
-            ->map(function ($section) {
-                return [
-                    'value' => $section->id,
-                    'label' => $section->name,
-                ];
-            })
-            ->toArray();
-
-        $this->section_id = null;
+        if (isset($this->teacherMark[$teacherId])) {
+            $this->teacherMark[$teacherId]['status'] = $status;
+        }
     }
 
-    public function openModalAssignTeacher()
+    public function submitTeacherAttendance(): void
     {
-        $this->showModalAssignTeacher = true;
+        $orgId = Auth::user()->organization_id;
+        $markedBy = Auth::id();
+
+        DB::transaction(function () use ($orgId, $markedBy) {
+            foreach ($this->teacherMark as $teacherId => $row) {
+                TeacherAttendance::updateOrCreate(
+                    ['teacher_detail_id' => $teacherId, 'organization_id' => $orgId, 'attendance_date' => $this->markDate],
+                    ['status' => $row['status'] === 'present' ? 1 : 0, 'remarks' => $row['remark'] ?? '', 'marked_by' => $markedBy]
+                );
+            }
+        });
+
+        $this->notification()->success('Teacher attendance saved for ' . Carbon::parse($this->markDate)->format('d M Y'));
     }
 
-    public function closeModalAssignTeacher()
+    // ═══════════════════════════ ASSIGN CLASS TEACHER ════════════════════════
+    public function openAssignPanel(): void
     {
-        $this->showModalAssignTeacher = false;
-        $this->resetForm();
+        $this->resetErrorBag();
+        $this->assignEditId = null;
+        $this->assignTeacherId = '';
+        $this->assignStandardId = '';
+        $this->assignSectionId = '';
+        $this->showAssignPanel = true;
     }
 
-    public function onEdit($id)
+    public function editAssign(int $id): void
     {
-        $this->editId = $id;
-        $assignment = AssignTeacherStandard::find($id);
-
-        $this->teacher_detail_id = $assignment->teacher_detail_id;
-        $this->standard_id = $assignment->standard_id;
-        $this->section_id = $assignment->section_id;
-
-        $this->updatedStandardId($this->standard_id);
-        $this->loadAvailableTeachers();
-        $this->showModalAssignTeacher = true;
+        $a = AssignTeacherStandard::find($id);
+        if ($a) {
+            $this->assignEditId = $id;
+            $this->assignTeacherId = $a->teacher_detail_id;
+            $this->assignStandardId = $a->standard_id;
+            $this->assignSectionId = $a->section_id;
+            $this->showAssignPanel = true;
+        }
     }
 
-    public function saveAssignment()
+    public function closeAssignPanel(): void { $this->showAssignPanel = false; }
+
+    public function saveAssign(): void
     {
         $this->validate([
-            'teacher_detail_id' => 'required|exists:teacher_details,id',
-            'standard_id' => 'required|exists:standards,id',
-            'section_id' => [
-                'integer',
-                Rule::when($this->section_id != 0, 'exists:sections,id')
-            ],
+            'assignTeacherId'  => 'required|exists:teacher_details,id',
+            'assignStandardId' => 'required|exists:standards,id',
+            'assignSectionId'  => 'nullable|exists:sections,id',
         ]);
 
-        $existing = AssignTeacherStandard::where('teacher_detail_id', $this->teacher_detail_id)
-            ->where('standard_id', $this->standard_id)
-            ->when($this->section_id, function ($query) {
-                $query->where('section_id', $this->section_id);
-            })
-            ->when($this->editId, function ($query) {
-                $query->where('id', '!=', $this->editId);
-            })
+        $orgId = Auth::user()->organization_id;
+
+        $dup = AssignTeacherStandard::where('organization_id', $orgId)
+            ->where('teacher_detail_id', $this->assignTeacherId)
+            ->where('standard_id', $this->assignStandardId)
+            ->when($this->assignSectionId, fn($q) => $q->where('section_id', $this->assignSectionId))
+            ->when($this->assignEditId, fn($q) => $q->where('id', '!=', $this->assignEditId))
             ->exists();
 
-        if ($existing) {
-            $this->notification()->error(
-                $this->section_id
-                    ? 'This teacher is already assigned to this class-section!'
-                    : 'This teacher is already assigned to this class!'
-            );
+        if ($dup) {
+            $this->notification()->error('This teacher is already assigned to this class/section.');
             return;
         }
 
-        try {
-            DB::beginTransaction();
+        AssignTeacherStandard::updateOrCreate(
+            ['id' => $this->assignEditId],
+            [
+                'organization_id'   => $orgId,
+                'teacher_detail_id' => $this->assignTeacherId,
+                'standard_id'       => $this->assignStandardId,
+                'section_id'        => $this->assignSectionId ?: null,
+            ]
+        );
 
-            $data = [
-                'teacher_detail_id' => $this->teacher_detail_id,
-                'standard_id' => $this->standard_id,
-                'section_id' => $this->section_id,
-                'organization_id' => Auth::user()->organization_id,
-            ];
+        $this->notification()->success($this->assignEditId ? 'Assignment updated.' : 'Class teacher assigned.');
+        $this->closeAssignPanel();
+    }
 
-            if ($this->editId) {
-                AssignTeacherStandard::find($this->editId)->update($data);
-                $message = 'Assignment updated successfully!';
-            } else {
-                $assignment = AssignTeacherStandard::create($data);
-
-                // Also create entry in TeacherSection table for consistency
-                TeacherSection::create([
-                    'teacher_detail_id' => $this->teacher_detail_id,
-                    'standard_id' => $this->standard_id,
-                    'section_id' => $this->section_id,
-                    'organization_id' => Auth::user()->organization_id,
-                ]);
-
-                $message = 'Teacher assigned successfully!';
-            }
-
-            DB::commit();
-
-            $this->closeModalAssignTeacher();
-            $this->loadData();
-            $this->notification()->success($message);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->notification()->error('Error!', 'Failed to save assignment: ' . $e->getMessage());
+    public function confirmDeleteAssign(int $id): void { $this->pendingDeleteAssignId = $id; }
+    public function cancelDeleteAssign(): void { $this->pendingDeleteAssignId = null; }
+    public function executeDeleteAssign(): void
+    {
+        if ($this->pendingDeleteAssignId) {
+            AssignTeacherStandard::where('id', $this->pendingDeleteAssignId)
+                ->where('organization_id', Auth::user()->organization_id)->delete();
+            $this->notification()->success('Assignment removed.');
         }
+        $this->pendingDeleteAssignId = null;
     }
 
-    public function onDelete($id)
+    // ═══════════════════════════════ STUDENT: BY DATE ════════════════════════
+    public function updatedSdStandard(): void { $this->sdSection = ''; $this->studentMark = []; }
+    public function updatedSdSection(): void { $this->loadStudentMark(); }
+    public function updatedSdDate(): void { $this->loadStudentMark(); }
+
+    public function loadStudentMark(): void
     {
-        AssignTeacherStandard::find($id)->delete();
-        $this->loadData();
-        $this->notification()->success('Assignment deleted successfully!');
-    }
+        $this->studentMark = [];
+        if (!$this->sdStandard || !$this->sdSection) return;
 
-    // Teacher Attendance Methods with Live Updates
-    public function loadTeacherAttendanceData()
-    {
-        $teachers = TeacherDetail::with(['user', 'attendance' => function ($q) {
-            $q->whereDate('attendance_date', $this->teacher_attendance_date);
-        }])->where('organization_id', Auth::user()->organization_id)->get();
+        $orgId = Auth::user()->organization_id;
+        $students = StudentDetail::with('user:id,name,email,image')
+            ->where('organization_id', $orgId)
+            ->where('standard_id', $this->sdStandard)
+            ->where('section_id', $this->sdSection)
+            ->whereNotNull('user_id')
+            ->get();
 
-        $this->teacher_attendance_data = [];
-        foreach ($teachers as $teacher) {
-            $existingAttendance = $teacher->attendance->first();
+        $existing = StudentAttendance::where('organization_id', $orgId)
+            ->whereDate('attendance_date', $this->sdDate)
+            ->whereIn('student_detail_id', $students->pluck('id'))
+            ->get()->keyBy('student_detail_id');
 
-            $dbStatus = $existingAttendance ? $existingAttendance->status : 1;
-            $displayStatus = $this->getStatusLabel($dbStatus);
-
-            $this->teacher_attendance_data[$teacher->id] = [
-                'status' => $displayStatus,
-                'db_status' => $dbStatus,
-                'remarks' => $existingAttendance ? $existingAttendance->remarks : ''
+        foreach ($students as $s) {
+            $rec = $existing->get($s->id);
+            $this->studentMark[$s->id] = [
+                'status' => $rec ? ((int) $rec->status === 1 ? 'present' : 'absent') : 'present',
+                'remark' => $rec->remarks ?? '',
+                'user_id' => $s->user_id,
             ];
         }
     }
 
-
-    public function updatedTeacherAttendanceDate()
+    public function setStudentStatus($studentId, string $status): void
     {
-        $this->loadTeacherAttendanceData();
-    }
-    public function updateTeacherAttendance($teacherId, $status)
-    {
-        try {
-            $organizationId = Auth::user()->organization_id;
-            $markedBy = Auth::id();
-
-            // Convert status to database values
-            $dbStatus = $this->getStatusValue($status);
-
-            $attendance = TeacherAttendance::updateOrCreate(
-                [
-                    'teacher_detail_id' => $teacherId,
-                    'organization_id' => $organizationId,
-                    'attendance_date' => $this->teacher_attendance_date
-                ],
-                [
-                    'status' => $dbStatus,
-                    'remarks' => $this->teacher_attendance_data[$teacherId]['remarks'] ?? '',
-                    'marked_by' => $markedBy
-                ]
-            );
-
-            // Update local data with display status
-            $this->teacher_attendance_data[$teacherId]['status'] = $status;
-            $this->teacher_attendance_data[$teacherId]['db_status'] = $dbStatus;
-
-            $this->dispatch('attendanceUpdated');
-
-            // Reload data to reflect changes
-            $this->loadTeacherAttendanceData();
-        } catch (\Exception $e) {
-
-            $this->notification()->error(
-                'Error',
-                'Failed to update attendance: ' . $e->getMessage()
-            );
+        if (isset($this->studentMark[$studentId])) {
+            $this->studentMark[$studentId]['status'] = $status;
         }
     }
 
-    protected function getStatusValue($status)
+    public function submitStudentAttendance(): void
     {
-        // Map frontend status to database values
-        $statusMap = [
-            'present' => 1,    // Present
-            'absent' => 0,     // Absent
-            'late' => 2,       // Late
-            'half_day' => 3,   // Half Day
-            'none' => 4
-        ];
-
-        return $statusMap[$status] ?? 4; // Default to present
-    }
-
-    // Reverse mapping for displaying status
-    protected function getStatusLabel($dbStatus)
-    {
-        $statusMap = [
-            1 => 'present',
-            0 => 'absent',
-            2 => 'late',
-            3 => 'half_day',
-            4 => 'none'
-        ];
-
-        return $statusMap[$dbStatus] ?? 'none';
-    }
-
-    public function updateTeacherRemarks($teacherId)
-    {
-        try {
-            $organizationId = Auth::user()->organization_id;
-            $markedBy = Auth::id();
-
-            // Get current status from local data or default to present (1)
-            $currentStatus = $this->teacher_attendance_data[$teacherId]['db_status'] ?? 1;
-
-            TeacherAttendance::updateOrCreate(
-                [
-                    'teacher_detail_id' => $teacherId,
-                    'organization_id' => $organizationId,
-                    'attendance_date' => $this->teacher_attendance_date
-                ],
-                [
-                    'status' => $currentStatus,
-                    'remarks' => $this->teacher_attendance_data[$teacherId]['remarks'] ?? '',
-                    'marked_by' => $markedBy
-                ]
-            );
-
-            $this->dispatch('remarksUpdated');
-        } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error',
-                'Failed to update remarks: ' . $e->getMessage()
-            );
+        if (!$this->sdStandard || !$this->sdSection) {
+            $this->notification()->error('Select class and section first.');
+            return;
         }
-    }
+        $orgId = Auth::user()->organization_id;
+        $markedBy = Auth::id();
 
-    // Export Methods
-    public function exportTeacherAttendance()
-    {
-        try {
-            $data = TeacherAttendance::with(['teacherDetails.user'])
-                ->whereDate('attendance_date', $this->filter_date)
-                ->when($this->filter_teacher, function ($q) {
-                    $q->where('teacher_detail_id', $this->filter_teacher);
-                })
-                ->when($this->filter_status, function ($q) {
-                    $q->where('status', $this->filter_status);
-                })
-                ->get();
-
-            // Export logic here
-            $this->notification()->success(
-                'Export Successful',
-                'Teacher attendance data exported successfully.'
-            );
-        } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error',
-                'Failed to export attendance: ' . $e->getMessage()
-            );
-        }
-    }
-
-    public function exportStudentAttendance()
-    {
-        try {
-            $data = StudentAttendance::with(['studentDetail.user'])
-                ->whereDate('attendance_date', $this->filter_date)
-                ->when($this->selected_standard, function ($q) {
-                    $q->whereHas('studentDetail', function ($q2) {
-                        $q2->where('standard_id', $this->selected_standard);
-                    });
-                })
-                ->when($this->filter_status, function ($q) {
-                    $q->where('status', $this->filter_status);
-                })
-                ->get();
-
-            // Export logic here
-            $this->notification()->success(
-                'Export Successful',
-                'Student attendance data exported successfully.'
-            );
-        } catch (\Exception $e) {
-            $this->notification()->error(
-                'Error',
-                'Failed to export attendance: ' . $e->getMessage()
-            );
-        }
-    }
-
-    // Dashboard Statistics - Teacher
-    public function getTeacherStatsProperty()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $totalTeachers = TeacherDetail::where('organization_id', $organizationId)->count();
-
-        // Use integer values for status comparison
-        $todayStats = TeacherAttendance::whereDate('attendance_date', today())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        $yesterdayStats = TeacherAttendance::whereDate('attendance_date', today()->subDay())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        // Use integer keys to access counts
-        $presentToday = $todayStats[1] ?? 0; // 1 = present
-        $absentToday = $todayStats[0] ?? 0;  // 0 = absent
-        $lateToday = $todayStats[2] ?? 0;    // 2 = late
-        $halfDayToday = $todayStats[3] ?? 0; // 3 = half_day
-
-        $presentYesterday = $yesterdayStats[1] ?? 0;
-        $presentGrowth = $this->calculateGrowth($presentToday, $presentYesterday);
-
-        return [
-            'total_teachers' => [
-                'count' => $totalTeachers,
-                'trend' => 'up',
-                'growth' => 2.5
-            ],
-            'present_today' => [
-                'count' => $presentToday,
-                'trend' => $presentGrowth >= 0 ? 'up' : 'down',
-                'growth' => abs($presentGrowth)
-            ],
-            'absent_today' => [
-                'count' => $absentToday,
-                'trend' => 'down',
-                'growth' => 1.2
-            ],
-            'late_today' => [
-                'count' => $lateToday,
-                'trend' => 'down',
-                'growth' => 0.8
-            ],
-            'half_day_today' => [
-                'count' => $halfDayToday,
-                'trend' => 'down',
-                'growth' => 0.5
-            ]
-        ];
-    }
-
-    // Dashboard Statistics - Student
-    public function getStudentStatsProperty()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $totalStudents = StudentDetail::where('organization_id', $organizationId)->count();
-
-        // Use integer values for status comparison
-        $todayStats = StudentAttendance::whereDate('attendance_date', today())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        $yesterdayStats = StudentAttendance::whereDate('attendance_date', today()->subDay())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        // Use integer keys to access counts
-        $presentToday = $todayStats[1] ?? 0; // 1 = present
-        $absentToday = $todayStats[0] ?? 0;  // 0 = absent
-        $lateToday = $todayStats[2] ?? 0;    // 2 = late
-        $halfDayToday = $todayStats[3] ?? 0; // 3 = half_day
-
-        $presentYesterday = $yesterdayStats[1] ?? 0;
-        $presentGrowth = $this->calculateGrowth($presentToday, $presentYesterday);
-
-        return [
-            'total_students' => [
-                'count' => $totalStudents,
-                'trend' => 'up',
-                'growth' => 3.2
-            ],
-            'present_today' => [
-                'count' => $presentToday,
-                'trend' => $presentGrowth >= 0 ? 'up' : 'down',
-                'growth' => abs($presentGrowth)
-            ],
-            'absent_today' => [
-                'count' => $absentToday,
-                'trend' => 'down',
-                'growth' => 2.1
-            ],
-            'late_today' => [
-                'count' => $lateToday,
-                'trend' => 'down',
-                'growth' => 1.3
-            ],
-            'half_day_today' => [
-                'count' => $halfDayToday,
-                'trend' => 'down',
-                'growth' => 0.9
-            ]
-        ];
-    }
-
-    protected function calculateGrowth($current, $previous)
-    {
-        if ($previous == 0) return $current > 0 ? 100 : 0;
-        return (($current - $previous) / $previous) * 100;
-    }
-
-    // Chart Data Methods - Teacher
-    public function getTeacherAttendanceTrendData()
-    {
-        $organizationId = Auth::user()->organization_id;
-        $months = [];
-        $presentData = [];
-        $absentData = [];
-
-        for ($i = 5; $i >= 0; $i--) {
-            $startDate = now()->subMonths($i)->startOfMonth();
-            $endDate = now()->subMonths($i)->endOfMonth();
-
-            $months[] = $startDate->format('M Y');
-
-            // Get actual data for the month
-            $monthStats = TeacherAttendance::whereBetween('attendance_date', [$startDate, $endDate])
-                ->where('organization_id', $organizationId)
-                ->selectRaw('status, count(*) as count')
-                ->groupBy('status')
-                ->get()
-                ->pluck('count', 'status');
-
-            $presentData[] = $monthStats[1] ?? 0; // Present count
-            $absentData[] = $monthStats[0] ?? 0;  // Absent count
-        }
-
-        return [
-            'months' => $months,
-            'present' => $presentData,
-            'absent' => $absentData
-        ];
-    }
-
-    public function getTeacherStatusDistributionData()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $todayStats = TeacherAttendance::whereDate('attendance_date', today())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        return [
-            'Present' => $todayStats[1] ?? 0,      // 1 = present
-            'Absent' => $todayStats[0] ?? 0,       // 0 = absent
-            'Late' => $todayStats[2] ?? 0,         // 2 = late
-            'Half Day' => $todayStats[3] ?? 0      // 3 = half_day
-        ];
-    }
-
-    // Chart Data Methods - Student
-    public function getStudentAttendanceTrendData()
-    {
-        $organizationId = Auth::user()->organization_id;
-        $months = [];
-        $presentData = [];
-        $absentData = [];
-
-        for ($i = 5; $i >= 0; $i--) {
-            $startDate = now()->subMonths($i)->startOfMonth();
-            $endDate = now()->subMonths($i)->endOfMonth();
-
-            $months[] = $startDate->format('M Y');
-
-            // Get actual data for the month
-            $monthStats = StudentAttendance::whereBetween('attendance_date', [$startDate, $endDate])
-                ->where('organization_id', $organizationId)
-                ->selectRaw('status, count(*) as count')
-                ->groupBy('status')
-                ->get()
-                ->pluck('count', 'status');
-
-            $presentData[] = $monthStats[1] ?? 0; // Present count
-            $absentData[] = $monthStats[0] ?? 0;  // Absent count
-        }
-
-        return [
-            'months' => $months,
-            'present' => $presentData,
-            'absent' => $absentData
-        ];
-    }
-
-    public function getStudentStatusDistributionData()
-    {
-        $organizationId = Auth::user()->organization_id;
-
-        $todayStats = StudentAttendance::whereDate('attendance_date', today())
-            ->where('organization_id', $organizationId)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        return [
-            'Present' => $todayStats[1] ?? 0,      // 1 = present
-            'Absent' => $todayStats[0] ?? 0,       // 0 = absent
-            'Late' => $todayStats[2] ?? 0,         // 2 = late
-            'Half Day' => $todayStats[3] ?? 0      // 3 = half_day
-        ];
-    }
-
-    public function getClassWiseAttendanceData()
-    {
-        $organizationId = Auth::user()->organization_id;
-        $distribution = [];
-
-        // Get all standards
-        $standards = Standard::where('organization_id', $organizationId)->get();
-
-        foreach ($standards as $standard) {
-            $totalStudents = StudentDetail::where('standard_id', $standard->id)
-                ->where('organization_id', $organizationId)
-                ->count();
-
-            if ($totalStudents > 0) {
-                $presentToday = StudentAttendance::whereDate('attendance_date', today())
-                    ->where('organization_id', $organizationId)
-                    ->whereHas('studentDetail', function ($q) use ($standard) {
-                        $q->where('standard_id', $standard->id);
-                    })
-                    ->where('status', 1) // Present
-                    ->count();
-
-                $attendancePercentage = $totalStudents > 0 ? round(($presentToday / $totalStudents) * 100) : 0;
-                $distribution[$standard->name] = $attendancePercentage;
+        DB::transaction(function () use ($orgId, $markedBy) {
+            foreach ($this->studentMark as $studentId => $row) {
+                StudentAttendance::updateOrCreate(
+                    ['student_detail_id' => $studentId, 'organization_id' => $orgId, 'attendance_date' => $this->sdDate],
+                    ['user_id' => $row['user_id'] ?? 0, 'status' => $row['status'] === 'present' ? 1 : 0, 'remarks' => $row['remark'] ?? '', 'marked_by' => $markedBy]
+                );
             }
+        });
+
+        $this->notification()->success('Student attendance saved for ' . Carbon::parse($this->sdDate)->format('d M Y'));
+    }
+
+    // Cascading section resets for other student views
+    public function updatedSsStandard(): void { $this->ssSection = ''; $this->ssStudentId = ''; }
+    public function updatedSsSection(): void { $this->ssStudentId = ''; }
+    public function updatedScStandard(): void { $this->scSection = ''; }
+
+    // ═══════════════════════════════ CALENDAR HELPER ═════════════════════════
+    /**
+     * Build a month calendar grid.
+     * @param string $monthStr Y-m
+     * @param array  $records  [Y-m-d => status(int 1/0)]
+     * @return array ['weeks'=>[[cell...]], 'totals'=>[...]]
+     */
+    private function buildCalendar(string $monthStr, array $records): array
+    {
+        $start = Carbon::createFromFormat('Y-m-d', $monthStr . '-01')->startOfMonth();
+        $end = (clone $start)->endOfMonth();
+        $daysInMonth = $end->day;
+
+        $weeks = [];
+        $week = array_fill(0, 7, null);
+        // Carbon dayOfWeek: 0=Sun..6=Sat
+        $firstDow = (int) $start->dayOfWeek;
+
+        $present = 0; $absent = 0; $working = 0;
+        $dayPtr = 1;
+        $col = $firstDow;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $date = $start->copy()->day($d)->toDateString();
+            $status = $records[$date] ?? null; // null => holiday
+            $cell = ['day' => $d, 'date' => $date, 'status' => 'holiday'];
+            if ($status !== null) {
+                $working++;
+                if ((int) $status === 1) { $cell['status'] = 'present'; $present++; }
+                else { $cell['status'] = 'absent'; $absent++; }
+            }
+            $week[$col] = $cell;
+            $col++;
+            if ($col === 7) { $weeks[] = $week; $week = array_fill(0, 7, null); $col = 0; }
         }
+        if ($col !== 0) $weeks[] = $week;
 
-        return $distribution;
-    }
-
-    public function getRecentActivities()
-    {
         return [
-            [
-                'type' => 'attendance_marked',
-                'title' => 'Attendance Marked',
-                'description' => 'Daily attendance marked for Class 5A',
-                'time' => '2 hours ago',
-                'icon' => 'green',
-                'icon_class' => 'text-green-600'
+            'weeks'  => $weeks,
+            'totals' => [
+                'total_days'   => $daysInMonth,
+                'working_days' => $working,
+                'present_days' => $present,
+                'absent_days'  => $absent,
             ],
-            [
-                'type' => 'attendance_updated',
-                'title' => 'Attendance Updated',
-                'description' => 'Updated attendance for Class 8B',
-                'time' => '4 hours ago',
-                'icon' => 'blue',
-                'icon_class' => 'text-blue-600'
-            ],
-            [
-                'type' => 'report_generated',
-                'title' => 'Report Generated',
-                'description' => 'Monthly attendance report generated',
-                'time' => '1 day ago',
-                'icon' => 'purple',
-                'icon_class' => 'text-purple-600'
-            ]
         ];
-    }
-
-    // Tab Navigation
-    public function showTab($tab)
-    {
-        $this->activeTab = $tab;
-        $this->subTab = array_key_first($this->tabs[$tab]);
-        $this->resetPage();
-    }
-
-    public function setSubTab($subTab)
-    {
-        $this->subTab = $subTab;
-        $this->resetPage();
-    }
-
-    private function resetForm()
-    {
-        $this->reset([
-            'teacher_detail_id',
-            'standard_id',
-            'section_id',
-            'editId',
-            'filteredSections'
-        ]);
     }
 
     public function render()
     {
-        $teacherAttendanceData = [];
-        $teacherAttendanceList = [];
-        $studentAttendanceList = [];
-        $assignments = collect();
+        $orgId = Auth::user()->organization_id;
 
-        // Load data based on active tab and sub tab
-        if ($this->activeTab === 'teacher_attendance') {
-            if ($this->subTab === 'teacher_attendance') {
-                $teacherAttendanceData = TeacherDetail::with(['user', 'attendance' => function ($q) {
-                    $q->whereDate('attendance_date', $this->teacher_attendance_date);
-                }])->where('organization_id', Auth::user()->organization_id)->get();
-            } elseif ($this->subTab === 'teacher_attendance_list') {
-                // Fix the relationship here
-                $teacherAttendanceList = TeacherAttendance::with(['teacherDetail.user', 'recordedBy'])
-                    ->whereDate('attendance_date', $this->filter_date)
-                    ->when($this->filter_teacher, function ($q) {
-                        $q->where('teacher_detail_id', $this->filter_teacher);
-                    })
-                    ->when($this->filter_status, function ($q) {
-                        $q->where('status', $this->filter_status);
-                    })
-                    ->latest()
-                    ->paginate(20);
-            }
-        } elseif ($this->activeTab === 'student_attendance') {
-            if ($this->subTab === 'student_attendance_list') {
-                $studentAttendanceList = StudentAttendance::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section', 'markerdBy'])
-                    ->whereDate('attendance_date', $this->filter_date)
-                    ->when($this->selected_standard, function ($q) {
-                        $q->whereHas('studentDetail', function ($q2) {
-                            $q2->where('standard_id', $this->selected_standard);
-                        });
-                    })
-                    ->when($this->filter_status, function ($q) {
-                        $q->where('status', $this->filter_status);
-                    })
-                    ->latest()
-                    ->paginate(20);
-            }
-        } elseif ($this->activeTab === 'assign_teacher_class' && $this->subTab === 'assign_teacher') {
-            $assignments = AssignTeacherStandard::with(['teacher.user', 'standard', 'section'])
-                ->where('organization_id', Auth::user()->organization_id)
-                ->latest()
-                ->get();
+        $standards = Standard::where('organization_id', $orgId)->orderBy('order')->get(['id', 'name']);
+        $teachers  = TeacherDetail::with('user:id,name,email,image')->where('organization_id', $orgId)->get();
+
+        // Assign-teacher list
+        $assignments = AssignTeacherStandard::with(['teacher.user:id,name,email', 'standard:id,name', 'section:id,name'])
+            ->where('organization_id', $orgId)->latest()->get();
+
+        // ── Teacher mark list (ordered) ──
+        $markTeachers = $teachers->sortBy(fn($t) => $t->user->name ?? '')->values();
+
+        // ── Teacher: by date ──
+        $byDateTeacherRows = collect();
+        if ($this->mainTab === 'teacher' && $this->teacherView === 'by_date') {
+            $recs = TeacherAttendance::where('organization_id', $orgId)
+                ->whereDate('attendance_date', $this->byDateTeacherDate)->get()->keyBy('teacher_detail_id');
+            $byDateTeacherRows = $teachers->sortBy(fn($t) => $t->user->name ?? '')->values()->map(function ($t) use ($recs) {
+                $rec = $recs->get($t->id);
+                return [
+                    'name'   => $t->user->name ?? '—',
+                    'email'  => $t->user->email ?? '',
+                    'image'  => $t->user->image ?? null,
+                    'status' => $rec ? ((int) $rec->status === 1 ? 'present' : 'absent') : 'holiday',
+                    'remark' => $rec->remarks ?? '',
+                ];
+            });
         }
 
-        // Dashboard data
-        $teacherStats = $this->teacherStats;
-        $studentStats = $this->studentStats;
-        $teacherTrendData = $this->getTeacherAttendanceTrendData();
-        $teacherStatusData = $this->getTeacherStatusDistributionData();
-        $studentTrendData = $this->getStudentAttendanceTrendData();
-        $studentStatusData = $this->getStudentStatusDistributionData();
-        $classWiseData = $this->getClassWiseAttendanceData();
-        $recentActivities = $this->getRecentActivities();
+        // ── Teacher: by teacher (calendar) ──
+        $teacherCalendar = null;
+        if ($this->mainTab === 'teacher' && $this->teacherView === 'by_teacher' && $this->byTeacherId) {
+            $start = Carbon::createFromFormat('Y-m-d', $this->byTeacherMonth . '-01')->startOfMonth();
+            $end = (clone $start)->endOfMonth();
+            $recs = TeacherAttendance::where('organization_id', $orgId)
+                ->where('teacher_detail_id', $this->byTeacherId)
+                ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+                ->get()->mapWithKeys(fn($r) => [Carbon::parse($r->attendance_date)->toDateString() => $r->status]);
+            $teacherCalendar = $this->buildCalendar($this->byTeacherMonth, $recs->toArray());
+        }
+
+        // ── Student: by date sections ──
+        $sdSections = ($this->sdStandard) ? Section::where('standard_id', $this->sdStandard)->orderBy('name')->get(['id', 'name']) : collect();
+        $ssSections = ($this->ssStandard) ? Section::where('standard_id', $this->ssStandard)->orderBy('name')->get(['id', 'name']) : collect();
+        $scSections = ($this->scStandard) ? Section::where('standard_id', $this->scStandard)->orderBy('name')->get(['id', 'name']) : collect();
+
+        // student list for by_student dropdown
+        $ssStudents = collect();
+        if ($this->ssStandard && $this->ssSection) {
+            $ssStudents = StudentDetail::with('user:id,name')
+                ->where('organization_id', $orgId)->where('standard_id', $this->ssStandard)
+                ->where('section_id', $this->ssSection)->whereNotNull('user_id')->get();
+        }
+
+        // ── Student: by student (calendar) ──
+        $studentCalendar = null;
+        if ($this->mainTab === 'student' && $this->studentView === 'by_student' && $this->ssStudentId) {
+            $start = Carbon::createFromFormat('Y-m-d', $this->ssMonth . '-01')->startOfMonth();
+            $end = (clone $start)->endOfMonth();
+            $recs = StudentAttendance::where('organization_id', $orgId)
+                ->where('student_detail_id', $this->ssStudentId)
+                ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+                ->get()->mapWithKeys(fn($r) => [Carbon::parse($r->attendance_date)->toDateString() => $r->status]);
+            $studentCalendar = $this->buildCalendar($this->ssMonth, $recs->toArray());
+        }
+
+        // ── Student: by class ──
+        $byClassRows = collect();
+        if ($this->mainTab === 'student' && $this->studentView === 'by_class' && $this->scStandard && $this->scSection) {
+            $students = StudentDetail::with('user:id,name,email,image')
+                ->where('organization_id', $orgId)->where('standard_id', $this->scStandard)
+                ->where('section_id', $this->scSection)->whereNotNull('user_id')->get();
+            $recs = StudentAttendance::where('organization_id', $orgId)
+                ->whereDate('attendance_date', $this->scDate)
+                ->whereIn('student_detail_id', $students->pluck('id'))->get()->keyBy('student_detail_id');
+            $byClassRows = $students->sortBy(fn($s) => $s->user->name ?? '')->values()->map(function ($s) use ($recs) {
+                $rec = $recs->get($s->id);
+                return [
+                    'name'   => $s->user->name ?? ($s->full_name ?? '—'),
+                    'email'  => $s->user->email ?? '',
+                    'image'  => $s->user->image ?? null,
+                    'status' => $rec ? ((int) $rec->status === 1 ? 'present' : 'absent') : 'holiday',
+                    'remark' => $rec->remarks ?? '',
+                ];
+            });
+        }
+
+        // student mark list (by_date)
+        $sdStudents = collect();
+        if ($this->mainTab === 'student' && $this->studentView === 'by_date' && $this->sdStandard && $this->sdSection) {
+            $sdStudents = StudentDetail::with('user:id,name,email,image')
+                ->where('organization_id', $orgId)->where('standard_id', $this->sdStandard)
+                ->where('section_id', $this->sdSection)->whereNotNull('user_id')
+                ->get()->sortBy(fn($s) => $s->user->name ?? '')->values();
+        }
 
         return view('livewire.admin.attendance', compact(
-            'teacherAttendanceData',
-            'teacherAttendanceList',
-            'studentAttendanceList',
-            'teacherStats',
-            'studentStats',
-            'teacherTrendData',
-            'teacherStatusData',
-            'studentTrendData',
-            'studentStatusData',
-            'classWiseData',
-            'recentActivities',
-            'assignments'
+            'standards', 'teachers', 'assignments', 'markTeachers',
+            'byDateTeacherRows', 'teacherCalendar',
+            'sdSections', 'ssSections', 'scSections', 'ssStudents', 'sdStudents',
+            'studentCalendar', 'byClassRows'
         ));
     }
 }
