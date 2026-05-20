@@ -34,10 +34,15 @@ class IdCard extends Component
     public $personId;
     public $viewCard = null;
 
+    // Filters
+    public $standardFilter = '';
+    public $sectionFilter  = '';
+    public $statusFilter   = '';
+
     // Bulk generation
-    public $validityMonths = 12;
+    public $bulkExpiryDate = '';
     public $cardPrefix = 'ID';
-    public $perPage = 10;
+    public $perPage = 100;
 
     protected function rules()
     {
@@ -77,6 +82,34 @@ class IdCard extends Component
         $this->cardType = $type;
         $this->resetFilters();
         $this->resetForm();
+    }
+
+    public function updatedStandardFilter() { $this->sectionFilter = ''; $this->resetPage(); }
+    public function updatedSectionFilter()  { $this->resetPage(); }
+    public function updatedStatusFilter()   { $this->resetPage(); }
+
+    /**
+     * Analytics for the current tab: total persons, issued cards, remaining.
+     */
+    public function getAnalyticsProperty(): array
+    {
+        $orgId = Auth::user()->organization_id;
+
+        if ($this->cardType === 'student') {
+            $total  = StudentDetail::where('organization_id', $orgId)->count();
+            $issued = StudentIdCard::where('organization_id', $orgId)->where('status', 'active')
+                ->distinct('student_detail_id')->count('student_detail_id');
+        } else {
+            $total  = TeacherDetail::where('organization_id', $orgId)->count();
+            $issued = TeacherIdCard::where('organization_id', $orgId)->where('status', 'active')
+                ->distinct('teacher_detail_id')->count('teacher_detail_id');
+        }
+
+        return [
+            'total'     => $total,
+            'issued'    => $issued,
+            'remaining' => max(0, $total - $issued),
+        ];
     }
 
     // Reset form
@@ -377,6 +410,7 @@ class IdCard extends Component
     // Open bulk generation modal
     public function openBulkGenerate()
     {
+        $this->bulkExpiryDate = now()->addYear()->format('Y-m-d');
         $this->showBulkGenerateModal = true;
     }
 
@@ -384,8 +418,7 @@ class IdCard extends Component
     public function closeBulkModal()
     {
         $this->showBulkGenerateModal = false;
-        $this->cardPrefix = 'ID';
-        $this->validityMonths = 12;
+        $this->bulkExpiryDate = '';
         $this->resetValidation();
     }
 
@@ -416,8 +449,9 @@ class IdCard extends Component
     public function bulkGenerateCards()
     {
         $this->validate([
-            'validityMonths' => 'required|integer|min:1|max:60',
-            'cardPrefix' => 'required|string|max:10'
+            'bulkExpiryDate' => 'required|date|after:today',
+        ], [
+            'bulkExpiryDate.after' => 'Expiry date must be in the future.',
         ]);
 
         try {
@@ -464,7 +498,7 @@ class IdCard extends Component
                         'organization_id' => $organization->id,
                         'user_id' => Auth::id(),
                         'issue_date' => now(),
-                        'expiry_date' => now()->addMonths($this->validityMonths),
+                        'expiry_date' => $this->bulkExpiryDate,
                         'status' => 'active',
                     ]);
 
@@ -638,15 +672,17 @@ class IdCard extends Component
     // Reset filters
     public function resetFilters()
     {
-        $this->reset(['search']);
+        $this->reset(['search', 'standardFilter', 'sectionFilter', 'statusFilter']);
         $this->resetPage();
     }
 
     public function render()
     {
+        $orgId = Auth::user()->organization_id;
+
         if ($this->cardType === 'student') {
-            $query = StudentIdCard::with(['studentDetail', 'studentDetail.standard', 'studentDetail.section', 'organization'])
-                ->where('organization_id', Auth::user()->organization_id);
+            $query = StudentIdCard::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section', 'organization'])
+                ->where('organization_id', $orgId);
 
             if ($this->search) {
                 $query->where(function ($q) {
@@ -658,9 +694,15 @@ class IdCard extends Component
                         });
                 });
             }
+            if ($this->standardFilter) {
+                $query->whereHas('studentDetail', fn($q) => $q->where('standard_id', $this->standardFilter));
+            }
+            if ($this->sectionFilter) {
+                $query->whereHas('studentDetail', fn($q) => $q->where('section_id', $this->sectionFilter));
+            }
         } else {
-            $query = TeacherIdCard::with(['teacherDetail.user', 'teacherDetail.assignedClasses.standard', 'teacherDetail.assignedClasses.section', 'organization'])
-                ->where('organization_id', Auth::user()->organization_id);
+            $query = TeacherIdCard::with(['teacherDetail.user', 'organization'])
+                ->where('organization_id', $orgId);
 
             if ($this->search) {
                 $query->where(function ($q) {
@@ -677,10 +719,22 @@ class IdCard extends Component
             }
         }
 
+        if ($this->statusFilter) {
+            $query->where('status', $this->statusFilter);
+        }
+
         $cards = $query->latest()->paginate($this->perPage);
 
+        $standards = \App\Models\Student\Standard::where('organization_id', $orgId)
+            ->where('is_active', true)->orderBy('order')->get(['id', 'name']);
+        $sections = $this->standardFilter
+            ? \App\Models\Student\Section::where('standard_id', $this->standardFilter)->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('livewire.admin.id-card', [
-            'cards' => $cards,
+            'cards'     => $cards,
+            'standards' => $standards,
+            'sections'  => $sections,
         ]);
     }
 }
