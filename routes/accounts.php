@@ -52,6 +52,7 @@ Route::prefix('accounts')->group(function () {
             Route::get('/fee-cycles', FeeCycles::class)->name('accounts.fee-cycles');
             Route::get('/attendance', Attendance::class)->name('accounts.attendance');
             Route::get('/transport', Transport::class)->name('accounts.transport');
+            Route::get('/transport/receipt/{id}', [\App\Http\Controllers\Admin\TransportReceiptController::class, 'show'])->name('accounts.transport.receipt');
             Route::get('/calendar', Calendar::class)->name('accounts.calendar');
             Route::get('/id-card', IdCard::class)->name('accounts.id-card');
             Route::get('/admit-card', AdmitCard::class)->name('accounts.admit-card');

@@ -15,11 +15,15 @@
             </div>
         </div>
         <div class="border-t border-gray-200 px-4 sm:px-6">
-            <div class="flex gap-1">
+            <div class="flex gap-1 overflow-x-auto">
                 <button wire:click="$set('activeTab', 'transportation')"
-                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'transportation' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Routes</button>
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {{ $activeTab === 'transportation' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Routes</button>
                 <button wire:click="$set('activeTab', 'drivers')"
-                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'drivers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Drivers</button>
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {{ $activeTab === 'drivers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Drivers</button>
+                <button wire:click="$set('activeTab', 'students')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {{ $activeTab === 'students' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Transport Students</button>
+                <button wire:click="$set('activeTab', 'fees')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {{ $activeTab === 'fees' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Fee Summary</button>
             </div>
         </div>
     </div>
@@ -51,62 +55,132 @@
                 </button>
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @forelse ($transportations as $t)
+                    <div wire:key="route-{{ $t->id }}" class="bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all p-5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <h3 class="text-base font-semibold text-gray-900 truncate">{{ $t->route_name }}</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">Pickup: {{ $t->pickup_time ?: '—' }}</p>
+                            </div>
+                            <button wire:click="toggleTransportStatus({{ $t->id }})"
+                                class="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 {{ $t->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
+                                {{ $t->is_active ? 'Active' : 'Inactive' }}
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-3 mt-4 pt-3 border-t border-gray-100">
+                            @if ($t->driver?->image)
+                                <img src="{{ $t->driver->image }}" class="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0">
+                            @else
+                                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-sm font-bold flex-shrink-0">{{ strtoupper(substr($t->driver->user->name ?? 'D', 0, 1)) }}</div>
+                            @endif
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-800 truncate">{{ $t->driver->user->name ?? '—' }}</p>
+                                <p class="text-xs text-gray-400 truncate">{{ $t->driver->vehicle_no ?: 'No vehicle' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                            <div class="bg-gray-50 rounded-lg py-2">
+                                <p class="text-sm font-bold text-gray-700">{{ $t->capacity ?: '—' }}</p>
+                                <p class="text-[10px] uppercase tracking-wide text-gray-400">Seats</p>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg py-2">
+                                <p class="text-sm font-bold text-blue-700">₹{{ number_format($t->monthly_fee, 0) }}</p>
+                                <p class="text-[10px] uppercase tracking-wide text-blue-400">Monthly</p>
+                            </div>
+                            <div class="bg-emerald-50 rounded-lg py-2">
+                                <p class="text-sm font-bold text-emerald-700">₹{{ number_format($this->annualFee($t->monthly_fee), 0) }}</p>
+                                <p class="text-[10px] uppercase tracking-wide text-emerald-400">Annual×11</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 mt-4 pt-3 border-t border-gray-100">
+                            <button wire:click="editTransport({{ $t->id }})"
+                                class="flex-1 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-amber-50 hover:text-amber-600">Edit</button>
+                            <button wire:click="confirmDeleteRoute({{ $t->id }})"
+                                class="px-2 py-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50" title="Delete">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full text-center py-16 bg-white rounded-xl border border-gray-200">
+                        <p class="text-base font-semibold text-gray-800">No routes found</p>
+                        <p class="text-sm text-gray-400 mt-1">Add a route to get started.</p>
+                    </div>
+                @endforelse
+            </div>
+            @if ($transportations->hasPages())
+                <div class="mt-6">{{ $transportations->links() }}</div>
+            @endif
+        @endif
+
+        {{-- ═══════════════════════ TRANSPORT STUDENTS TAB ═══════════════════════ --}}
+        @if ($activeTab === 'students')
+            @php $txStudents = $this->transportStudents(); @endphp
+            <div class="flex flex-wrap items-center gap-2 mb-5">
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search student name / admission…"
+                    class="text-sm bg-white border border-gray-200 rounded-md px-3 py-2 text-gray-700 w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select wire:model.live="filterRoute" class="text-sm bg-white border border-gray-200 rounded-md px-2.5 py-2 text-gray-700">
+                    <option value="">All Routes</option>
+                    @foreach ($routeOptions as $r)<option value="{{ $r->id }}">{{ $r->route_name }}</option>@endforeach
+                </select>
+                <span class="ml-auto text-sm text-gray-500">{{ $txStudents->total() }} student(s) · Annual = monthly × 11 (June free)</span>
+            </div>
+
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                         <tr>
+                            <th class="px-4 py-3 text-left">Student</th>
                             <th class="px-4 py-3 text-left">Route</th>
-                            <th class="px-4 py-3 text-left">Driver</th>
-                            <th class="px-4 py-3 text-center w-28">Pickup Time</th>
-                            <th class="px-4 py-3 text-center w-24">Capacity</th>
-                            <th class="px-4 py-3 text-right w-28">Monthly Fee</th>
-                            <th class="px-4 py-3 text-center w-24">Status</th>
-                            <th class="px-4 py-3 text-center w-28">Actions</th>
+                            <th class="px-4 py-3 text-right w-28">Annual Fee</th>
+                            <th class="px-4 py-3 text-right w-24">Paid</th>
+                            <th class="px-4 py-3 text-right w-28">Remaining</th>
+                            <th class="px-4 py-3 text-center w-24">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @forelse ($transportations as $t)
-                            <tr wire:key="route-{{ $t->id }}" class="hover:bg-gray-50">
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $t->route_name }}</td>
+                        @forelse ($txStudents as $s)
+                            <tr wire:key="txs-{{ $s->id }}" class="hover:bg-gray-50">
                                 <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2.5">
-                                        @if ($t->driver?->image)
-                                            <img src="{{ $t->driver->image }}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                                    <div class="flex items-center gap-3">
+                                        @if ($s->user?->image)
+                                            <img src="{{ $s->user->image }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
                                         @else
-                                            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-xs font-bold">{{ strtoupper(substr($t->driver->user->name ?? 'D', 0, 1)) }}</div>
+                                            <div class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs font-bold">{{ strtoupper(substr($s->full_name ?? 'S', 0, 1)) }}</div>
                                         @endif
-                                        <span class="text-gray-700">{{ $t->driver->user->name ?? '—' }}</span>
+                                        <div class="min-w-0">
+                                            <p class="font-medium text-gray-800 truncate">{{ $s->full_name }}</p>
+                                            <p class="text-xs text-gray-400 truncate">{{ $s->admission_no }} · {{ $s->standard->name ?? '' }}{{ $s->section ? '-' . $s->section->name : '' }}</p>
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-center text-gray-600">{{ $t->pickup_time ?: '—' }}</td>
-                                <td class="px-4 py-3 text-center text-gray-600">{{ $t->capacity ?: '—' }}</td>
-                                <td class="px-4 py-3 text-right text-gray-700">₹{{ number_format($t->monthly_fee, 0) }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ $s->_route->route_name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-right text-gray-700">₹{{ number_format($s->_annual, 0) }}</td>
+                                <td class="px-4 py-3 text-right text-emerald-600">₹{{ number_format($s->_paid, 0) }}</td>
+                                <td class="px-4 py-3 text-right font-semibold {{ $s->_remaining > 0 ? 'text-red-600' : 'text-gray-400' }}">₹{{ number_format($s->_remaining, 0) }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    <button wire:click="toggleTransportStatus({{ $t->id }})"
-                                        class="text-xs font-semibold px-2.5 py-1 rounded-full {{ $t->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500' }}">
-                                        {{ $t->is_active ? 'Active' : 'Inactive' }}
-                                    </button>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <button wire:click="editTransport({{ $t->id }})" class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600" title="Edit">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        </button>
-                                        <button wire:click="confirmDeleteRoute({{ $t->id }})" class="p-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50" title="Delete">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-                                    </div>
+                                    <button wire:click="$set('activeTab','fees'); selectFeeStudent({{ $s->id }})"
+                                        class="text-xs font-medium px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50">Fees</button>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">No routes found.</td></tr>
+                            <tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">No students using transport.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
-                @if ($transportations->hasPages())
-                    <div class="px-4 py-3 border-t border-gray-100">{{ $transportations->links() }}</div>
+                @if ($txStudents->hasPages())
+                    <div class="px-4 py-3 border-t border-gray-100">{{ $txStudents->links() }}</div>
                 @endif
             </div>
+        @endif
+
+        {{-- ═══════════════════════ FEE SUMMARY TAB ═══════════════════════ --}}
+        @if ($activeTab === 'fees')
+            @include('livewire.partials.transport-fee-summary')
         @endif
 
         {{-- ═══════════════════════ DRIVERS TAB ═══════════════════════ --}}
@@ -379,4 +453,7 @@
             </div>
         @endif
     @endforeach
+
+    {{-- Transport fee payment panel + delete confirm (shared) --}}
+    @include('livewire.partials.transport-payment-panel')
 </div>

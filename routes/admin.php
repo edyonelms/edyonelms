@@ -120,5 +120,9 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         // ID Card printable / download
         Route::get('/id-card/{type}/{id}/print', [\App\Http\Controllers\Admin\IdCardPrintController::class, 'print'])
             ->name('admin.id-card.print');
+
+        // Transport fee receipt
+        Route::get('/transport/receipt/{id}', [\App\Http\Controllers\Admin\TransportReceiptController::class, 'show'])
+            ->name('admin.transport.receipt');
     });
 });

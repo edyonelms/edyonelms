@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\HandlesTransportFees;
 use App\Models\Admin\DriverDetail;
 use App\Models\Admin\Transportation;
 use App\Models\Student\StudentDetail;
@@ -19,10 +20,15 @@ use WireUi\Traits\WireUiActions;
 
 class Transport extends Component
 {
-    use WireUiActions, WithPagination, WithFileUploads;
+    use WireUiActions, WithPagination, WithFileUploads, HandlesTransportFees;
 
     #[Url(keep: true)]
-    public string $activeTab = 'transportation'; // transportation | drivers
+    public string $activeTab = 'transportation'; // transportation | drivers | students | fees
+
+    protected function txOrgId(): int
+    {
+        return (int) Auth::user()->organization_id;
+    }
 
     // ─── Modals (slide-in panels) ──────────────────────────
     public bool $driverModal    = false;
