@@ -262,137 +262,118 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════
-         EVENT DETAIL MODAL
+         EVENT DETAIL — SLIDE-IN PANEL
     ══════════════════════════════════════════════════ --}}
     @if ($showEventModal && $selectedEvent)
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6"
-            wire:click.self="closeEventModal">
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEventModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
 
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+                {{-- Floating close --}}
+                <button wire:click="closeEventModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                {{-- Modal Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h3 class="text-lg font-bold text-gray-900">Event Details</h3>
-                    <button wire:click="closeEventModal"
-                        class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400
-                               hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                {{-- Modal Body --}}
-                <div class="overflow-y-auto flex-1 p-6">
-                    <div class="space-y-4">
-
-                        {{-- Event Title + Type --}}
-                        <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
-                            <div class="w-4 h-4 rounded-full flex-shrink-0"
-                                style="background-color: {{ $selectedEvent['color'] ?? '#10b981' }}"></div>
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900">{{ $selectedEvent['title'] }}</h2>
-                                <div class="flex flex-wrap gap-2 mt-1">
-                                    <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1
-                                                 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
-                                        {{ ucfirst($selectedEvent['event_type'] ?? 'Event') }}
-                                    </span>
-                                    @if ($selectedEvent['is_all_day'] ?? false)
-                                        <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1
-                                                     bg-green-50 text-green-700 rounded-full border border-green-100">
-                                            All Day
-                                        </span>
-                                    @endif
-                                </div>
+                {{-- Accent strip + title --}}
+                <div class="px-6 pt-6 pb-5 border-b border-gray-100">
+                    <div class="flex items-start gap-3">
+                        <span class="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
+                            style="background-color: {{ $selectedEvent['color'] ?? '#10b981' }}"></span>
+                        <div class="min-w-0 pr-8">
+                            <h2 class="text-xl font-bold text-gray-900 leading-snug">{{ $selectedEvent['title'] }}</h2>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="inline-flex items-center text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                                    {{ ucfirst($selectedEvent['event_type'] ?? 'Event') }}
+                                </span>
+                                @if ($selectedEvent['is_all_day'] ?? false)
+                                    <span class="inline-flex items-center text-xs px-2.5 py-1 bg-green-50 text-green-700 rounded-full border border-green-100">All Day</span>
+                                @endif
                             </div>
                         </div>
-
-                        {{-- Date & Time --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Date</p>
-                                <p class="text-sm font-medium text-gray-800">
-                                    {{ \Carbon\Carbon::parse($selectedEvent['date'])->format('l, F d, Y') }}
-                                </p>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Time</p>
-                                <p class="text-sm font-medium text-gray-800">
-                                    @if ($selectedEvent['is_all_day'] ?? false)
-                                        All Day Event
-                                    @elseif (!empty($selectedEvent['start_time']))
-                                        {{ $selectedEvent['start_time'] }}
-                                        @if (!empty($selectedEvent['end_time']))
-                                            &ndash; {{ $selectedEvent['end_time'] }}
-                                        @endif
-                                    @else
-                                        &mdash;
-                                    @endif
-                                </p>
-                            </div>
-                        </div>
-
-                        {{-- Description --}}
-                        @if (!empty($selectedEvent['description']))
-                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</p>
-                                <p class="text-sm text-gray-700 leading-relaxed">{{ $selectedEvent['description'] }}</p>
-                            </div>
-                        @endif
-
-                        {{-- Location --}}
-                        @if (!empty($selectedEvent['location']))
-                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Location</p>
-                                <p class="text-sm font-medium text-gray-800">{{ $selectedEvent['location'] }}</p>
-                            </div>
-                        @endif
-
-                        {{-- Class Info --}}
-                        @if (!empty($selectedEvent['standard']) || !empty($selectedEvent['subject']) || !empty($selectedEvent['teacher']))
-                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Class Information</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    @if (!empty($selectedEvent['standard']))
-                                        <div>
-                                            <p class="text-xs text-gray-400 mb-0.5">Class</p>
-                                            <p class="text-sm font-medium text-gray-800">
-                                                {{ $selectedEvent['standard'] }}
-                                                @if (!empty($selectedEvent['section']))
-                                                    &ndash; {{ $selectedEvent['section'] }}
-                                                @endif
-                                            </p>
-                                        </div>
-                                    @endif
-                                    @if (!empty($selectedEvent['subject']))
-                                        <div>
-                                            <p class="text-xs text-gray-400 mb-0.5">Subject</p>
-                                            <p class="text-sm font-medium text-gray-800">{{ $selectedEvent['subject'] }}</p>
-                                        </div>
-                                    @endif
-                                    @if (!empty($selectedEvent['teacher']))
-                                        <div>
-                                            <p class="text-xs text-gray-400 mb-0.5">Teacher</p>
-                                            <p class="text-sm font-medium text-gray-800">{{ $selectedEvent['teacher'] }}</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
                     </div>
                 </div>
 
-                {{-- Modal Footer --}}
-                <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white rounded-b-xl">
-                    <p class="text-xs text-gray-400"># {{ $selectedEvent['id'] }}</p>
-                    <button wire:click="closeEventModal"
-                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors">
-                        Close
-                    </button>
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+                    {{-- Date & Time --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Date</p>
+                            <p class="text-sm font-medium text-gray-800">{{ \Carbon\Carbon::parse($selectedEvent['date'])->format('l, d M Y') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Time</p>
+                            <p class="text-sm font-medium text-gray-800">
+                                @if ($selectedEvent['is_all_day'] ?? false)
+                                    All Day
+                                @elseif (!empty($selectedEvent['start_time']))
+                                    {{ $selectedEvent['start_time'] }}@if (!empty($selectedEvent['end_time'])) &ndash; {{ $selectedEvent['end_time'] }}@endif
+                                @else
+                                    &mdash;
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Description --}}
+                    @if (!empty($selectedEvent['description']))
+                        <div class="border-t border-gray-100 pt-5">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Description</p>
+                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $selectedEvent['description'] }}</p>
+                        </div>
+                    @endif
+
+                    {{-- Location --}}
+                    @if (!empty($selectedEvent['location']))
+                        <div class="border-t border-gray-100 pt-5">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Location</p>
+                            <p class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-800">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {{ $selectedEvent['location'] }}
+                            </p>
+                        </div>
+                    @endif
+
+                    {{-- Class Info --}}
+                    @if (!empty($selectedEvent['standard']) || !empty($selectedEvent['subject']) || !empty($selectedEvent['teacher']))
+                        <div class="border-t border-gray-100 pt-5">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-3">Class Information</p>
+                            <div class="space-y-3">
+                                @if (!empty($selectedEvent['standard']))
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-400">Class</span>
+                                        <span class="text-sm font-medium text-gray-800">{{ $selectedEvent['standard'] }}@if (!empty($selectedEvent['section'])) &ndash; {{ $selectedEvent['section'] }}@endif</span>
+                                    </div>
+                                @endif
+                                @if (!empty($selectedEvent['subject']))
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-400">Subject</span>
+                                        <span class="text-sm font-medium text-gray-800">{{ $selectedEvent['subject'] }}</span>
+                                    </div>
+                                @endif
+                                @if (!empty($selectedEvent['teacher']))
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-400">Teacher</span>
+                                        <span class="text-sm font-medium text-gray-800">{{ $selectedEvent['teacher'] }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
+                {{-- Footer --}}
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <p class="text-xs text-gray-400">Event #{{ $selectedEvent['id'] }}</p>
+                    <button wire:click="closeEventModal" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">Close</button>
+                </div>
             </div>
         </div>
     @endif
