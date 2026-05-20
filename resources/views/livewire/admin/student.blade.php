@@ -543,7 +543,12 @@
                         <div class="bg-gray-50 rounded-xl p-4">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Photo</p>
                             <div class="flex items-center gap-4">
-                                @if ($editId && !$studentImage && $studentImageUrl)
+                                @if ($studentImage)
+                                    {{-- Newly selected image preview --}}
+                                    <img src="{{ $studentImage->temporaryUrl() }}"
+                                        class="w-16 h-16 rounded-full object-cover border-2 border-white shadow">
+                                @elseif ($studentImageUrl)
+                                    {{-- Existing saved image --}}
                                     <img src="{{ $studentImageUrl }}"
                                         class="w-16 h-16 rounded-full object-cover border-2 border-white shadow">
                                 @else
@@ -562,6 +567,7 @@
                                                file:rounded-lg file:border-0 file:text-xs file:font-semibold
                                                file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                                     <p class="text-xs text-gray-400 mt-1">JPG, PNG up to 2MB</p>
+                                    <div wire:loading wire:target="studentImage" class="text-xs text-blue-600 mt-1">Uploading…</div>
                                     @error('studentImage')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror

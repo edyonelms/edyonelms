@@ -283,6 +283,19 @@ class Student extends Component
 
             $student->fill($studentData)->save();
 
+            $isNewStudent = empty($this->studentData['id']);
+
+            // Generate identifiers ONCE so the list, DB and email always match.
+            // On edit, keep the existing admission/roll numbers.
+            if ($isNewStudent) {
+                $admissionNo = $this->generateAdmissionNumber();
+                $rollNo      = $this->generateRollNumber();
+            } else {
+                $existingDetail = StudentDetail::where('user_id', $student->id)->first(['admission_no', 'roll_no']);
+                $admissionNo = $existingDetail->admission_no ?? $this->generateAdmissionNumber();
+                $rollNo      = $existingDetail->roll_no ?? $this->generateRollNumber();
+            }
+
             $detailData = [
                 'user_id'                => $student->id,
                 'standard_id'            => (int) $this->studentsClass,
@@ -299,9 +312,9 @@ class Student extends Component
                 'city'                   => $this->selectedCity ?? null,
                 'state'                  => $this->selectedState ?? null,
                 'pincode'                => $this->pincode ?? null,
-                'admission_no'           => $this->generateAdmissionNumber(),
+                'admission_no'           => $admissionNo,
                 'date_of_admission'      => $this->dateOfAdmission,
-                'roll_no'                => $this->generateRollNumber(),
+                'roll_no'                => $rollNo,
                 'board'                  => $this->studentsBoard,
                 'aadhar_no'              => $this->aadharNo ?? null,
                 'phone'                  => $this->studentsMobile,
@@ -329,7 +342,7 @@ class Student extends Component
                             [
                                 'password'         => $plainPassword,
                                 'school_name'      => $schoolName,
-                                'admission_number' => $detailData['admission_no'],
+                                'admission_number' => $admissionNo,
                                 'username'         => $student->name,
                                 'name'             => $student->name,
                                 'email'            => $student->email,
