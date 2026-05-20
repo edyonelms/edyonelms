@@ -11,6 +11,7 @@ use App\Livewire\Admin\Announcement;
 use App\Livewire\Admin\TimeTable;
 use App\Livewire\Admin\Arrangement;
 use App\Livewire\Admin\Fee;
+use App\Livewire\Admin\FeeStructure;
 use App\Livewire\Admin\Homework;
 use App\Livewire\Admin\Attendance;
 use App\Livewire\Admin\Syllabus;
@@ -66,6 +67,7 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         Route::get('/timetable', TimeTable::class)->name('admin.timetable');
         Route::get('/arrangement', Arrangement::class)->name('admin.arrangement');
         Route::get('/fee', Fee::class)->name('admin.fee');
+        Route::get('/fee-structure', FeeStructure::class)->name('admin.fee-structure');
         Route::get('/fee/receipt/{id}', [FeeReceiptController::class, 'show'])->name('admin.fee.receipt');
         Route::get('/homework', Homework::class)->name('admin.homework');
         Route::get('/attendance', Attendance::class)->name('admin.attendance');

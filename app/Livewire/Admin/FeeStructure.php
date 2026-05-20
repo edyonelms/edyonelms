@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Accounts;
+namespace App\Livewire\Admin;
 
 use App\Livewire\Concerns\HandlesTransportFees;
 use App\Models\Admin\Fee\FeeStructure as FeeStructureModel;
@@ -251,7 +251,7 @@ class FeeStructure extends Component
                 ->orderBy('route_name')->get();
         }
 
-        return view('livewire.accounts.fee-structure', [
+        return view('livewire.admin.fee-structure', [
             'standards'        => $standards,
             'sections'         => $sections,
             'formSections'     => $formSections,
