@@ -4,77 +4,71 @@ namespace App\Livewire\Admin;
 
 use App\Models\Admin\DriverDetail;
 use App\Models\Admin\Transportation;
-use App\Models\Organization;
 use App\Models\Student\StudentDetail;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use WireUi\Traits\WireUiActions;
 
 class Transport extends Component
 {
-    use WireUiActions, WithPagination;
+    use WireUiActions, WithPagination, WithFileUploads;
 
-    // ─── Tab ───────────────────────────────────────────────
     #[Url(keep: true)]
     public string $activeTab = 'transportation'; // transportation | drivers
 
-    // ─── Modals ────────────────────────────────────────────
-    public bool $driverModal      = false;
-    public bool $transportModal   = false;
-    public bool $assignStudentModal = false;
+    // ─── Modals (slide-in panels) ──────────────────────────
+    public bool $driverModal    = false;
+    public bool $transportModal = false;
 
-    // ─── Edit IDs ──────────────────────────────────────────
-    public ?int $editDriverId      = null;
-    public ?int $editTransportId   = null;
-    public ?int $assignTransportId = null;
+    public ?int $editDriverId    = null;
+    public ?int $editTransportId = null;
 
     // ─── Driver Form ───────────────────────────────────────
-    public string $driver_name        = '';
-    public string $driver_email       = '';
-    public string $driver_phone       = '';
-    public string $driver_password    = '';
-    public string $license_no         = '';
-    public string $driver_vehicle_no  = '';
+    public string $driver_name         = '';
+    public string $driver_email        = '';
+    public string $driver_phone        = '';
+    public string $license_no          = '';
+    public string $driver_vehicle_no   = '';
     public string $driver_vehicle_type = '';
-    public string $driver_address     = '';
-    public int    $experience_years   = 0;
-    public bool   $driver_is_active   = true;
+    public string $driver_address      = '';
+    public int    $experience_years    = 0;
+    public bool   $driver_is_active    = true;
+    public $driver_image;                    // uploaded file
+    public ?string $driver_image_existing = null;
 
-    // ─── Transportation Form ───────────────────────────────
-    public string  $route_name        = '';
-    public ?int    $driver_detail_id  = null;
-    public string  $pickup_location   = '';
-    public string  $drop_location     = '';
-    public string  $stops_input       = '';   // comma-separated
-    public float   $monthly_fee       = 0;
-    public int     $capacity          = 0;
-    public bool    $transport_is_active = true;
-
-    // ─── Assign Students ───────────────────────────────────
-    public array  $selectedStudents   = [];
-    public string $studentSearch      = '';
+    // ─── Transportation (Route) Form ───────────────────────
+    public string $route_name          = '';
+    public ?int   $driver_detail_id    = null;
+    public string $pickup_time         = '';
+    public float  $monthly_fee         = 0;
+    public int    $capacity            = 0;
+    public bool   $transport_is_active = true;
 
     // ─── Filters ───────────────────────────────────────────
     #[Url(keep: true)]
     public string $search = '';
-
     #[Url(keep: true)]
     public string $filterStatus = '';
-
+    #[Url(keep: true)]
+    public string $filterRoute = '';     // drivers tab → filter by route
+    #[Url(keep: true)]
+    public string $filterDriver = '';    // routes tab → filter by driver
     #[Url(keep: true)]
     public int $perPage = 10;
 
-    // ─── Dropdown data (plain arrays — safe for Livewire serialization) ──
-    public array $availableDrivers = [];
-    public array $availableStudents = [];
+    // ─── Delete confirm ────────────────────────────────────
+    public ?int $pendingDeleteDriverId = null;
+    public ?int $pendingDeleteRouteId  = null;
 
-    // Vehicle types
+    public array $availableDrivers = [];
     public array $vehicleTypes = ['Bus', 'Mini Bus', 'Van', 'Auto', 'Car', 'Other'];
 
     protected $listeners = ['refresh-transport' => '$refresh'];
@@ -96,28 +90,21 @@ class Transport extends Component
         if (!$this->organizationId) {
             return ['drivers' => 0, 'routes' => 0, 'students' => 0, 'monthly_revenue' => 0];
         }
-
         $orgId = $this->organizationId;
 
         return [
             'drivers'         => DriverDetail::where('organization_id', $orgId)->where('is_active', true)->count(),
             'routes'          => Transportation::where('organization_id', $orgId)->where('is_active', true)->count(),
-            'students'        => DB::table('transportation_students')
-                                    ->where('organization_id', $orgId)->count(),
+            'students'        => DB::table('transportation_students')->where('organization_id', $orgId)->count(),
             'monthly_revenue' => Transportation::where('organization_id', $orgId)
-                                    ->where('is_active', true)
-                                    ->withCount('students')
-                                    ->get()
-                                    ->sum(fn($t) => $t->monthly_fee * $t->students_count),
+                ->where('is_active', true)->withCount('students')->get()
+                ->sum(fn($t) => $t->monthly_fee * $t->students_count),
         ];
     }
 
     private function loadAvailableDrivers(): void
     {
-        if (!$this->organizationId) {
-            $this->availableDrivers = [];
-            return;
-        }
+        if (!$this->organizationId) { $this->availableDrivers = []; return; }
 
         $this->availableDrivers = DriverDetail::with('user:id,name')
             ->where('organization_id', $this->organizationId)
@@ -128,51 +115,18 @@ class Transport extends Component
                 'name'       => $d->user->name ?? 'Unknown',
                 'license_no' => $d->license_no,
                 'vehicle_no' => $d->vehicle_no,
-            ])
-            ->toArray();
+            ])->toArray();
     }
 
-    private function loadAvailableStudents(): void
-    {
-        if (!$this->organizationId) {
-            $this->availableStudents = [];
-            return;
-        }
+    // ── Watchers ──
+    public function updatedSearch(): void       { $this->resetPage(); }
+    public function updatedPerPage(): void      { $this->resetPage(); }
+    public function updatedFilterStatus(): void { $this->resetPage(); }
+    public function updatedFilterRoute(): void  { $this->resetPage(); }
+    public function updatedFilterDriver(): void { $this->resetPage(); }
+    public function updatedActiveTab(): void    { $this->resetPage(); $this->search = ''; }
 
-        $query = StudentDetail::where('organization_id', $this->organizationId)
-            ->where('transportation_required', true);
-
-        if ($this->studentSearch) {
-            $query->where(function ($q) {
-                $q->where('full_name', 'like', '%' . $this->studentSearch . '%')
-                  ->orWhere('admission_no', 'like', '%' . $this->studentSearch . '%');
-            });
-        }
-
-        $this->availableStudents = $query->orderBy('full_name')
-            ->get(['id', 'full_name', 'admission_no', 'standard_id', 'section_id'])
-            ->map(fn($s) => [
-                'id'           => $s->id,
-                'full_name'    => $s->full_name,
-                'admission_no' => $s->admission_no,
-            ])
-            ->toArray();
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // Watchers
-    // ─────────────────────────────────────────────────────────
-
-    public function updatedSearch(): void          { $this->resetPage(); }
-    public function updatedPerPage(): void         { $this->resetPage(); }
-    public function updatedFilterStatus(): void    { $this->resetPage(); }
-    public function updatedActiveTab(): void       { $this->resetPage(); $this->search = ''; }
-
-    public function updatedStudentSearch(): void
-    {
-        $this->loadAvailableStudents();
-    }
-
+    // ═══════════════════════════════ DRIVERS ═════════════════════════════════
     public function createDriver(): void
     {
         $this->resetDriverForm();
@@ -183,18 +137,19 @@ class Transport extends Component
     public function editDriver(int $id): void
     {
         $driver = DriverDetail::with('user')->findOrFail($id);
-
-        $this->editDriverId         = $driver->id;
-        $this->driver_name          = $driver->user->name ?? '';
-        $this->driver_email         = $driver->user->email ?? '';
-        $this->driver_phone         = $driver->phone ?? '';
-        $this->license_no           = $driver->license_no ?? '';
-        $this->driver_vehicle_no    = $driver->vehicle_no ?? '';
-        $this->driver_vehicle_type  = $driver->vehicle_type ?? '';
-        $this->driver_address       = $driver->address ?? '';
-        $this->experience_years     = $driver->experience_years ?? 0;
-        $this->driver_is_active     = $driver->is_active;
-        $this->driverModal          = true;
+        $this->editDriverId        = $driver->id;
+        $this->driver_name         = $driver->user->name ?? '';
+        $this->driver_email        = $driver->user->email ?? '';
+        $this->driver_phone        = $driver->phone ?? '';
+        $this->license_no          = $driver->license_no ?? '';
+        $this->driver_vehicle_no   = $driver->vehicle_no ?? '';
+        $this->driver_vehicle_type = $driver->vehicle_type ?? '';
+        $this->driver_address      = $driver->address ?? '';
+        $this->experience_years    = $driver->experience_years ?? 0;
+        $this->driver_is_active    = $driver->is_active;
+        $this->driver_image        = null;
+        $this->driver_image_existing = $driver->image;
+        $this->driverModal         = true;
     }
 
     public function saveDriver(): void
@@ -208,25 +163,32 @@ class Transport extends Component
             'driver_vehicle_type' => 'nullable|string|max:50',
             'driver_address'      => 'nullable|string|max:500',
             'experience_years'    => 'nullable|integer|min:0|max:50',
+            'driver_image'        => 'nullable|image|max:2048',
         ];
-
         if (!$this->editDriverId) {
-            $rules['driver_email']    = 'required|email|unique:users,email';
+            $rules['driver_email'] = 'required|email|unique:users,email';
         }
-
         $this->validate($rules);
 
         DB::beginTransaction();
         try {
+            // Resolve image URL
+            $imageUrl = $this->driver_image_existing;
+            if ($this->driver_image) {
+                if ($this->driver_image_existing) {
+                    $old = parse_url($this->driver_image_existing, PHP_URL_PATH);
+                    if ($old) Storage::disk('s3')->delete(ltrim($old, '/'));
+                }
+                $path = $this->driver_image->store('admin/drivers/photos', 's3');
+                Storage::disk('s3')->setVisibility($path, 'public');
+                $imageUrl = Storage::disk('s3')->url($path);
+            }
+
             if ($this->editDriverId) {
                 $driver = DriverDetail::findOrFail($this->editDriverId);
-
-                $driver->user->update([
-                    'name'  => $this->driver_name,
-                    'email' => $this->driver_email,
-                ]);
-
+                $driver->user->update(['name' => $this->driver_name, 'email' => $this->driver_email]);
                 $driver->update([
+                    'image'            => $imageUrl,
                     'phone'            => $this->driver_phone,
                     'license_no'       => $this->license_no,
                     'vehicle_no'       => $this->driver_vehicle_no,
@@ -240,15 +202,15 @@ class Transport extends Component
                     'name'            => $this->driver_name,
                     'email'           => $this->driver_email,
                     'mobile_number'   => $this->driver_phone,
-                    'password'        => Hash::make("123456"), // Default password, should be changed by driver
+                    'password'        => Hash::make('123456'),
                     'role'            => 'driver',
                     'organization_id' => $this->organizationId,
                     'is_active'       => true,
                 ]);
-
                 DriverDetail::create([
                     'user_id'          => $user->id,
                     'organization_id'  => $this->organizationId,
+                    'image'            => $imageUrl,
                     'phone'            => $this->driver_phone,
                     'license_no'       => $this->license_no,
                     'vehicle_no'       => $this->driver_vehicle_no,
@@ -260,53 +222,39 @@ class Transport extends Component
             }
 
             DB::commit();
-
             $this->loadAvailableDrivers();
             unset($this->statistics);
-
-            $this->notification()->success(
-                title: 'Success!',
-                description: $this->editDriverId ? 'Driver updated successfully' : 'Driver added successfully'
-            );
-
+            $this->notification()->success('Success!', $this->editDriverId ? 'Driver updated' : 'Driver added');
             $this->closeDriverModal();
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->notification()->error(title: 'Error!', description: 'Failed to save driver: ' . $e->getMessage());
-            logger()->error('Save driver error: ' . $e->getMessage());
+            $this->notification()->error('Error!', 'Failed to save driver: ' . $e->getMessage());
         }
     }
 
-    public function deleteDriver(int $id): void
+    public function confirmDeleteDriver(int $id): void { $this->pendingDeleteDriverId = $id; }
+    public function cancelDeleteDriver(): void { $this->pendingDeleteDriverId = null; }
+    public function executeDeleteDriver(): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Driver?',
-            'description' => 'This will remove the driver and their user account. Assigned routes will have no driver.',
-            'icon'        => 'error',
-            'accept'      => ['label' => 'Yes, Delete', 'method' => 'confirmDeleteDriver', 'params' => $id],
-            'reject'      => ['label' => 'Cancel'],
-        ]);
-    }
-
-    public function confirmDeleteDriver(int $id): void
-    {
+        if (!$this->pendingDeleteDriverId) return;
         DB::beginTransaction();
         try {
-            $driver = DriverDetail::with('user')->findOrFail($id);
+            $driver = DriverDetail::with('user')->findOrFail($this->pendingDeleteDriverId);
+            if ($driver->image) {
+                $old = parse_url($driver->image, PHP_URL_PATH);
+                if ($old) Storage::disk('s3')->delete(ltrim($old, '/'));
+            }
             $driver->user?->delete();
             $driver->delete();
-
             DB::commit();
-
             $this->loadAvailableDrivers();
             unset($this->statistics);
-
-            $this->notification()->success(title: 'Deleted!', description: 'Driver removed successfully');
+            $this->notification()->success('Deleted!', 'Driver removed');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->notification()->error(title: 'Error!', description: 'Failed to delete driver');
-            logger()->error('Delete driver error: ' . $e->getMessage());
+            $this->notification()->error('Error!', 'Failed to delete driver');
         }
+        $this->pendingDeleteDriverId = null;
     }
 
     public function toggleDriverStatus(int $id): void
@@ -316,7 +264,7 @@ class Transport extends Component
         $driver->user?->update(['is_active' => !$driver->user->is_active]);
         $this->loadAvailableDrivers();
         unset($this->statistics);
-        $this->notification()->success(title: 'Updated!', description: 'Driver status changed');
+        $this->notification()->success('Updated!', 'Driver status changed');
     }
 
     public function closeDriverModal(): void
@@ -330,13 +278,15 @@ class Transport extends Component
     private function resetDriverForm(): void
     {
         $this->reset([
-            'driver_name', 'driver_email', 'driver_phone', 'driver_password',
+            'driver_name', 'driver_email', 'driver_phone',
             'license_no', 'driver_vehicle_no', 'driver_vehicle_type',
             'driver_address', 'experience_years', 'driver_is_active',
+            'driver_image', 'driver_image_existing',
         ]);
         $this->driver_is_active = true;
     }
 
+    // ═══════════════════════════════ ROUTES ══════════════════════════════════
     public function createTransport(): void
     {
         $this->resetTransportForm();
@@ -346,18 +296,15 @@ class Transport extends Component
 
     public function editTransport(int $id): void
     {
-        $transport = Transportation::findOrFail($id);
-
-        $this->editTransportId      = $transport->id;
-        $this->route_name           = $transport->route_name;
-        $this->driver_detail_id     = $transport->driver_detail_id;
-        $this->pickup_location      = $transport->pickup_location ?? '';
-        $this->drop_location        = $transport->drop_location ?? '';
-        $this->stops_input          = is_array($transport->stops) ? implode(', ', $transport->stops) : '';
-        $this->monthly_fee          = (float) $transport->monthly_fee;
-        $this->capacity             = (int) $transport->capacity;
-        $this->transport_is_active  = $transport->is_active;
-        $this->transportModal       = true;
+        $t = Transportation::findOrFail($id);
+        $this->editTransportId     = $t->id;
+        $this->route_name          = $t->route_name;
+        $this->driver_detail_id    = $t->driver_detail_id;
+        $this->pickup_time         = $t->pickup_time ?? '';
+        $this->monthly_fee         = (float) $t->monthly_fee;
+        $this->capacity            = (int) $t->capacity;
+        $this->transport_is_active = $t->is_active;
+        $this->transportModal      = true;
     }
 
     public function saveTransport(): void
@@ -365,15 +312,11 @@ class Transport extends Component
         $this->validate([
             'route_name'       => 'required|string|max:255',
             'driver_detail_id' => 'required|exists:driver_details,id',
-            'pickup_location'  => 'nullable|string|max:255',
-            'drop_location'    => 'nullable|string|max:255',
+            'pickup_time'      => 'nullable|string|max:20',
             'monthly_fee'      => 'nullable|numeric|min:0',
             'capacity'         => 'nullable|integer|min:0',
         ]);
 
-        $stops  = array_filter(array_map('trim', explode(',', $this->stops_input)));
-
-        // Pull vehicle info from the assigned driver
         $driver = DriverDetail::find($this->driver_detail_id);
 
         $data = [
@@ -382,9 +325,7 @@ class Transport extends Component
             'vehicle_no'       => $driver?->vehicle_no,
             'vehicle_type'     => $driver?->vehicle_type,
             'driver_detail_id' => $this->driver_detail_id,
-            'pickup_location'  => $this->pickup_location ?: null,
-            'drop_location'    => $this->drop_location ?: null,
-            'stops'            => !empty($stops) ? array_values($stops) : null,
+            'pickup_time'      => $this->pickup_time ?: null,
             'monthly_fee'      => $this->monthly_fee,
             'capacity'         => $this->capacity,
             'is_active'        => $this->transport_is_active,
@@ -396,41 +337,27 @@ class Transport extends Component
             } else {
                 Transportation::create($data);
             }
-
             unset($this->statistics);
-
-            $this->notification()->success(
-                title: 'Success!',
-                description: $this->editTransportId ? 'Route updated successfully' : 'Route created successfully'
-            );
-
+            $this->notification()->success('Success!', $this->editTransportId ? 'Route updated' : 'Route created');
             $this->closeTransportModal();
         } catch (\Exception $e) {
-            $this->notification()->error(title: 'Error!', description: 'Failed to save route: ' . $e->getMessage());
-            logger()->error('Save transport error: ' . $e->getMessage());
+            $this->notification()->error('Error!', 'Failed to save route: ' . $e->getMessage());
         }
     }
 
-    public function deleteTransport(int $id): void
+    public function confirmDeleteRoute(int $id): void { $this->pendingDeleteRouteId = $id; }
+    public function cancelDeleteRoute(): void { $this->pendingDeleteRouteId = null; }
+    public function executeDeleteRoute(): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Route?',
-            'description' => 'This will remove the route and unassign all students.',
-            'icon'        => 'error',
-            'accept'      => ['label' => 'Yes, Delete', 'method' => 'confirmDeleteTransport', 'params' => $id],
-            'reject'      => ['label' => 'Cancel'],
-        ]);
-    }
-
-    public function confirmDeleteTransport(int $id): void
-    {
+        if (!$this->pendingDeleteRouteId) return;
         try {
-            Transportation::findOrFail($id)->delete();
+            Transportation::findOrFail($this->pendingDeleteRouteId)->delete();
             unset($this->statistics);
-            $this->notification()->success(title: 'Deleted!', description: 'Route deleted successfully');
+            $this->notification()->success('Deleted!', 'Route deleted');
         } catch (\Exception $e) {
-            $this->notification()->error(title: 'Error!', description: 'Failed to delete route');
+            $this->notification()->error('Error!', 'Failed to delete route');
         }
+        $this->pendingDeleteRouteId = null;
     }
 
     public function toggleTransportStatus(int $id): void
@@ -438,7 +365,7 @@ class Transport extends Component
         $t = Transportation::findOrFail($id);
         $t->update(['is_active' => !$t->is_active]);
         unset($this->statistics);
-        $this->notification()->success(title: 'Updated!', description: 'Route status changed');
+        $this->notification()->success('Updated!', 'Route status changed');
     }
 
     public function closeTransportModal(): void
@@ -451,74 +378,10 @@ class Transport extends Component
 
     private function resetTransportForm(): void
     {
-        $this->reset([
-            'route_name', 'driver_detail_id',
-            'pickup_location', 'drop_location', 'stops_input',
-            'monthly_fee', 'capacity', 'transport_is_active',
-        ]);
+        $this->reset(['route_name', 'driver_detail_id', 'pickup_time', 'monthly_fee', 'capacity', 'transport_is_active']);
         $this->transport_is_active = true;
-        $this->monthly_fee         = 0;
-        $this->capacity            = 0;
-    }
-
-    public function openAssignStudents(int $transportId): void
-    {
-        $this->assignTransportId = $transportId;
-        $this->studentSearch     = '';
-
-        // Pre-select already assigned students
-        $this->selectedStudents = Transportation::findOrFail($transportId)
-            ->students()
-            ->pluck('student_details.id')
-            ->map(fn($id) => (string) $id)
-            ->toArray();
-
-        $this->loadAvailableStudents();
-        $this->assignStudentModal = true;
-    }
-
-    public function saveAssignedStudents(): void
-    {
-        if (!$this->assignTransportId) return;
-
-        try {
-            $transport = Transportation::findOrFail($this->assignTransportId);
-
-            // Sync selected students with org_id in pivot
-            $syncData = collect($this->selectedStudents)
-                ->mapWithKeys(fn($id) => [(int)$id => ['organization_id' => $this->organizationId]])
-                ->toArray();
-
-            $transport->students()->sync($syncData);
-
-            unset($this->statistics);
-
-            $this->notification()->success(
-                title: 'Success!',
-                description: count($this->selectedStudents) . ' student(s) assigned'
-            );
-
-            $this->closeAssignStudentModal();
-        } catch (\Exception $e) {
-            $this->notification()->error(title: 'Error!', description: 'Failed to assign students');
-            logger()->error('Assign students error: ' . $e->getMessage());
-        }
-    }
-
-    public function removeStudent(int $transportId, int $studentDetailId): void
-    {
-        Transportation::findOrFail($transportId)->students()->detach($studentDetailId);
-        unset($this->statistics);
-        $this->notification()->success(title: 'Removed!', description: 'Student unassigned');
-    }
-
-    public function closeAssignStudentModal(): void
-    {
-        $this->assignStudentModal = false;
-        $this->assignTransportId  = null;
-        $this->selectedStudents   = [];
-        $this->studentSearch      = '';
-        $this->availableStudents  = [];
+        $this->monthly_fee = 0;
+        $this->capacity = 0;
     }
 
     public function render()
@@ -526,7 +389,15 @@ class Transport extends Component
         return view('livewire.admin.transport', [
             'transportations' => $this->getTransportations(),
             'drivers'         => $this->getDrivers(),
+            'routeOptions'    => $this->getRouteOptions(),
         ]);
+    }
+
+    private function getRouteOptions()
+    {
+        if (!$this->organizationId) return collect();
+        return Transportation::where('organization_id', $this->organizationId)
+            ->orderBy('route_name')->get(['id', 'route_name']);
     }
 
     private function getTransportations()
@@ -537,14 +408,11 @@ class Transport extends Component
             ->where('organization_id', $this->organizationId);
 
         if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('route_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('vehicle_no', 'like', '%' . $this->search . '%')
-                  ->orWhere('pickup_location', 'like', '%' . $this->search . '%')
-                  ->orWhere('drop_location', 'like', '%' . $this->search . '%');
-            });
+            $query->where(fn($q) => $q->where('route_name', 'like', '%' . $this->search . '%'));
         }
-
+        if ($this->filterDriver !== '') {
+            $query->where('driver_detail_id', $this->filterDriver);
+        }
         if ($this->filterStatus !== '') {
             $query->where('is_active', (bool) $this->filterStatus);
         }
@@ -567,7 +435,9 @@ class Transport extends Component
                   ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', '%' . $this->search . '%'));
             });
         }
-
+        if ($this->filterRoute !== '') {
+            $query->whereHas('transportations', fn($q) => $q->where('id', $this->filterRoute));
+        }
         if ($this->filterStatus !== '') {
             $query->where('is_active', (bool) $this->filterStatus);
         }

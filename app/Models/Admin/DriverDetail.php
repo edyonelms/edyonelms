@@ -16,6 +16,7 @@ class DriverDetail extends Model
     protected $fillable = [
         'user_id',
         'organization_id',
+        'image',
         'license_no',
         'vehicle_no',
         'vehicle_type',

@@ -17,6 +17,7 @@ class Transportation extends Model
         'organization_id',
         'route_name',
         'driver_detail_id',
+        'pickup_time',
         'pickup_location',
         'drop_location',
         'stops',
