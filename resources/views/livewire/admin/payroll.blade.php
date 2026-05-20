@@ -2,21 +2,39 @@
 
     {{-- ══════════ HEADER ══════════ --}}
     <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Payroll</h1>
                 <p class="text-sm text-gray-500 mt-0.5">Manage employees, attendance and salaries</p>
             </div>
-            @if ($activeTab === 'employees')
-                <button wire:click="openEmpModal()"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700
-                           text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Employee
-                </button>
-            @endif
+            <div class="flex flex-wrap items-center gap-2">
+                {{-- Analytics chips --}}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-xs font-medium text-gray-600">
+                    Total <strong class="text-gray-900">{{ $empStats['total'] }}</strong>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-medium text-blue-600">
+                    Teachers <strong>{{ $empStats['teacher'] }}</strong>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-xs font-medium text-purple-600">
+                    Mgmt <strong>{{ $empStats['management'] }}</strong>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-600">
+                    Staff <strong>{{ $empStats['employee'] }}</strong>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-xs font-medium text-amber-600">
+                    Drivers <strong>{{ $empStats['driver'] }}</strong>
+                </span>
+                @if ($activeTab === 'employees')
+                    <button wire:click="openEmpModal()"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700
+                               text-white text-sm font-semibold rounded-lg shadow-sm transition-colors ml-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Employee
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -44,20 +62,6 @@
 
         {{-- ══════════ EMPLOYEES TAB ══════════ --}}
         @if ($activeTab === 'employees')
-
-            {{-- Stats --}}
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                    <p class="text-xs text-gray-400 mb-1">Total</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ $empStats['total'] }}</p>
-                </div>
-                @foreach (['teacher' => 'blue', 'management' => 'purple', 'employee' => 'emerald', 'driver' => 'amber'] as $type => $color)
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                        <p class="text-xs text-gray-400 mb-1 capitalize">{{ $type }}</p>
-                        <p class="text-2xl font-bold text-{{ $color }}-600">{{ $empStats[$type] }}</p>
-                    </div>
-                @endforeach
-            </div>
 
             {{-- Employee Cards --}}
             @if ($employees->count())
@@ -690,37 +694,21 @@
         @endif
     </div>
 
-    {{-- ══════════ ADD/EDIT EMPLOYEE MODAL ══════════ --}}
+    {{-- ══════════ ADD/EDIT EMPLOYEE SLIDE-IN PANEL ══════════ --}}
     @if ($showEmpModal)
-        <div
-            class="fixed inset-0 flex items-start justify-center bg-black/30 backdrop-blur-sm z-[9999] px-4 py-8 overflow-y-auto">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-auto">
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEmpModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closeEmpModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
 
-                <div
-                    class="flex items-center justify-between px-5 py-4 border-b border-gray-100
-                            bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-gray-900">
-                            {{ $editEmpId ? 'Edit Employee' : 'Add Employee' }}
-                        </h3>
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ $editEmpId ? 'Edit Employee' : 'Add Employee' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">For type <strong>Teacher</strong>, attendance syncs with the Attendance module.</p>
                     </div>
-                    <button wire:click="closeEmpModal"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
 
                     {{-- Photo --}}
                     <div>
@@ -852,42 +840,25 @@
                     </div>
                 </div>
 
-                <div class="px-5 pb-5 flex items-center gap-2">
-                    <button wire:click="saveEmployee"
-                        class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
-                               rounded-lg transition-colors">
-                        {{ $editEmpId ? 'Update Employee' : 'Add Employee' }}
-                    </button>
-                    <button wire:click="closeEmpModal"
-                        class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium
-                               rounded-lg transition-colors">
-                        Cancel
-                    </button>
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeEmpModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveEmployee" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">{{ $editEmpId ? 'Update Employee' : 'Add Employee' }}</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- ══════════ EMPLOYEE DETAIL MODAL ══════════ --}}
+    {{-- ══════════ EMPLOYEE DETAIL SLIDE-IN PANEL ══════════ --}}
     @if ($showEmpDetailModal && $selectedEmployee)
-        <div
-            class="fixed inset-0 flex items-start justify-center bg-black/30 backdrop-blur-sm z-[9999] px-4 py-8 overflow-y-auto">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md my-auto">
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEmpDetailModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closeEmpDetailModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
 
-                <div
-                    class="flex items-center justify-between px-5 py-4 border-b border-gray-100
-                            bg-gradient-to-r from-indigo-50 to-purple-50">
-                    <h3 class="text-sm font-bold text-gray-900">Employee Details</h3>
-                    <button wire:click="closeEmpDetailModal"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="p-5 space-y-4">
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
                     <div class="flex flex-col items-center text-center pb-4 border-b border-gray-100">
                         @if ($selectedEmployee->photo)
                             <img src="{{ $selectedEmployee->photo }}"
@@ -964,49 +935,29 @@
                     @endif
                 </div>
 
-                <div class="px-5 pb-5">
-                    <button wire:click="closeEmpDetailModal"
-                        class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">
-                        Close
-                    </button>
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end flex-shrink-0">
+                    <button wire:click="closeEmpDetailModal" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">Close</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- ══════════ PAY SALARY MODAL ══════════ --}}
+    {{-- ══════════ PAY SALARY SLIDE-IN PANEL ══════════ --}}
     @if ($showPayModal)
         @php $payEmp = \App\Models\Admin\AdminEmployee::find($payEmployeeId); @endphp
-        <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[9999] px-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePayModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closePayModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
 
-                <div
-                    class="flex items-center justify-between px-5 py-4 border-b border-gray-100
-                            bg-gradient-to-r from-emerald-50 to-teal-50">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900">Pay Salary</h3>
-                            <p class="text-xs text-gray-400">{{ $payEmp?->name }} ·
-                                {{ \Carbon\Carbon::parse($salaryMonth . '-01')->format('M Y') }}</p>
-                        </div>
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Pay Salary</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ $payEmp?->name }} · {{ \Carbon\Carbon::parse($salaryMonth . '-01')->format('M Y') }}</p>
                     </div>
-                    <button wire:click="closePayModal"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="p-5 space-y-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Amount (₹) *</label>
                         <input type="number" wire:model.defer="payAmount" min="0"
@@ -1057,24 +1008,11 @@
                     </div>
                 </div>
 
-                <div class="px-5 pb-5 flex items-center gap-2">
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closePayModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="savePayment"
-                        class="flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors
-                               flex items-center justify-center gap-2
-                               {{ $payMode === 'cash'
-                                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                   : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="{{ $payMode === 'cash'
-                                    ? 'M5 13l4 4L19 7'
-                                    : 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14' }}" />
-                        </svg>
+                        class="px-5 py-2 text-sm font-semibold rounded-md text-white {{ $payMode === 'cash' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700' }}">
                         {{ $payMode === 'cash' ? 'Mark as Paid' : 'Pay Now' }}
-                    </button>
-                    <button wire:click="closePayModal"
-                        class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors">
-                        Cancel
                     </button>
                 </div>
             </div>
