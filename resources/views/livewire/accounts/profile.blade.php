@@ -37,17 +37,20 @@
 
         {{-- Top: Avatar + Name + Status --}}
         <div class="px-6 py-5 flex items-center gap-4 border-b border-gray-50">
-            @if (!empty($user['image']))
-                <img src="{{ $user['image'] }}" alt="{{ $user['name'] }}"
-                    class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
-            @else
-                <div
-                    class="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 ring-2 ring-purple-100">
-                    <span class="text-xl font-semibold text-purple-600">
-                        {{ strtoupper(substr($user['name'] ?? 'U', 0, 1)) }}
-                    </span>
-                </div>
-            @endif
+            <div class="relative w-16 h-16 flex-shrink-0">
+                @if (!empty($user['image']))
+                    <img src="{{ $user['image'] }}" alt="{{ $user['name'] }}"
+                        class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-16 h-16 rounded-full bg-purple-50 items-center justify-center ring-2 ring-purple-100" style="display:none;">
+                        <span class="text-xl font-semibold text-purple-600">{{ strtoupper(substr($user['name'] ?? 'U', 0, 1)) }}</span>
+                    </div>
+                @else
+                    <div class="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center ring-2 ring-purple-100">
+                        <span class="text-xl font-semibold text-purple-600">{{ strtoupper(substr($user['name'] ?? 'U', 0, 1)) }}</span>
+                    </div>
+                @endif
+            </div>
             <div class="flex-1 min-w-0">
                 <h2 class="text-base font-semibold text-gray-900 truncate">{{ $user['name'] ?? '-' }}</h2>
                 <p class="text-sm text-gray-400 truncate">{{ $user['email'] ?? '-' }}</p>
@@ -74,6 +77,14 @@
                 <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Account</p>
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Email</span>
+                        <span class="text-sm text-gray-700 truncate ml-4">{{ $user['email'] ?? '-' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Role</span>
+                        <span class="text-sm text-gray-700 capitalize">{{ $user['role'] ?? '-' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-400">Mobile</span>
                         <span class="text-sm text-gray-700">{{ $user['phone'] ?? '-' }}</span>
                     </div>
@@ -86,6 +97,10 @@
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-400">Member Since</span>
                         <span class="text-sm text-gray-700">{{ $user['created_at'] ?? '-' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Last Login</span>
+                        <span class="text-sm text-gray-700">{{ $user['last_login_at'] ?? '—' }}</span>
                     </div>
                 </div>
             </div>
@@ -127,18 +142,39 @@
 
             {{-- Org Header --}}
             <div class="px-6 py-5 flex items-center gap-4 border-b border-gray-50">
-                @if (!empty($organization['logo']))
-                    <img src="{{ $organization['logo'] }}" alt="{{ $organization['name'] }}"
-                        class="w-12 h-12 rounded-xl object-contain border border-gray-100 flex-shrink-0">
-                @else
-                    <div
-                        class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 border border-emerald-100">
-                        <x-icon name="building-office-2" class="w-6 h-6 text-emerald-500" />
-                    </div>
-                @endif
+                <div class="relative w-12 h-12 flex-shrink-0">
+                    @if (!empty($organization['logo']))
+                        <img src="{{ $organization['logo'] }}" alt="{{ $organization['name'] }}"
+                            class="w-12 h-12 rounded-xl object-contain border border-gray-100 bg-white"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 items-center justify-center border border-emerald-100" style="display:none;">
+                            <x-icon name="building-office-2" class="w-6 h-6 text-emerald-500" />
+                        </div>
+                    @else
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                            <x-icon name="building-office-2" class="w-6 h-6 text-emerald-500" />
+                        </div>
+                    @endif
+                </div>
                 <div>
                     <h2 class="text-base font-semibold text-gray-900">{{ $organization['name'] }}</h2>
                     <p class="text-sm text-gray-400">Organization details</p>
+                </div>
+            </div>
+
+            {{-- Analytics --}}
+            <div class="grid grid-cols-3 divide-x divide-gray-50 border-b border-gray-50">
+                <div class="px-6 py-4 text-center">
+                    <p class="text-2xl font-bold text-blue-600">{{ $analytics['students'] ?? 0 }}</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-400 mt-0.5">Students</p>
+                </div>
+                <div class="px-6 py-4 text-center">
+                    <p class="text-2xl font-bold text-purple-600">{{ $analytics['teachers'] ?? 0 }}</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-400 mt-0.5">Teachers</p>
+                </div>
+                <div class="px-6 py-4 text-center">
+                    <p class="text-2xl font-bold text-emerald-600">{{ $analytics['staff'] ?? 0 }}</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-400 mt-0.5">Active Staff</p>
                 </div>
             </div>
 
@@ -156,6 +192,14 @@
                         <span class="text-sm text-gray-400">Phone</span>
                         <span class="text-sm text-gray-700">{{ $organization['phone'] }}</span>
                     </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">State</span>
+                        <span class="text-sm text-gray-700">{{ $organization['state'] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Board</span>
+                        <span class="text-sm text-gray-700">{{ $organization['board'] }}</span>
+                    </div>
                     <div class="flex justify-between items-start gap-4">
                         <span class="text-sm text-gray-400 flex-shrink-0">Address</span>
                         <span class="text-sm text-gray-700 text-right">{{ $organization['address'] }}</span>
@@ -166,8 +210,8 @@
                 <div class="px-6 py-5 space-y-3">
                     <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Identifiers</p>
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-400">Code</span>
-                        <span class="text-sm text-gray-700 font-mono">{{ $organization['code'] }}</span>
+                        <span class="text-sm text-gray-400">School Code</span>
+                        <span class="text-sm text-gray-700 font-mono">{{ $organization['school_code'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-400">Affiliation No.</span>
@@ -180,6 +224,10 @@
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-400">UDISE No.</span>
                         <span class="text-sm text-gray-700 font-mono">{{ $organization['udise_number'] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Registered</span>
+                        <span class="text-sm text-gray-700">{{ $organization['created_at'] ?? '-' }}</span>
                     </div>
                 </div>
             </div>

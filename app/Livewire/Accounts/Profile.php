@@ -4,6 +4,8 @@ namespace App\Livewire\Accounts;
 
 use App\Models\Admin\SchoolUser;
 use App\Models\Organization;
+use App\Models\Student\StudentDetail;
+use App\Models\Teacher\TeacherDetail;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -12,6 +14,7 @@ class Profile extends Component
     public $user = [];
     public $schoolUser = [];
     public $organization = [];
+    public array $analytics = [];
 
     public function mount(): void
     {
@@ -54,15 +57,25 @@ class Profile extends Component
             $this->organization = [
                 'name'               => $org->name ?? '-',
                 'email'              => $org->email ?? '-',
-                'phone'              => $org->phone ?? '-',
+                'phone'              => $org->mobile_number ?? '-',
                 'address'            => $org->address ?? '-',
+                'state'              => $org->state ?? '-',
                 'logo'               => $org->logo ?? null,
-                'code'               => $org->code ?? '-',
-                'affiliation_number' => $org->affiliation_number ?? '-',
+                'school_code'        => $org->school_code ?? '-',
+                'affiliation_number' => $org->affiliation_no ?? '-',
                 'serial_number'      => $org->serial_number ?? '-',
                 'udise_number'       => $org->udise_number ?? '-',
+                'board'              => $org->education_board ?? '-',
+                'created_at'         => $org->created_at?->format('d M Y'),
             ];
         }
+
+        // Analytics: student & teacher counts for this organization
+        $this->analytics = [
+            'students' => StudentDetail::where('organization_id', $orgId)->count(),
+            'teachers' => TeacherDetail::where('organization_id', $orgId)->count(),
+            'staff'    => SchoolUser::where('organization_id', $orgId)->where('is_active', true)->count(),
+        ];
     }
 
     private function orgId(): int
