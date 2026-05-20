@@ -112,5 +112,9 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
             ->name('admin.report-card.download');
         Route::get('/report-card/{id}/print', [ReportCardController::class, 'print'])
             ->name('admin.report-card.print');
+
+        // Seating Plan printable chart
+        Route::get('/seating-plan/{id}/print', [\App\Http\Controllers\Admin\SeatingPlanPrintController::class, 'print'])
+            ->name('admin.seating-plan.print');
     });
 });
