@@ -42,7 +42,8 @@ class User extends Authenticatable
         'organization_id',
         'role',
         'otp_expires_at',
-        'otp_order_id'
+        'otp_order_id',
+        'last_login_at',
     ];
 
     /**
@@ -65,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_login_at' => 'datetime',
         ];
     }
 

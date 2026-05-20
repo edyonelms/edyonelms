@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +24,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Record last login timestamp on every successful authentication
+        Event::listen(Login::class, function (Login $event) {
+            $user = $event->user;
+            if ($user && \Illuminate\Support\Facades\Schema::hasColumn($user->getTable(), 'last_login_at')) {
+                $user->forceFill(['last_login_at' => now()])->saveQuietly();
+            }
+        });
+
         // // Rate limiting for API
         // RateLimiter::for('api', function (Request $request) {
         //     $key = $request->user()?->id ?: $request->ip();

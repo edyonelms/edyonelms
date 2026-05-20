@@ -1,24 +1,44 @@
-<div class="p-6 space-y-6">
+<div class="min-h-screen bg-gray-50">
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between bg-white rounded-2xl border border-gray-100 px-6 py-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Profile</h1>
-            <p class="text-sm text-gray-400 mt-0.5">Your account and organization details</p>
-        </div>
-        <div class="flex items-center gap-3 text-sm text-gray-500">
-            <x-icon name="calendar-days" class="w-4 h-4 text-gray-400" />
-            {{ now()->format('l, d M Y') }}
+    {{-- ══════════ HEADER (admin theme — sticky white) ══════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4 sm:py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Profile</h1>
+                <p class="text-sm text-gray-500 mt-0.5">Your account and organization details</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-sm">
+                {{-- Last login --}}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-600">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Last login: <strong class="text-gray-800">{{ $user['last_login_at'] ?? '—' }}</strong>
+                </span>
+                {{-- Live IST clock --}}
+                <span x-data="{ t: '' }" x-init="
+                        const f = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday:'short', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
+                        t = f(); setInterval(() => t = f(), 1000);
+                    "
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-blue-700">
+                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span x-text="t"></span> <span class="font-semibold">IST</span>
+                </span>
+            </div>
         </div>
     </div>
 
+    <div class="p-4 sm:p-6 space-y-6">
+
     {{-- Combined User + Staff Card --}}
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
         {{-- Top: Avatar + Name + Status --}}
         <div class="px-6 py-5 flex items-center gap-4 border-b border-gray-50">
-            @if (!empty($schoolUser['image']))
-                <img src="{{ $schoolUser['image'] }}" alt="{{ $user['name'] }}"
+            @if (!empty($user['image']))
+                <img src="{{ $user['image'] }}" alt="{{ $user['name'] }}"
                     class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
             @else
                 <div
@@ -103,7 +123,7 @@
 
     {{-- Organization Card --}}
     @if (!empty($organization))
-        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
             {{-- Org Header --}}
             <div class="px-6 py-5 flex items-center gap-4 border-b border-gray-50">
@@ -166,4 +186,5 @@
         </div>
     @endif
 
+    </div>
 </div>

@@ -18,17 +18,24 @@ class Profile extends Component
         $authUser = Auth::user();
         $orgId    = $this->orgId();
 
-        $this->user = [
-            'name'       => $authUser->name,
-            'email'      => $authUser->email,
-            'role'       => $authUser->role,
-            'phone'      => $authUser->mobile_number ?? '-',
-            'created_at' => $authUser->created_at?->format('d M Y'),
-        ];
-
         $schoolUserRecord = SchoolUser::where('user_id', $authUser->id)
             ->where('organization_id', $orgId)
             ->first();
+
+        // Prefer the user account photo, fall back to the staff record photo
+        $avatar = $authUser->image ?: ($schoolUserRecord->image ?? null);
+
+        $this->user = [
+            'name'          => $authUser->name,
+            'email'         => $authUser->email,
+            'role'          => $authUser->role,
+            'phone'         => $authUser->mobile_number ?? '-',
+            'created_at'    => $authUser->created_at?->format('d M Y'),
+            'image'         => $avatar,
+            'last_login_at' => $authUser->last_login_at
+                ? $authUser->last_login_at->timezone('Asia/Kolkata')->format('d M Y, h:i A')
+                : null,
+        ];
 
         if ($schoolUserRecord) {
             $this->schoolUser = [
@@ -38,7 +45,7 @@ class Profile extends Component
                 'alternate_mobile' => $schoolUserRecord->alternate_mobile ?? '-',
                 'address'          => $schoolUserRecord->address ?? '-',
                 'is_active'        => $schoolUserRecord->is_active,
-                'image'            => $schoolUserRecord->image ?? null,
+                'image'            => $avatar,
             ];
         }
 
