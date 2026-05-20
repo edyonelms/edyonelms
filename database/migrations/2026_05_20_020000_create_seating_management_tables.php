@@ -112,8 +112,8 @@ return new class extends Migration
 
                 $table->foreign('seating_plan_id')->references('id')->on('seating_plans')->onDelete('cascade');
                 $table->foreign('invigilator_id')->references('id')->on('seating_invigilators')->onDelete('cascade');
-                $table->unique(['seating_plan_id', 'room_id', 'invigilator_id']);
-                $table->index(['seating_plan_id', 'room_id']);
+                $table->unique(['seating_plan_id', 'room_id', 'invigilator_id'], 'inv_assign_plan_room_inv_unique');
+                $table->index(['seating_plan_id', 'room_id'], 'inv_assign_plan_room_idx');
             });
         }
     }
