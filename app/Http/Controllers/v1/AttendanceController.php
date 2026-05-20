@@ -545,4 +545,82 @@ class AttendanceController extends Controller
     {
         return $attendance->created_at->diffInHours(now()) < 24;
     }
+
+    /**
+     * GET /api/v1/attendance/my
+     *
+     * Self attendance view for BOTH students and teachers.
+     * Optional ?month=YYYY-MM (defaults to current month).
+     * Returns day-wise records + monthly summary.
+     * Days with no record are treated as holidays.
+     */
+    public function myAttendance(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return $this->responseService->errorResponse('Authentication required', 401);
+            }
+
+            $month = $request->get('month', now()->format('Y-m'));
+            if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+                $month = now()->format('Y-m');
+            }
+            $start = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01')->startOfMonth();
+            $end   = (clone $start)->endOfMonth();
+            $daysInMonth = $end->day;
+
+            if ($user->role === 'teacher') {
+                $teacher = TeacherDetail::where('user_id', $user->id)->first();
+                if (!$teacher) {
+                    return $this->responseService->errorResponse('Teacher profile not found', 404);
+                }
+                $records = TeacherAttendance::where('teacher_detail_id', $teacher->id)
+                    ->where('organization_id', $user->organization_id)
+                    ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+                    ->get()
+                    ->mapWithKeys(fn($r) => [\Carbon\Carbon::parse($r->attendance_date)->toDateString() => (int) $r->status]);
+            } else {
+                $student = StudentDetail::where('user_id', $user->id)->first();
+                if (!$student) {
+                    return $this->responseService->errorResponse('Student profile not found', 404);
+                }
+                $records = StudentAttendance::where('student_detail_id', $student->id)
+                    ->where('organization_id', $user->organization_id)
+                    ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
+                    ->get()
+                    ->mapWithKeys(fn($r) => [\Carbon\Carbon::parse($r->attendance_date)->toDateString() => (int) $r->status]);
+            }
+
+            $days = [];
+            $present = 0; $absent = 0; $working = 0;
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                $date = $start->copy()->day($d)->toDateString();
+                if ($records->has($date)) {
+                    $working++;
+                    $isPresent = $records->get($date) === 1;
+                    $isPresent ? $present++ : $absent++;
+                    $status = $isPresent ? 'present' : 'absent';
+                } else {
+                    $status = 'holiday';
+                }
+                $days[] = ['date' => $date, 'day' => $d, 'status' => $status];
+            }
+
+            return $this->responseService->success([
+                'month'   => $month,
+                'role'    => $user->role,
+                'days'    => $days,
+                'summary' => [
+                    'total_days'   => $daysInMonth,
+                    'working_days' => $working,
+                    'present_days' => $present,
+                    'absent_days'  => $absent,
+                    'present_percentage' => $working > 0 ? round($present / $working * 100, 2) : 0,
+                ],
+            ], 'Attendance fetched successfully');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('An error occurred: ' . $e->getMessage(), 500);
+        }
+    }
 }

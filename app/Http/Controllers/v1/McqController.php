@@ -136,6 +136,100 @@ class McqController extends Controller
     }
 
     /**
+     * Update an existing quiz question + its options (teacher only).
+     */
+    public function updateQuiz(Request $request, $questionId)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return $this->responseService->errorResponse('Authentication required', 401);
+            }
+            if ($user->role !== 'teacher') {
+                return $this->responseService->errorResponse('Only teachers can update quizzes', 403);
+            }
+
+            $question = McqQuestion::where('organization_id', $user->organization_id)
+                ->find($questionId);
+            if (!$question) {
+                return $this->responseService->errorResponse('Quiz question not found', 404);
+            }
+
+            $validated = $request->validate([
+                'question_text'         => 'sometimes|required|string',
+                'standard_id'           => 'sometimes|required|exists:standards,id',
+                'section_id'            => 'sometimes|required|exists:sections,id',
+                'chapter_id'            => 'nullable|exists:chapters,id',
+                'topic_id'              => 'nullable|exists:topics,id',
+                'time_limit'            => 'nullable|integer',
+                'is_active'             => 'sometimes|boolean',
+                'options'               => 'sometimes|array|min:2',
+                'options.*.option_text' => 'required_with:options|string',
+                'options.*.is_correct'  => 'required_with:options|boolean',
+            ]);
+
+            $question->update(array_filter([
+                'question_text' => $validated['question_text'] ?? $question->question_text,
+                'standard_id'   => $validated['standard_id']   ?? $question->standard_id,
+                'section_id'    => $validated['section_id']    ?? $question->section_id,
+                'chapter_id'    => $request->has('chapter_id') ? $validated['chapter_id'] : $question->chapter_id,
+                'topic_id'      => $request->has('topic_id')   ? $validated['topic_id']   : $question->topic_id,
+                'time_limit'    => $validated['time_limit']    ?? $question->time_limit,
+                'is_active'     => $request->has('is_active')  ? $validated['is_active']   : $question->is_active,
+            ], fn($v) => $v !== null));
+
+            // Replace options if provided
+            if (!empty($validated['options'])) {
+                McqOption::where('mcq_question_id', $question->id)->delete();
+                foreach ($validated['options'] as $option) {
+                    McqOption::create([
+                        'organization_id' => $user->organization_id,
+                        'mcq_question_id' => $question->id,
+                        'option_text'     => $option['option_text'],
+                        'is_correct'      => $option['is_correct'],
+                    ]);
+                }
+            }
+
+            $question->load('options', 'chapter', 'topic');
+
+            return $this->responseService->success($question, 'Quiz question updated successfully');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('An error occurred: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Delete a quiz question + its options/answers (teacher only).
+     */
+    public function deleteQuiz($questionId)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return $this->responseService->errorResponse('Authentication required', 401);
+            }
+            if ($user->role !== 'teacher') {
+                return $this->responseService->errorResponse('Only teachers can delete quizzes', 403);
+            }
+
+            $question = McqQuestion::where('organization_id', $user->organization_id)
+                ->find($questionId);
+            if (!$question) {
+                return $this->responseService->errorResponse('Quiz question not found', 404);
+            }
+
+            McqOption::where('mcq_question_id', $question->id)->delete();
+            McqUserAnswer::where('mcq_question_id', $question->id)->delete();
+            $question->delete();
+
+            return $this->responseService->success(null, 'Quiz question deleted successfully');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('An error occurred: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Submit user answer for a question
      */
     public function submitAnswer(Request $request)

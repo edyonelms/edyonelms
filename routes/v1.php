@@ -130,6 +130,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('quiz')->group(function () {
             Route::post('/upload', [McqController::class, 'uploadQuiz']);
             Route::post('/get', [McqController::class, 'viewAllQuizzes']);
+            Route::post('/update/{id}', [McqController::class, 'updateQuiz']);   // teacher
+            Route::delete('/delete/{id}', [McqController::class, 'deleteQuiz']); // teacher
             Route::post('/submit-answer', [McqController::class, 'submitAnswer']);
             Route::post('/get/user-answer', [McqController::class, 'getUserAnswers']);
         });
@@ -141,6 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/summary', [AttendanceController::class, 'getAttendanceSummary']);
             Route::post('/teacher', [AttendanceController::class, 'teacherAttendance']);
             Route::get('/today-teacher', [AttendanceController::class, 'todaysAttendance']);
+            Route::get('/my', [AttendanceController::class, 'myAttendance']); // self view — student & teacher
         });
 
         // Syllabus Routes All
