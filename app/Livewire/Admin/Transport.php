@@ -417,7 +417,10 @@ class Transport extends Component
             $query->where('is_active', (bool) $this->filterStatus);
         }
 
-        return $query->orderBy('route_name')->paginate($this->perPage);
+        // Order by pickup time (earliest first); routes without a time go last
+        return $query->orderByRaw('pickup_time IS NULL, pickup_time ASC')
+            ->orderBy('route_name')
+            ->paginate($this->perPage);
     }
 
     private function getDrivers()
