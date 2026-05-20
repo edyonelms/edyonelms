@@ -267,7 +267,7 @@
     @if ($showEventModal && $selectedEvent)
         <div class="fixed inset-0 z-[9999] overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEventModal"></div>
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Floating close --}}
                 <button wire:click="closeEventModal"
@@ -277,13 +277,15 @@
                     </svg>
                 </button>
 
-                {{-- Accent strip + title --}}
-                <div class="px-6 pt-6 pb-5 border-b border-gray-100">
-                    <div class="flex items-start gap-3">
-                        <span class="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
+                {{-- Body (admissions template) --}}
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+
+                    {{-- Title + chips --}}
+                    <div class="flex items-start gap-3 pr-8">
+                        <span class="w-3 h-3 rounded-full mt-2 flex-shrink-0"
                             style="background-color: {{ $selectedEvent['color'] ?? '#10b981' }}"></span>
-                        <div class="min-w-0 pr-8">
-                            <h2 class="text-xl font-bold text-gray-900 leading-snug">{{ $selectedEvent['title'] }}</h2>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-semibold text-gray-900 leading-snug">{{ $selectedEvent['title'] }}</h2>
                             <div class="flex flex-wrap gap-2 mt-2">
                                 <span class="inline-flex items-center text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
                                     {{ ucfirst($selectedEvent['event_type'] ?? 'Event') }}
@@ -294,13 +296,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {{-- Body --}}
-                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
                     {{-- Date & Time --}}
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-5">
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Date</p>
                             <p class="text-sm font-medium text-gray-800">{{ \Carbon\Carbon::parse($selectedEvent['date'])->format('l, d M Y') }}</p>
