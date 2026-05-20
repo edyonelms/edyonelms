@@ -39,6 +39,14 @@ class Admissions extends Component
     public string $remarks       = '';
     public $resultPdf            = null;
 
+    // ─── Fee collection slide-in ─────────────────────────────────────────────
+    public $feeEnquiryId          = null;
+    public bool $feeModalOpen     = false;
+    public string $collectedAmount = '';
+    public string $paymentMode     = 'cash';
+    public string $collectedBy     = '';
+    public string $feeCollectedAt  = '';
+
     // ─── View slide-in ───────────────────────────────────────────────────────
     public bool $viewModalOpen   = false;
     public array $viewEnquiryData = [];
@@ -306,6 +314,60 @@ class Admissions extends Component
         }
     }
 
+    // ─── Fee collection slide-in ─────────────────────────────────────────────
+
+    public function openFeeModal(int $id): void
+    {
+        $this->resetValidation();
+        $enquiry = AdmissionEnquiry::where('id', $id)
+            ->where('organization_id', $this->orgId())->first();
+        if (!$enquiry) return;
+
+        $this->feeEnquiryId    = $id;
+        $this->collectedAmount = (string) ($enquiry->collected_amount ?? $enquiry->admission_fee ?? '');
+        $this->paymentMode     = $enquiry->payment_mode ?: 'cash';
+        $this->collectedBy     = $enquiry->collected_by ?: (Auth::user()->name ?? '');
+        $this->feeCollectedAt  = $enquiry->fee_collected_at
+            ? $enquiry->fee_collected_at->format('Y-m-d')
+            : now()->toDateString();
+        $this->feeModalOpen    = true;
+    }
+
+    public function closeFeeModal(): void
+    {
+        $this->feeModalOpen = false;
+        $this->reset(['feeEnquiryId', 'collectedAmount', 'paymentMode', 'collectedBy', 'feeCollectedAt']);
+        $this->resetValidation();
+    }
+
+    public function saveFee(): void
+    {
+        $this->validate([
+            'collectedAmount' => 'required|numeric|min:0',
+            'paymentMode'     => 'required|in:cash,online,upi,cheque,card',
+            'collectedBy'     => 'required|string|max:255',
+            'feeCollectedAt'  => 'required|date',
+        ]);
+
+        try {
+            $enquiry = AdmissionEnquiry::where('id', $this->feeEnquiryId)
+                ->where('organization_id', $this->orgId())->first();
+            if (!$enquiry) return;
+
+            $enquiry->update([
+                'collected_amount' => $this->collectedAmount,
+                'payment_mode'     => $this->paymentMode,
+                'collected_by'     => $this->collectedBy,
+                'fee_collected_at' => $this->feeCollectedAt,
+            ]);
+
+            $this->notification()->success('Fee collection updated successfully!');
+            $this->closeFeeModal();
+        } catch (\Exception $e) {
+            $this->notification()->error('Error: ' . $e->getMessage());
+        }
+    }
+
     // ─── Reset helpers ───────────────────────────────────────────────────────
 
     private function resetEnquiryForm(): void
@@ -450,8 +512,14 @@ class Admissions extends Component
             ->where('organization_id', $this->orgId())
             ->first();
 
-        if (!$paper) {
-            $this->notification()->error('Paper not found.');
+        if (!$paper || !$paper->file_path) {
+            $this->notification()->error('Paper file not found.');
+            return null;
+        }
+
+        // Guard against stale records whose S3 object no longer exists
+        if (!Storage::disk('s3')->exists($paper->file_path)) {
+            $this->notification()->error('File missing on storage. Please re-upload this exam paper.');
             return null;
         }
 
@@ -476,6 +544,11 @@ class Admissions extends Component
 
         if (!$enquiry || !$enquiry->result_pdf) {
             $this->notification()->error('PDF not found.');
+            return null;
+        }
+
+        if (!Storage::disk('s3')->exists($enquiry->result_pdf)) {
+            $this->notification()->error('File missing on storage. Please re-upload the result PDF.');
             return null;
         }
 

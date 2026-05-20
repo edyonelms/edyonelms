@@ -19,6 +19,10 @@ class AdmissionEnquiry extends Model
         'standard_id',
         'stream',
         'admission_fee',
+        'collected_amount',
+        'payment_mode',
+        'collected_by',
+        'fee_collected_at',
         'total_marks',
         'obtained_marks',
         'remarks',
@@ -27,9 +31,11 @@ class AdmissionEnquiry extends Model
     ];
 
     protected $casts = [
-        'admission_fee'  => 'decimal:2',
-        'total_marks'    => 'decimal:2',
-        'obtained_marks' => 'decimal:2',
+        'admission_fee'    => 'decimal:2',
+        'collected_amount' => 'decimal:2',
+        'fee_collected_at' => 'date',
+        'total_marks'      => 'decimal:2',
+        'obtained_marks'   => 'decimal:2',
     ];
 
     public function organization(): BelongsTo

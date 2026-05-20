@@ -203,6 +203,12 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </button>
+                                            <button wire:click="openFeeModal({{ $enquiry->id }})" title="Update Fee"
+                                                class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-green-50 hover:text-green-600 hover:border-green-200">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
                                             <button wire:click="openUpdateModal({{ $enquiry->id }})" title="Update Result"
                                                 class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -516,23 +522,22 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════
-         UPLOAD EXAM PAPER MODAL (centered, clean)
+         UPLOAD EXAM PAPER SLIDE-IN PANEL
     ══════════════════════════════════════════════════ --}}
     @if ($paperModalOpen)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="closePaperModal"></div>
-            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePaperModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closePaperModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
                     <div>
-                        <h2 class="text-base font-semibold text-gray-900">Upload Exam Paper</h2>
+                        <h2 class="text-lg font-semibold text-gray-900">Upload Exam Paper</h2>
                         <p class="text-xs text-gray-500 mt-0.5">Maximum size: 1 MB · PDF only</p>
                     </div>
-                    <button wire:click="closePaperModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-
-                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span class="text-red-500">*</span></label>
                         <input wire:model.defer="paperTitle" type="text" placeholder="e.g. Class 10 Math Sample"
@@ -564,7 +569,7 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2">
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button wire:click="closePaperModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="saveExamPaper" wire:loading.attr="disabled"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-60">
@@ -577,23 +582,22 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════
-         EDIT EXAM PAPER MODAL (centered)
+         EDIT EXAM PAPER SLIDE-IN PANEL
     ══════════════════════════════════════════════════ --}}
     @if ($editPaperModalOpen)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="closeEditPaperModal"></div>
-            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEditPaperModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closeEditPaperModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
                     <div>
-                        <h2 class="text-base font-semibold text-gray-900">Edit Exam Paper</h2>
+                        <h2 class="text-lg font-semibold text-gray-900">Edit Exam Paper</h2>
                         <p class="text-xs text-gray-500 mt-0.5">Replace PDF only if needed (max 1 MB)</p>
                     </div>
-                    <button wire:click="closeEditPaperModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-
-                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span class="text-red-500">*</span></label>
                         <input wire:model.defer="editPaperTitle" type="text" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm">
@@ -623,13 +627,70 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2">
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button wire:click="closeEditPaperModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="saveEditPaper" wire:loading.attr="disabled"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-60">
                         <span wire:loading.remove wire:target="saveEditPaper">Update</span>
                         <span wire:loading wire:target="saveEditPaper">Saving...</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         FEE COLLECTION SLIDE-IN PANEL
+    ══════════════════════════════════════════════════ --}}
+    @if ($feeModalOpen)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeFeeModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+                <button wire:click="closeFeeModal"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Update Fee Collection</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Record how much was collected, the mode, and by whom.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Amount Collected (₹) <span class="text-red-500">*</span></label>
+                        <input wire:model="collectedAmount" type="number" min="0" step="0.01"
+                            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500">
+                        @error('collectedAmount')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Payment Mode <span class="text-red-500">*</span></label>
+                            <select wire:model="paymentMode" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm bg-white">
+                                <option value="cash">Cash</option>
+                                <option value="online">Online</option>
+                                <option value="upi">UPI</option>
+                                <option value="card">Card</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                            @error('paymentMode')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Collected On <span class="text-red-500">*</span></label>
+                            <input wire:model="feeCollectedAt" type="date" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500">
+                            @error('feeCollectedAt')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Collected By <span class="text-red-500">*</span></label>
+                        <input wire:model="collectedBy" type="text" placeholder="Name of person who collected"
+                            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500">
+                        @error('collectedBy')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeFeeModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveFee" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">Save</button>
                 </div>
             </div>
         </div>
