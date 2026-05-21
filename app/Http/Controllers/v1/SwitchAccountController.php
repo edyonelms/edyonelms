@@ -257,9 +257,12 @@ class SwitchAccountController extends ApiController
         return [
             'user_id'      => $user->id,
             'name'         => $displayName,
+            'username'     => $displayName,
             'email'        => $user->email,
             'role'         => $user->role,
             'role_label'   => $user->role === 'user' ? 'Student' : ucfirst($user->role),
+            // Friendly account type for the switcher card: 'student' | 'teacher'
+            'user_type'    => $user->role === 'teacher' ? 'teacher' : 'student',
             'image'        => $displayImage,
             'organization' => $organization ? [
                 'id'   => $organization->id,
