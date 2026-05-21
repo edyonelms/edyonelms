@@ -137,8 +137,14 @@ class Users extends Component
     // ─── Save ────────────────────────────────────────────────────────────
     public function save(): void
     {
-        // Re-validate personal details (guards against skipping the step)
-        $this->validateStepOne();
+        // Re-validate personal details (guards against skipping the step).
+        // If it fails, jump back to step 1 so the errors are visible.
+        try {
+            $this->validateStepOne();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->step = 1;
+            throw $e;
+        }
 
         if (empty($this->permissions)) {
             $this->notification()->error('Select Access', 'Grant at least one functionality to this user.');
@@ -172,7 +178,7 @@ class Users extends Component
             $user->date_of_joining    = $this->dateOfJoining;
             $user->role               = 'sub-super-admin';
             $user->is_active          = (int) $this->isActive;
-            $user->organization_id    = null;
+            $user->organization_id    = 0; // column is NOT NULL with default 0
             $user->permissions        = $grants;
 
             if (!$isEdit) {
