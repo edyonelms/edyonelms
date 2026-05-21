@@ -28,7 +28,7 @@
 						{ "key": "search", "value": "", "disabled": true }
 					]
 				},
-				"description": "Paginated list of published exams for the user's organization. Optional filters: academic_year, exam_type, search."
+				"description": "Paginated list of published exams. Scoped to the caller's assigned subjects: a STUDENT sees only exams that have syllabus for their class+section; a TEACHER sees only exams that include their timetable/assigned subjects. Each card has exam_name, exam_type, academic_year, status (upcoming/ongoing/completed) and dates — matching the app's exam cards. Open an exam's syllabus via the Exam Syllabus request. Optional filters: academic_year, exam_type, search."
 			},
 			"response": []
 		},

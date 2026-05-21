@@ -31,6 +31,14 @@ class ExamController extends ApiController
             ->when($request->filled('search'),        fn($q) => $q->where('exam_name', 'like', '%' . $request->search . '%'))
             ->latest('start_date');
 
+        // Students/teachers only see exams that include their own assigned
+        // subjects (student class+section, teacher timetable subjects). Exams
+        // are not directly tied to a class — the link is via the syllabus rows.
+        $scopedIds = $this->scopedExamIds($user);
+        if (is_array($scopedIds)) {
+            $query->whereIn('id', $scopedIds);
+        }
+
         $exams = $query->paginate((int) $request->get('per_page', 20));
 
         $items = $exams->getCollection()->map(fn($e) => $this->formatExam($e));
@@ -88,6 +96,57 @@ class ExamController extends ApiController
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
+
+    /**
+     * Exam IDs relevant to the caller, based on the syllabus assigned to them:
+     *   - Student → exams that have syllabus for their standard (+ section)
+     *   - Teacher → exams that have syllabus for their timetable / assigned (class, subject) pairs
+     *
+     * Returns null for non student/teacher roles (no scoping → all exams), or an
+     * array of exam ids (possibly empty → the caller has no assigned exams).
+     */
+    private function scopedExamIds($user): ?array
+    {
+        $orgId = $user->organization_id;
+        $base  = ExamSyllabusChapter::where('organization_id', $orgId);
+
+        if ($user->role === 'user') {
+            $student = StudentDetail::where('user_id', $user->id)->first(['standard_id', 'section_id']);
+            if (!$student) return [];
+
+            $base->where('standard_id', $student->standard_id);
+            if ($student->section_id) {
+                $base->where(fn($q) => $q->where('section_id', $student->section_id)->orWhereNull('section_id'));
+            }
+
+            return $base->distinct()->pluck('exam_id')->all();
+        }
+
+        if ($user->role === 'teacher') {
+            $teacher = TeacherDetail::where('user_id', $user->id)->first(['id']);
+            if (!$teacher) return [];
+
+            $pairs = collect()
+                ->merge(TeacherTimeTable::where('teacher_detail_id', $teacher->id)->get(['standard_id', 'subject_id']))
+                ->merge(TeacherSubject::where('teacher_detail_id', $teacher->id)->get(['standard_id', 'subject_id']));
+
+            $assignments = $pairs
+                ->filter(fn($r) => $r->standard_id && $r->subject_id)
+                ->map(fn($r) => $r->standard_id . '-' . $r->subject_id)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (empty($assignments)) return [];
+
+            return $base->whereIn(\DB::raw('CONCAT(standard_id, "-", subject_id)'), $assignments)
+                ->distinct()
+                ->pluck('exam_id')
+                ->all();
+        }
+
+        return null; // admin / accounts / other → no scoping
+    }
 
     private function formatExam(Exam $e, bool $full = false): array
     {
