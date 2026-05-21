@@ -18,6 +18,7 @@ use App\Livewire\SuperAdmin\Student;
 use App\Livewire\SuperAdmin\Support;
 use App\Livewire\SuperAdmin\Teacher;
 use App\Livewire\SuperAdmin\Users;
+use App\Livewire\SuperAdmin\Profile as SuperAdminProfile;
 use App\Livewire\SuperAdmin\TermOfUse;
 use App\Livewire\SuperAdmin\TermsCondition;
 use App\Livewire\SuperAdmin\WebsiteData;
@@ -50,5 +51,5 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('term-of-use', TermOfUse::class)->name('super-admin.term-of-use');
     Route::get('sessions', Session::class)->name('super-admin.sessions');
     Route::get('credit', Credit::class)->name('super-admin.credit');
-    Route::get('profile', Profile::class)->name('super-admin.profile');
+    Route::get('profile', SuperAdminProfile::class)->name('super-admin.profile');
 });
