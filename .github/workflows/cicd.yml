@@ -249,8 +249,13 @@ jobs:
             echo "==> [step 0] truncate large /var/log files (>20MB)"
             find /var/log -type f \( -name "*.log" -o -name "*.gz" \) -size +20M -exec truncate -s 0 {} + 2>/dev/null || true
 
-            echo "==> [step 0] docker prune (builder cache + images + containers + networks)"
-            docker builder prune -af || true
+            echo "==> [step 0] docker prune (images + containers + networks)"
+            # NOTE: do NOT run `docker builder prune -af` here. Wiping the build
+            # cache forces a full from-source PHP recompile every deploy (10m+),
+            # which overran the SSH timeout. Keep the cache so the heavy PHP/
+            # extension layers are reused and the build finishes in seconds.
+            # Only trim builder cache older than 7 days to bound disk growth.
+            docker builder prune -f --filter "until=168h" || true
             docker image prune -af || true
             docker container prune -f || true
             docker network prune -f || true
