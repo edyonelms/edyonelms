@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\v1;
 
 use App\Models\Admin\Book;
+use App\Models\Admin\TeacherTimeTable;
 use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
-use App\Models\Teacher\TeacherSubject;
 use Illuminate\Http\Request;
 
 class BookController extends ApiController
@@ -24,7 +24,7 @@ class BookController extends ApiController
         [$user, $err] = $this->authUser();
         if ($err) return $err;
 
-        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name,image'])
+        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name'])
             ->where('organization_id', $user->organization_id)
             ->where('is_active', true);
 
@@ -63,7 +63,7 @@ class BookController extends ApiController
         [$user, $err] = $this->authUser();
         if ($err) return $err;
 
-        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name,image'])
+        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name'])
             ->where('organization_id', $user->organization_id)
             ->where('is_active', true);
 
@@ -104,8 +104,13 @@ class BookController extends ApiController
                 $query->whereRaw('1 = 0');
                 return;
             }
-            $pairs = TeacherSubject::where('teacher_detail_id', $teacher->id)
+
+            // Teachers are assigned (class, subject) via the timetable. The old
+            // code read standard_id from teacher_subjects, which has no such
+            // column — causing a 500. Derive the pairs from the timetable.
+            $pairs = TeacherTimeTable::where('teacher_detail_id', $teacher->id)
                 ->get(['standard_id', 'subject_id'])
+                ->filter(fn($r) => $r->standard_id && $r->subject_id)
                 ->map(fn($r) => $r->standard_id . '-' . $r->subject_id)
                 ->unique()
                 ->values()
