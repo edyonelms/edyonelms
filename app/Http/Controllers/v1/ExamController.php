@@ -4,6 +4,7 @@ namespace App\Http\Controllers\v1;
 
 use App\Models\Admin\Exam;
 use App\Models\Admin\ExamSyllabusChapter;
+use App\Models\Admin\TeacherTimeTable;
 use App\Models\Student\Chapter;
 use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
@@ -151,8 +152,18 @@ class ExamController extends ApiController
             $teacher = TeacherDetail::where('user_id', $user->id)->first(['id']);
             if (!$teacher) return [];
 
-            $assignments = TeacherSubject::where('teacher_detail_id', $teacher->id)
-                ->get(['standard_id', 'subject_id'])
+            // Teachers are assigned subjects primarily through the timetable, so
+            // build the (standard_id, subject_id) pairs from the timetable AND any
+            // directly-assigned subjects. Using only TeacherSubject left teachers
+            // with no syllabus because assignments live in the timetable.
+            $pairs = collect()
+                ->merge(TeacherTimeTable::where('teacher_detail_id', $teacher->id)
+                    ->get(['standard_id', 'subject_id']))
+                ->merge(TeacherSubject::where('teacher_detail_id', $teacher->id)
+                    ->get(['standard_id', 'subject_id']));
+
+            $assignments = $pairs
+                ->filter(fn($r) => $r->standard_id && $r->subject_id)
                 ->map(fn($r) => $r->standard_id . '-' . $r->subject_id)
                 ->unique()
                 ->values()
