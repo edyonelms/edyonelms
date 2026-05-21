@@ -20,6 +20,23 @@ class Dashboard extends Component
 
     public function mount(): void
     {
+        // Defaults so the view always renders even if a query fails
+        $this->stats = [
+            'collected' => 0, 'pending' => 0, 'today' => 0, 'month' => 0,
+            'transport_collected' => 0, 'students' => 0, 'employees' => 0,
+            'salary_month' => 0, 'admissions' => 0, 'admissions_pending' => 0,
+        ];
+        $this->recentPayments = [];
+
+        try {
+            $this->loadDashboard();
+        } catch (\Throwable $e) {
+            logger()->error('Accounts dashboard load failed: ' . $e->getMessage());
+        }
+    }
+
+    private function loadDashboard(): void
+    {
         $orgId = $this->orgId();
 
         // ── Fees ──────────────────────────────────────────────────────────────
@@ -66,11 +83,11 @@ class Dashboard extends Component
             ->limit(8)
             ->get()
             ->map(fn($p) => [
-                'student'  => $p->studentDetail->full_name ?? '—',
-                'admno'    => $p->studentDetail->admission_no ?? '',
+                'student'  => $p->studentDetail?->full_name ?? '—',
+                'admno'    => $p->studentDetail?->admission_no ?? '',
                 'amount'   => $p->amount,
                 'mode'     => $p->payment_mode,
-                'date'     => $p->payment_date?->format('d M Y'),
+                'date'     => $p->payment_date ? \Carbon\Carbon::parse($p->payment_date)->format('d M Y') : '—',
                 'receipt'  => $p->receipt_number,
             ])->toArray();
     }
