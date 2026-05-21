@@ -44,7 +44,7 @@ class Login extends Component
             return;
         }
 
-        if ($user->role !== 'admin') {
+        if (!in_array($user->role, ['admin', 'sub-admin'], true)) {
             Auth::logout();
             $this->addError('email', 'You do not have school admin access.');
             return redirect()->route('admin.login');
@@ -52,11 +52,25 @@ class Login extends Component
 
         if (!$user->organization_id) {
             Auth::logout();
-            $this->addError('email', 'No organization assigned to this admin account.');
+            $this->addError('email', 'No organization assigned to this account.');
             return redirect()->route('admin.login');
         }
 
-        return redirect()->route('admin.quick-links', ['organization' => $user->organization_id])
+        // Scoped sub-admins must be active to sign in.
+        if ($user->role === 'sub-admin' && !$user->is_active) {
+            Auth::logout();
+            $this->addError('email', 'Your account is inactive. Please contact the administrator.');
+            return redirect()->route('admin.login');
+        }
+
+        // Sub-admins land on their first granted screen; full admins on Quick Links.
+        $landingRoute = 'admin.quick-links';
+        if ($user->role === 'sub-admin') {
+            $permissions  = (array) $user->permissions;
+            $landingRoute = $permissions[0] ?? 'admin.profile';
+        }
+
+        return redirect()->route($landingRoute, ['organization' => $user->organization_id])
             ->with('success', 'Login successful.');
     }
 

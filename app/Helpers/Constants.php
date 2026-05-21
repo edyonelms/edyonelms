@@ -21,6 +21,7 @@ class Constants
 
     const ROLEVALUE = [
         'admin' => 'admin',
+        'sub-admin' => 'admin',
         'teacher' => 'teacher',
         'super-admin' => 'super-admin',
         'sub-super-admin' => 'super-admin',

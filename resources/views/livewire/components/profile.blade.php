@@ -1,6 +1,74 @@
 <div class="min-h-screen bg-gray-50">
 
     {{-- ══════════════════════════════════════════════════
+         SUB-ADMIN PERSONAL DETAILS (only for scoped sub-admins)
+    ══════════════════════════════════════════════════ --}}
+    @if (auth()->user()->role === 'sub-admin')
+        @php
+            $me = auth()->user();
+            $adminCatalog = collect(config('menu.admin', []))
+                ->mapWithKeys(fn($i) => [$i['link'] => $i['title']]);
+            $myAccess = collect((array) $me->permissions)
+                ->map(fn($p) => $adminCatalog[$p] ?? $p)
+                ->all();
+        @endphp
+        <div class="px-4 sm:px-6 pt-4 sm:pt-6">
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-4">
+                    @if ($me->image)
+                        <img src="{{ $me->image }}" class="w-14 h-14 rounded-full object-cover border border-gray-200" alt="">
+                    @else
+                        <span class="w-14 h-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold">{{ strtoupper(substr($me->name ?? '', 0, 1)) }}</span>
+                    @endif
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-bold text-gray-900 truncate">{{ $me->name }}</h2>
+                        <p class="text-sm text-gray-500 truncate">{{ $me->email }}</p>
+                        <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">Sub-admin</span>
+                    </div>
+                </div>
+                <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Mobile</dt>
+                        <dd class="text-gray-800 font-medium">{{ $me->mobile_number ?: '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Alt. Mobile</dt>
+                        <dd class="text-gray-800 font-medium">{{ $me->alternative_mobile ?: '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Gender</dt>
+                        <dd class="text-gray-800 font-medium capitalize">{{ $me->gender ?: '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Date of Birth</dt>
+                        <dd class="text-gray-800 font-medium">{{ $me->dob ? \Carbon\Carbon::parse($me->dob)->format('d M Y') : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Date of Joining</dt>
+                        <dd class="text-gray-800 font-medium">{{ $me->date_of_joining ? \Carbon\Carbon::parse($me->date_of_joining)->format('d M Y') : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                        <dt class="text-gray-500">Organization</dt>
+                        <dd class="text-gray-800 font-medium truncate">{{ $organization->name ?? '—' }}</dd>
+                    </div>
+                </div>
+                <div class="px-5 py-4 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Granted Access</h4>
+                    @if (!empty($myAccess))
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($myAccess as $perm)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium">{{ $perm }}</span>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-xs text-gray-400">No functionalities granted.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
          HEADER (full-width, sticky, with tabs)
     ══════════════════════════════════════════════════ --}}
     <div class="bg-white border-b border-gray-200 sticky top-0 z-30">

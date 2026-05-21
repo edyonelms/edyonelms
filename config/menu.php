@@ -21,6 +21,12 @@ return [
             'prefix' => 'admin.analytics',
         ],
         [
+            'title' => 'Users',
+            'link' => 'admin.users',
+            'icon' => 'user-group',
+            'prefix' => 'admin.users',
+        ],
+        [
             'title' => 'Standard',
             'link' => 'admin.standard',
             'icon' => 'book-open',

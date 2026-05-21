@@ -1,3 +1,21 @@
+@php
+    $authUser = auth()->user();
+    $allItems = config('menu.' . App\Helpers\Constants::ROLEVALUE[$authUser->role]);
+
+    // Sub-admins see only the functionalities granted to them, and never the
+    // Users management screen (reserved for the full school admin).
+    if ($authUser->role === 'sub-admin') {
+        $granted  = (array) $authUser->permissions;
+        $navItems = collect($allItems)
+            ->reject(fn($i) => ($i['link'] ?? '') === 'admin.users')
+            ->filter(fn($i) => in_array($i['link'] ?? '', $granted, true))
+            ->values()
+            ->all();
+    } else {
+        $navItems = $allItems;
+    }
+@endphp
+
 <!-- Off-canvas menu for mobile -->
 <div x-show="offcanvas" x-cloak class="fixed inset-0 flex z-40 md:hidden" role="dialog" aria-modal="true">
     <!-- Backdrop -->
@@ -51,7 +69,7 @@
                             @php
                                 $currentOrganization = auth()->user()->organization_id;
                             @endphp
-                            @foreach (config('menu.' . App\Helpers\Constants::ROLEVALUE[auth()->user()->role]) as $menu_item)
+                            @foreach ($navItems as $menu_item)
                                 @php
                                     $is_active = Route::is($menu_item['prefix']);
                                     $routeParams = ['organization' => $currentOrganization];
@@ -103,7 +121,7 @@
                             @php
                                 $currentOrganization = auth()->user()->organization_id;
                             @endphp
-                            @foreach (config('menu.' . App\Helpers\Constants::ROLEVALUE[auth()->user()->role]) as $menu_item)
+                            @foreach ($navItems as $menu_item)
                                 @php
                                     $is_active = Route::is($menu_item['prefix']);
                                     $routeParams = ['organization' => $currentOrganization];

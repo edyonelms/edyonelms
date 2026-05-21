@@ -44,6 +44,7 @@ use App\Livewire\Admin\TermsAndCondition;
 use App\Livewire\Admin\Transport;
 use App\Livewire\Admin\AccountUsers;
 use App\Livewire\Admin\Admissions;
+use App\Livewire\Admin\Users;
 use App\Livewire\Components\Notification;
 use App\Livewire\Components\Profile;
 use App\Livewire\ResetPassword;
@@ -77,6 +78,7 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         Route::get('/content', Content::class)->name('admin.content');
         Route::get('/performance', Performance::class)->name('admin.performance');
         Route::get('/analytics', Analytics::class)->name('admin.analytics');
+        Route::get('/users', Users::class)->name('admin.users');
         Route::get('/quiz', Quiz::class)->name('admin.quiz');
         Route::get('/book', Book::class)->name('admin.book');
         Route::get('/support', Support::class)->name('admin.support');

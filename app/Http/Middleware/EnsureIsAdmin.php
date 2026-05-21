@@ -24,26 +24,56 @@ class EnsureIsAdmin
                 : redirect()->route('admin.login');
         }
 
-        // If authenticated but not an admin
-        if ($user->role !== 'admin') {
-            return redirect()->route('super-admin.dashboard'); 
+        // If authenticated but neither an admin nor a sub-admin
+        if (!in_array($user->role, ['admin', 'sub-admin'], true)) {
+            return redirect()->route('super-admin.dashboard');
         }
 
-        // Check organization for admin users
-        if ($user->role === 'admin') {
-            if (!$user->organization_id) {
-                Auth::logout();
-                return redirect()->route('admin.login')
-                    ->withErrors(['email' => 'No organization assigned to this admin account.']);
+        // Both admins and sub-admins must belong to an organization.
+        if (!$user->organization_id) {
+            Auth::logout();
+            return redirect()->route('admin.login')
+                ->withErrors(['email' => 'No organization assigned to this account.']);
+        }
+
+        // The URL's organization segment must match the signed-in user's org.
+        $organization = $request->route('organization');
+        if ($organization != $user->organization_id) {
+            return redirect()->route('admin.quick-links', ['organization' => $user->organization_id])
+                ->withErrors(['organization' => 'Invalid organization access.']);
+        }
+
+        // Sub-admin → scoped access by granted permissions.
+        if ($user->role === 'sub-admin') {
+            $routeName = $request->route()?->getName();
+
+            // Managing other sub-admins is reserved for the full admin only.
+            if ($routeName === 'admin.users') {
+                return redirect()->route(
+                    $this->firstAllowedRoute($user),
+                    ['organization' => $user->organization_id]
+                );
             }
 
-            $organization = $request->route('organization');
-            if ($organization != $user->organization_id) {
-                return redirect()->route('admin.quick-links', ['organization' => $user->organization_id])
-                    ->withErrors(['organization' => 'Invalid organization access.']);
+            if (!$user->canAccessAdminRoute($routeName)) {
+                return redirect()->route(
+                    $this->firstAllowedRoute($user),
+                    ['organization' => $user->organization_id]
+                );
             }
         }
 
         return $next($request);
+    }
+
+    /**
+     * The route a sub-admin should land on: their first granted permission,
+     * falling back to the profile page if none.
+     */
+    private function firstAllowedRoute($user): string
+    {
+        $permissions = (array) $user->permissions;
+
+        return $permissions[0] ?? 'admin.profile';
     }
 }

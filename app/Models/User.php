@@ -110,6 +110,55 @@ class User extends Authenticatable
         return in_array($routeName, (array) $this->permissions, true);
     }
 
+    /**
+     * A sub-admin is a scoped admin created by a school admin from the
+     * Users panel, limited to a subset of admin functionalities.
+     */
+    public function isSubAdmin(): bool
+    {
+        return $this->role === 'sub-admin';
+    }
+
+    /**
+     * True if this user may access the given admin route name.
+     * Full admins (role admin) always have access. Sub-admins are limited
+     * to their granted permissions — with profile + notification always
+     * allowed, and sub-routes of a granted screen (e.g. downloads/prints)
+     * permitted by prefix match.
+     */
+    public function canAccessAdminRoute(?string $routeName): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        if ($this->role !== 'sub-admin') {
+            return false;
+        }
+
+        if ($routeName === null) {
+            return false;
+        }
+
+        // Always-allowed routes for any signed-in sub-admin
+        $always = ['admin.profile', 'admin.notification'];
+        if (in_array($routeName, $always, true)) {
+            return true;
+        }
+
+        $granted = (array) $this->permissions;
+
+        // Exact match, or a sub-route of a granted screen (granted "admin.report-card"
+        // also allows "admin.report-card.download", "admin.report-card.print", etc.)
+        foreach ($granted as $perm) {
+            if ($routeName === $perm || str_starts_with($routeName, $perm . '.')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     public function roles(): BelongsToMany
     {
