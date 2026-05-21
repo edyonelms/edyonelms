@@ -23,6 +23,7 @@ class Constants
         'admin' => 'admin',
         'teacher' => 'teacher',
         'super-admin' => 'super-admin',
+        'sub-super-admin' => 'super-admin',
         'accounts' => 'accounts',
     ];
     const MALE = "male";

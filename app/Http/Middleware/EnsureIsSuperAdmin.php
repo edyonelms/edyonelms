@@ -25,11 +25,39 @@ class EnsureIsSuperAdmin
                 : redirect()->route('super-admin.login');
         }
 
-        // If authenticated but not a super-admin
-        if ($user->role !== 'super-admin') {
-            return redirect()->route('admin.quick-links', ['organization' => $user->organization_id]);
+        // Full super-admin → unrestricted access
+        if ($user->role === 'super-admin') {
+            return $next($request);
         }
 
-        return $next($request);
+        // Sub-super-admin → scoped access by granted permissions
+        if ($user->role === 'sub-super-admin') {
+            $routeName = $request->route()?->getName();
+
+            // Managing other sub-admins is reserved for the main super-admin only
+            if ($routeName === 'super-admin.users') {
+                return redirect()->route($this->firstAllowedRoute($user));
+            }
+
+            if ($user->canAccessSuperAdminRoute($routeName)) {
+                return $next($request);
+            }
+
+            return redirect()->route($this->firstAllowedRoute($user));
+        }
+
+        // Any other role → bounce to their admin area
+        return redirect()->route('admin.quick-links', ['organization' => $user->organization_id]);
+    }
+
+    /**
+     * The route a sub-super-admin should land on: their first granted
+     * permission, falling back to the profile page if none.
+     */
+    private function firstAllowedRoute($user): string
+    {
+        $permissions = (array) $user->permissions;
+
+        return $permissions[0] ?? 'super-admin.profile';
     }
 }

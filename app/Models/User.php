@@ -44,6 +44,11 @@ class User extends Authenticatable
         'otp_expires_at',
         'otp_order_id',
         'last_login_at',
+        'dob',
+        'gender',
+        'date_of_joining',
+        'alternative_mobile',
+        'permissions',
     ];
 
     /**
@@ -67,7 +72,42 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_login_at' => 'datetime',
+            'permissions' => 'array',
         ];
+    }
+
+    /**
+     * A sub-super-admin is a scoped super-admin created by the main
+     * super-admin from the Users panel.
+     */
+    public function isSubSuperAdmin(): bool
+    {
+        return $this->role === 'sub-super-admin';
+    }
+
+    /**
+     * True if this user may access the given super-admin route name.
+     * Main super-admin (role super-admin) always has full access.
+     * Sub-super-admins are limited to their granted permissions, with
+     * profile + notification always allowed.
+     */
+    public function canAccessSuperAdminRoute(?string $routeName): bool
+    {
+        if ($this->role === 'super-admin') {
+            return true;
+        }
+
+        if ($this->role !== 'sub-super-admin') {
+            return false;
+        }
+
+        // Always-allowed routes for any signed-in sub-super-admin
+        $always = ['super-admin.profile', 'super-admin.notification'];
+        if (in_array($routeName, $always, true)) {
+            return true;
+        }
+
+        return in_array($routeName, (array) $this->permissions, true);
     }
 
 

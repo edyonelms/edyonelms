@@ -264,6 +264,12 @@ return [
             'prefix' => 'super-admin.fees',
         ],
         [
+            'title' => 'Users',
+            'link' => 'super-admin.users',
+            'icon' => 'user-group',
+            'prefix' => 'super-admin.users',
+        ],
+        [
             'title' => 'Payroll',
             'link' => 'super-admin.payroll',
             'icon' => 'banknotes',

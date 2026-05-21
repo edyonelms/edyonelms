@@ -17,6 +17,7 @@ use App\Livewire\SuperAdmin\Session;
 use App\Livewire\SuperAdmin\Student;
 use App\Livewire\SuperAdmin\Support;
 use App\Livewire\SuperAdmin\Teacher;
+use App\Livewire\SuperAdmin\Users;
 use App\Livewire\SuperAdmin\TermOfUse;
 use App\Livewire\SuperAdmin\TermsCondition;
 use App\Livewire\SuperAdmin\WebsiteData;
@@ -35,6 +36,7 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('students', Student::class)->name('super-admin.students');
     Route::get('teachers', Teacher::class)->name('super-admin.teachers');
     Route::get('fees', Fees::class)->name('super-admin.fees');
+    Route::get('users', Users::class)->name('super-admin.users');
     Route::get('payroll', Payroll::class)->name('super-admin.payroll');
     Route::get('enquiries', Enquiry::class)->name('super-admin.enquiries');
     Route::get('support', Support::class)->name('super-admin.support');

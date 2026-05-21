@@ -46,8 +46,19 @@ class Login extends Component
 
         $allowedEmails = ['edyonelms@gmail.com', 'edyonelms1@gmail.com'];
 
-        if (!in_array($this->email, $allowedEmails) || $user->role !== 'super-admin') {
+        // Main super-admin: must be a whitelisted email with the super-admin role.
+        $isMainSuperAdmin = $user->role === 'super-admin' && in_array($this->email, $allowedEmails);
+
+        // Sub-super-admin: created from the Users panel, identified by role.
+        $isSubSuperAdmin  = $user->role === 'sub-super-admin';
+
+        if (!$isMainSuperAdmin && !$isSubSuperAdmin) {
             $this->addError('email', 'You do not have super-admin access.');
+            return;
+        }
+
+        if ($isSubSuperAdmin && !$user->is_active) {
+            $this->addError('email', 'Your account is inactive. Please contact the administrator.');
             return;
         }
 

@@ -1,3 +1,21 @@
+@php
+    $authUser  = auth()->user();
+    $allItems  = config('menu.' . App\Helpers\Constants::ROLEVALUE[$authUser->role]);
+
+    // Sub-super-admins see only the functionalities granted to them, and never
+    // the Users management screen (reserved for the main super-admin).
+    if ($authUser->role === 'sub-super-admin') {
+        $granted  = (array) $authUser->permissions;
+        $navItems = collect($allItems)
+            ->reject(fn($i) => ($i['link'] ?? '') === 'super-admin.users')
+            ->filter(fn($i) => in_array($i['link'] ?? '', $granted, true))
+            ->values()
+            ->all();
+    } else {
+        $navItems = $allItems;
+    }
+@endphp
+
 <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
 <div x-show="offcanvas" x-cloak class="fixed inset-0 flex z-40 md:hidden" role="dialog" aria-modal="true">
     <div x-show="offcanvas" x-on:click="offcanvas = false" class="fixed inset-0 bg-black bg-opacity-50"
@@ -37,7 +55,7 @@
                 <div class="mb-6">
                     <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Dashboard</h3>
                     <div class="space-y-1">
-                        @foreach (config('menu.' . App\Helpers\Constants::ROLEVALUE[auth()->user()->role]) as $menu_item)
+                        @foreach ($navItems as $menu_item)
                             @php
                                 $is_active = Route::is($menu_item['prefix']);
                             @endphp
@@ -78,7 +96,7 @@
                 <div>
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Dashboard</h3>
                     <div class="space-y-1">
-                        @foreach (config('menu.' . App\Helpers\Constants::ROLEVALUE[auth()->user()->role]) as $menu_item)
+                        @foreach ($navItems as $menu_item)
                             @php
                                 $is_active = Route::is($menu_item['prefix']);
                             @endphp

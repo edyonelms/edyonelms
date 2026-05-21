@@ -35,7 +35,7 @@
     @if (Auth::user())
         {{-- ─── SIDEBAR (fixed, never scrolls horizontally) ─── --}}
         <aside class="fixed inset-y-0 left-0 w-64 shadow-md z-50 overflow-y-auto overflow-x-hidden">
-            @if (Auth::user()->role === 'super-admin')
+            @if (in_array(Auth::user()->role, ['super-admin', 'sub-super-admin']))
                 @include('admin-components.super-admin-sidebar')
             @elseif (Auth::user()->role === 'admin')
                 @include('admin-components.admin-sidebar')

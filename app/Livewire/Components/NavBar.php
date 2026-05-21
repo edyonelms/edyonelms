@@ -51,7 +51,8 @@ class NavBar extends Component
         }
 
         $role      = Auth::user()->role;
-        $navItems = config('menu')[$role] ?? [];
+        $menuKey   = \App\Helpers\Constants::ROLEVALUE[$role] ?? $role;
+        $navItems  = config('menu')[$menuKey] ?? [];
         $colorKeys = array_keys($this->colorMap);
 
         $this->searchResults = collect($navItems)
@@ -112,7 +113,7 @@ class NavBar extends Component
 
     public function confirmLogout(): void
     {
-        if (Auth::user()->role === 'super-admin') {
+        if (in_array(Auth::user()->role, ['super-admin', 'sub-super-admin'])) {
             $this->showSuperAdminLogoutModal = true;
         } elseif (Auth::user()->role === 'accounts') {
             $this->showAccountsLogoutModal = true;
@@ -142,7 +143,7 @@ class NavBar extends Component
 
     public function profilePage(): mixed
     {
-        if (Auth::user()->role === 'super-admin') {
+        if (in_array(Auth::user()->role, ['super-admin', 'sub-super-admin'])) {
             return redirect()->route('super-admin.profile');
         }
         if (Auth::user()->role === 'accounts') {
