@@ -85,7 +85,7 @@
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Access</h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                 @foreach ($menu as $item)
-                    <a href="{{ route($item['link']) }}"
+                    <a href="{{ route($item['link'], ['organization' => auth()->user()->organization_id]) }}"
                         class="group bg-white rounded-xl border border-gray-200 p-4 flex flex-col items-center text-center gap-2 hover:border-blue-300 hover:shadow-md transition-all">
                         <span class="w-11 h-11 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
                             <x-icon name="{{ $item['icon'] ?? 'squares-2x2' }}" class="w-5 h-5 text-blue-600" />
@@ -100,7 +100,7 @@
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <h2 class="text-sm font-semibold text-gray-700">Recent Fee Payments</h2>
-                <a href="{{ route('accounts.payments') }}" class="text-xs font-medium text-blue-600 hover:text-blue-800">View all →</a>
+                <a href="{{ route('accounts.payments', ['organization' => auth()->user()->organization_id]) }}" class="text-xs font-medium text-blue-600 hover:text-blue-800">View all →</a>
             </div>
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase">

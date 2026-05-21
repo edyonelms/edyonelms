@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   app:
     build:
@@ -7,6 +13,7 @@ services:
     image: edyonelms/app:local
     container_name: edyonelms-app
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - .env
     environment:
@@ -32,6 +39,7 @@ services:
     image: nginx:1.27-alpine
     container_name: edyonelms-nginx
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "8080:80"
     volumes:
@@ -48,6 +56,7 @@ services:
     image: mysql:8.0
     container_name: edyonelms-mysql
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-edyonelms}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${DB_PASSWORD:-rootsecret}}
@@ -79,6 +88,7 @@ services:
     image: redis:7-alpine
     container_name: edyonelms-redis
     restart: unless-stopped
+    logging: *default-logging
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
