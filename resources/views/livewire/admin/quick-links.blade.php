@@ -1,6 +1,6 @@
 <div class="p-6">
     <div class="rounded-lg">
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 overflow-y-auto ">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 overflow-y-auto ">
             @foreach ($links as $link)
                 <a href="{{ route($link['route'], ['organization' => request()->route('organization')]) }}"
                    class="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 bg-white transition">
