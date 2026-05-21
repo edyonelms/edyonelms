@@ -1,1146 +1,803 @@
 <div class="p-4">
-    <!-- Header Actions -->
-    <div
-        class="flex justify-between items-center p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-sm border mb-6">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">Admit Card Management</h2>
-            <p class="text-gray-600 mt-1">Manage and generate examination admit cards</p>
-        </div>
-        <div class="flex gap-3">
-            <button wire:click="openBulkGenerate"
-                class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2">
-                <x-icon name="document-duplicate" class="h-5 w-5" />
-                Bulk Generate
-            </button>
+    <x-notifications />
+    <x-dialog />
 
-            <button wire:click="addAdmitCard"
-                class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2">
-                <x-icon name="plus-circle" class="h-5 w-5" />
-                Add Admit Card
-            </button>
+    {{-- ══════════════════════════ BULK GENERATE FULL SCREEN ══════════════════════════ --}}
+    @if($showBulkScreen)
+    <div class="fixed inset-0 z-[9998] bg-white overflow-y-auto">
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Bulk Generate Admit Cards</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Auto-generate based on attendance or fee criteria</p>
+                </div>
+                <button wire:click="closeBulkScreen"
+                    class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                    <x-icon name="x-mark" class="h-5 w-5" /> Close
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border mb-6 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Search -->
-            <div class="lg:col-span-2">
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <x-icon name="magnifying-glass" class="h-5 w-5 text-gray-400" />
+        <div class="max-w-3xl mx-auto px-6 py-8 space-y-6">
+
+            {{-- Exam + Class + Section --}}
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Step 1 — Select Exam & Class</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Exam <span class="text-red-500">*</span></label>
+                        <select wire:model.live="bulkExam" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Select Exam</option>
+                            @foreach($this->exams as $exam)
+                                <option value="{{ $exam->id }}">{{ $exam->exam_name }} ({{ $exam->academic_year }})</option>
+                            @endforeach
+                        </select>
+                        @error('bulkExam') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
-                    <input type="text" wire:model.live.debounce.300ms="search"
-                        placeholder="Search by admit card number, student name, roll number..."
-                        class="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Class <span class="text-red-500">*</span></label>
+                        <select wire:model.live="bulkStandard" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Select Class</option>
+                            @foreach($this->standards as $std)
+                                <option value="{{ $std->id }}">{{ $std->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('bulkStandard') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Section <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <select wire:model.live="bulkSection" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            {{ $this->bulkSections->isEmpty() ? 'disabled' : '' }}>
+                            <option value="">All Sections</option>
+                            @foreach($this->bulkSections as $sec)
+                                <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <!-- Exam Filter -->
+            {{-- Criteria --}}
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Step 2 — Eligibility Criteria</h3>
+                <div class="flex gap-6">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" wire:model.live="bulkGenerateType" value="attendance"
+                            class="text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                        <div>
+                            <span class="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">By Attendance</span>
+                            <p class="text-xs text-gray-400">Generate if attendance % meets threshold</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" wire:model.live="bulkGenerateType" value="fee"
+                            class="text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                        <div>
+                            <span class="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">By Fee Clearance</span>
+                            <p class="text-xs text-gray-400">Generate if student has paid fees</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-56">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                            {{ $bulkGenerateType === 'attendance' ? 'Minimum Attendance %' : 'Fee Coverage %' }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" wire:model="bulkPercentage" min="1" max="100"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 pr-8">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                        </div>
+                        @error('bulkPercentage') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="pt-5">
+                        <div class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs px-3 py-2 rounded-lg">
+                            <x-icon name="information-circle" class="h-4 w-4 flex-shrink-0" />
+                            Students meeting the {{ $bulkPercentage }}% threshold will get admit cards automatically
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Subjects --}}
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Step 3 — Exam Schedule</h3>
+                    <button type="button" wire:click="addBulkSubject"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition">
+                        <x-icon name="plus" class="h-3.5 w-3.5" /> Add Subject
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    @foreach($bulkSubjects as $i => $subj)
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-gray-500">Subject {{ $i + 1 }}</span>
+                            @if(count($bulkSubjects) > 1)
+                            <button type="button" wire:click="removeBulkSubject({{ $i }})"
+                                class="text-red-400 hover:text-red-600">
+                                <x-icon name="x-mark" class="h-4 w-4" />
+                            </button>
+                            @endif
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div class="col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Subject *</label>
+                                <select wire:model="bulkSubjects.{{ $i }}.subject_id"
+                                    wire:change="syncBulkSubjectName({{ $i }})"
+                                    class="w-full rounded-lg border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Choose Subject</option>
+                                    @foreach($this->allSubjects as $sub)
+                                        <option value="{{ $sub->id }}">{{ $sub->name }}{{ $sub->code ? ' ('.$sub->code.')' : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error("bulkSubjects.{$i}.subject_id") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Date *</label>
+                                <input type="date" wire:model="bulkSubjects.{{ $i }}.exam_date"
+                                    class="w-full rounded-lg border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
+                                @error("bulkSubjects.{$i}.exam_date") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Time *</label>
+                                <input type="time" wire:model="bulkSubjects.{{ $i }}.exam_time"
+                                    class="w-full rounded-lg border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
+                                @error("bulkSubjects.{$i}.exam_time") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Duration *</label>
+                                <input type="text" wire:model="bulkSubjects.{{ $i }}.exam_duration" placeholder="3 Hrs"
+                                    class="w-full rounded-lg border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
+                                @error("bulkSubjects.{$i}.exam_duration") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @error('bulkSubjects') <p class="text-sm text-red-500">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Instructions + Reporting Time --}}
+            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Step 4 — Additional Info</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Reporting Time</label>
+                        <input type="time" wire:model="bulkReportingTime"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Instructions for Students <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea wire:model="bulkInstructions" rows="3" placeholder="Enter exam instructions…"
+                        class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pb-8">
+                <button wire:click="closeBulkScreen"
+                    class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button wire:click="bulkGenerateAdmitCards"
+                    class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-md transition flex items-center gap-2">
+                    <x-icon name="document-duplicate" class="h-5 w-5" />
+                    Generate Admit Cards
+                </button>
+            </div>
+
+        </div>
+    </div>
+    @endif
+    {{-- ══════════════════════════ END BULK SCREEN ══════════════════════════ --}}
+
+
+    {{-- ══════════════════════════ HEADER ══════════════════════════ --}}
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-sm border mb-5 p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <x-native-select wire:model.live="examFilter" label="Exam">
+                <h2 class="text-2xl font-bold text-gray-900">Admit Card Management</h2>
+                <p class="text-gray-500 mt-1 text-sm">Issue and manage examination admit cards</p>
+            </div>
+            <div class="flex gap-3">
+                <button wire:click="openBulkScreen"
+                    class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <x-icon name="document-duplicate" class="h-5 w-5" />
+                    Bulk Generate
+                </button>
+                <button wire:click="openIssueModal"
+                    class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <x-icon name="ticket" class="h-5 w-5" />
+                    Issue Admit Card
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Analytics Cards --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div class="bg-white rounded-xl shadow-sm border p-5 flex items-center gap-4">
+            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <x-icon name="users" class="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Total Students</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $this->analytics['total'] }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5 flex items-center gap-4">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <x-icon name="ticket" class="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Issued</p>
+                <p class="text-2xl font-bold text-green-700">{{ $this->analytics['issued'] }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5 flex items-center gap-4">
+            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <x-icon name="clock" class="h-6 w-6 text-amber-600" />
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Remaining</p>
+                <p class="text-2xl font-bold text-amber-600">{{ $this->analytics['remaining'] }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Filters --}}
+    <div class="bg-white rounded-xl shadow-sm border mb-5 p-4">
+        <div class="flex flex-wrap gap-3 items-end">
+            {{-- Search --}}
+            <div class="flex-1 min-w-44">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Search</label>
+                <div class="relative">
+                    <x-icon name="magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input type="text" wire:model.live.debounce.300ms="search"
+                        placeholder="Name, card number, roll no…"
+                        class="w-full pl-9 rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                </div>
+            </div>
+            {{-- Exam --}}
+            <div class="min-w-44">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Exam</label>
+                <select wire:model.live="examFilter"
+                    class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">All Exams</option>
-                    @foreach ($this->exams as $exam)
+                    @foreach($this->exams as $exam)
                         <option value="{{ $exam->id }}">{{ $exam->exam_name }}</option>
                     @endforeach
-                </x-native-select>
+                </select>
             </div>
-
-            <!-- Class Filter -->
-            <div>
-                <x-native-select wire:model.live="standardFilter" label="Class">
+            {{-- Class --}}
+            <div class="min-w-36">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Class</label>
+                <select wire:model.live="standardFilter"
+                    class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">All Classes</option>
-                    @foreach ($this->standards as $standard)
-                        <option value="{{ $standard->id }}">{{ $standard->name }}</option>
+                    @foreach($this->standards as $std)
+                        <option value="{{ $std->id }}">{{ $std->name }}</option>
                     @endforeach
-                </x-native-select>
+                </select>
             </div>
-        </div>
-
-        <div class="flex justify-between items-center mt-4">
-            <div class="flex gap-3">
-                <!-- Status Filter -->
-                <div>
-                    <x-native-select wire:model.live="statusFilter" label="Status">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="used">Used</option>
-                    </x-native-select>
-                </div>
-
-                <!-- Show per page -->
-                <x-native-select wire:model.live="perPage" label="Show" class="w-32">
-                    <option value="10">10 per page</option>
-                    <option value="25">25 per page</option>
-                    <option value="50">50 per page</option>
-                    <option value="100">100 per page</option>
-                </x-native-select>
-
-                @if ($search || $examFilter || $standardFilter || $statusFilter)
-                    <div class="flex items-end">
-                        <x-button wire:click="resetFilters" slate outline label="Clear Filters" />
-                    </div>
-                @endif
+            {{-- Section (appears when class selected) --}}
+            @if($this->filterSections->isNotEmpty())
+            <div class="min-w-32">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Section</label>
+                <select wire:model.live="sectionFilter"
+                    class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">All</option>
+                    @foreach($this->filterSections as $sec)
+                        <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+                    @endforeach
+                </select>
             </div>
-
-            <div class="text-sm text-gray-600">
-                Total: {{ $admitCards->total() }} cards
+            @endif
+            {{-- Status --}}
+            <div class="min-w-32">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
+                <select wire:model.live="statusFilter"
+                    class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="used">Used</option>
+                </select>
             </div>
+            {{-- Per page --}}
+            <div class="min-w-28">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Show</label>
+                <select wire:model.live="perPage"
+                    class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="15">15</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            @if($search || $examFilter || $standardFilter || $sectionFilter || $statusFilter)
+            <div class="self-end">
+                <button wire:click="resetFilters"
+                    class="px-3 py-2 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Clear Filters
+                </button>
+            </div>
+            @endif
         </div>
     </div>
 
-    <!-- Admit Cards Table -->
+    {{-- Table --}}
     <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+        {{-- Print All button --}}
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+            <span class="text-sm text-gray-500">{{ $admitCards->total() }} card(s) found</span>
+            <a href="{{ $this->getPrintAllUrl() }}" target="_blank"
+                class="flex items-center gap-1.5 px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition shadow-sm">
+                <x-icon name="printer" class="h-4 w-4" />
+                Print All
+            </a>
+        </div>
+
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="w-full text-sm">
+                <thead class="bg-indigo-50">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Admit Card No.</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Student</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Exam</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Subjects</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Exam Center</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-indigo-700">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-indigo-700">Student</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-indigo-700">Class / Section</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-indigo-700">Exam</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-indigo-700">Card No. / Roll No.</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-indigo-700">Status</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-indigo-700">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($admitCards as $card)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-mono font-medium text-gray-900">{{ $card->admit_card_number }}
-                                </div>
-                                <div class="text-xs text-gray-500">Roll: {{ $card->roll_number }}</div>
-                                @if ($card->exam_roll_number)
-                                    <div class="text-xs text-gray-500">Exam Roll: {{ $card->exam_roll_number }}</div>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                        <span class="text-indigo-600 font-bold text-sm">
-                                            {{ substr($card->student_name, 0, 1) }}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ $card->student_name }}</div>
-                                        <div class="text-xs text-gray-500">
-                                            {{ $card->studentDetail?->admission_no ?? 'N/A' }}
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            {{ $card->studentDetail?->standard?->name ?? '' }}
-                                            {{ $card->studentDetail?->section?->name ? '- ' . $card->studentDetail->section->name : '' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-gray-900">{{ $card->exam_name }}</div>
-                                <div class="text-xs text-gray-500">{{ $card->academic_year }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if (!empty($card->subjects))
-                                    <div class="text-xs text-gray-600">
-                                        {{ count($card->subjects) }} Subject(s)
-                                    </div>
-                                    @foreach (array_slice($card->subjects, 0, 2) as $subject)
-                                        <div class="text-xs text-gray-500">
-                                            • {{ $subject['subject_name'] ?? 'N/A' }}
-                                            @if (isset($subject['subject_id']))
-                                                @php
-                                                    $subjectDetail = \App\Models\Student\Subject::find(
-                                                        $subject['subject_id'],
-                                                    );
-                                                    $subjectCode = $subjectDetail->code ?? null;
-                                                @endphp
-                                                @if ($subjectCode)
-                                                    <span class="text-gray-400">({{ $subjectCode }})</span>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                    @if (count($card->subjects) > 2)
-                                        <div class="text-xs text-blue-600">+{{ count($card->subjects) - 2 }} more</div>
-                                    @endif
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($admitCards as $i => $card)
+                    <tr class="hover:bg-indigo-50/20 transition">
+                        <td class="px-4 py-3 text-gray-400 text-xs">{{ $admitCards->firstItem() + $i }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                @if($card->studentDetail?->image)
+                                    <img src="{{ Storage::url($card->studentDetail->image) }}"
+                                        class="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0">
                                 @else
-                                    <span class="text-xs text-gray-400">No subjects</span>
+                                    <div class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                        <span class="text-indigo-600 font-bold text-sm">{{ substr($card->student_name, 0, 1) }}</span>
+                                    </div>
                                 @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ $card->exam_center }}</div>
-                                <div class="text-xs text-gray-500 truncate max-w-xs">
-                                    {{ Str::limit($card->exam_center_address, 50) }}
+                                <div>
+                                    <p class="font-semibold text-gray-800">{{ $card->student_name }}</p>
+                                    <p class="text-xs text-gray-400">{{ $card->studentDetail?->admission_no ?? '—' }}</p>
                                 </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                @php
-                                    $statusColors = [
-                                        'active' => 'bg-green-100 text-green-800',
-                                        'inactive' => 'bg-gray-100 text-gray-800',
-                                        'used' => 'bg-blue-100 text-blue-800',
-                                    ];
-                                @endphp
-                                <span
-                                    class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$card->status] ?? 'bg-gray-100' }}">
-                                    {{ ucfirst($card->status) }}
-                                </span>
-                                @if ($card->seat_number)
-                                    <div class="text-xs text-gray-600 mt-1">Seat: {{ $card->seat_number }}</div>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2">
-                                    <button wire:click="showAdmitCard({{ $card->id }})"
-                                        class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="View Admit Card">
-                                        <x-icon name="eye" class="h-5 w-5" />
-                                    </button>
-                                    <button wire:click="editAdmitCard({{ $card->id }})"
-                                        class="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-lg transition-colors"
-                                        title="Edit">
-                                        <x-icon name="pencil-square" class="h-5 w-5" />
-                                    </button>
-                                    <button wire:click="confirmDelete({{ $card->id }})"
-                                        class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Delete">
-                                        <x-icon name="trash" class="h-5 w-5" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-600">
+                            {{ $card->studentDetail?->standard?->name ?? '—' }}
+                            @if($card->studentDetail?->section?->name)
+                                / {{ $card->studentDetail->section->name }}
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="text-sm text-gray-700 font-medium">{{ $card->exam_name }}</p>
+                            <p class="text-xs text-gray-400">{{ $card->academic_year }}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="font-mono text-xs text-gray-800 font-medium">{{ $card->admit_card_number }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Roll: {{ $card->roll_number }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if($card->status === 'active')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
+                            @elseif($card->status === 'used')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Used</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Inactive</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-1">
+                                {{-- View --}}
+                                <a href="{{ route('admin.admit-card.view', [$org->serial_number ?? $org->id, $card->id]) }}"
+                                    target="_blank"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="View">
+                                    <x-icon name="eye" class="h-4 w-4" />
+                                </a>
+                                {{-- Download --}}
+                                <a href="{{ route('admin.admit-card.download', [$org->serial_number ?? $org->id, $card->id]) }}"
+                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Download PDF">
+                                    <x-icon name="arrow-down-tray" class="h-4 w-4" />
+                                </a>
+                                {{-- Edit --}}
+                                <button wire:click="openEditModal({{ $card->id }})"
+                                    class="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-lg transition" title="Edit">
+                                    <x-icon name="pencil-square" class="h-4 w-4" />
+                                </button>
+                                {{-- Delete --}}
+                                <button wire:click="confirmDelete({{ $card->id }})"
+                                    class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete">
+                                    <x-icon name="trash" class="h-4 w-4" />
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <div class="text-gray-400 mb-4">
-                                    <x-icon name="document-text" class="h-16 w-16 mx-auto" />
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">No admit cards found</h3>
-                                <p class="text-gray-600 mb-4">
-                                    @if ($search || $examFilter || $standardFilter)
-                                        No admit cards match your search criteria
-                                    @else
-                                        Get started by adding your first admit card
-                                    @endif
-                                </p>
-                                @if ($search || $examFilter || $standardFilter)
-                                    <button wire:click="resetFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                                        Clear Filters
-                                    </button>
-                                @else
-                                    <button wire:click="addAdmitCard"
-                                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                                        Add First Admit Card
-                                    </button>
-                                @endif
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="7" class="px-4 py-16 text-center">
+                            <x-icon name="ticket" class="w-14 h-14 text-gray-200 mx-auto mb-3" />
+                            <p class="text-gray-400 text-sm font-medium">No admit cards found</p>
+                            @if($search || $examFilter || $standardFilter || $statusFilter)
+                                <button wire:click="resetFilters" class="mt-3 text-xs text-indigo-600 hover:underline">Clear filters</button>
+                            @else
+                                <button wire:click="openIssueModal" class="mt-3 text-xs text-indigo-600 hover:underline">Issue first admit card</button>
+                            @endif
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="px-6 py-4 border-t bg-gray-50">
-            {{ $admitCards->links() }}
-        </div>
+        @if($admitCards->hasPages())
+            <div class="px-5 py-3 border-t border-gray-100">{{ $admitCards->links() }}</div>
+        @endif
     </div>
 
-    <!-- View Admit Card Modal -->
-    @if ($showViewModal && $viewAdmitCard)
-        <div
-            class="fixed inset-0 flex justify-end bg-white/10 backdrop-blur-sm z-[9999] pt-16 pb-4 overflow-y-auto">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-8 overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-gray-900">Admit Card Preview</h3>
-                        <button wire:click="closeViewModal" class="text-gray-400 hover:text-gray-600">
-                            <x-icon name="x-mark" class="h-6 w-6" />
-                        </button>
+
+    {{-- ══════════════════════════ ISSUE ADMIT CARD MODAL ══════════════════════════ --}}
+    @if($showIssueModal)
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6"
+         style="background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[92vh]" wire:click.stop>
+
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                    <h3 class="text-base font-bold text-gray-800">Issue Admit Cards</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Select exam, class and students to issue admit cards</p>
+                </div>
+                <button wire:click="closeIssueModal" class="text-gray-400 hover:text-gray-600">
+                    <x-icon name="x-mark" class="w-5 h-5" />
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+                {{-- Exam + Class + Section --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Exam <span class="text-red-500">*</span></label>
+                        <select wire:model.live="issueExam" class="w-full rounded-lg border-gray-300 text-sm focus:border-purple-500 focus:ring-purple-500">
+                            <option value="">Select Exam</option>
+                            @foreach($this->exams as $exam)
+                                <option value="{{ $exam->id }}">{{ $exam->exam_name }} ({{ $exam->academic_year }})</option>
+                            @endforeach
+                        </select>
+                        @error('issueExam') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
-
-                    <!-- Admit Card Preview -->
-                    <div
-                        class="bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-lg p-8 border-4 border-double border-purple-300">
-                        <!-- Header -->
-                        <div class="text-center border-b-2 border-purple-300 pb-4 mb-6">
-                            <h1 class="text-3xl font-bold text-purple-900">
-                                {{ $viewAdmitCard->organization->name }}
-                            </h1>
-                            <p class="text-xl text-gray-800 mt-2 font-semibold">{{ $viewAdmitCard->exam_name }}</p>
-                            <p class="text-sm text-gray-600 mt-1">Academic Year: {{ $viewAdmitCard->academic_year }}
-                            </p>
-                            <p class="text-sm text-gray-600 font-bold mt-2">ADMIT CARD</p>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-6">
-                            <!-- Student Info -->
-                            <div class="col-span-3 space-y-4">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="bg-white p-3 rounded-lg border">
-                                        <label class="text-xs font-semibold text-gray-500 uppercase">Student
-                                            Name</label>
-                                        <p class="text-lg font-bold text-gray-900">{{ $viewAdmitCard->student_name }}
-                                        </p>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-lg border">
-                                        <label class="text-xs font-semibold text-gray-500 uppercase">Father's
-                                            Name</label>
-                                        <p class="text-lg font-bold text-gray-900">{{ $viewAdmitCard->father_name }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-3 gap-4">
-                                    <div class="bg-white p-3 rounded-lg border">
-                                        <label class="text-xs font-semibold text-gray-500 uppercase">Admit Card
-                                            No.</label>
-                                        <p class="text-sm font-mono font-medium text-gray-900">
-                                            {{ $viewAdmitCard->admit_card_number }}</p>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-lg border">
-                                        <label class="text-xs font-semibold text-gray-500 uppercase">Roll
-                                            Number</label>
-                                        <p class="text-sm font-medium text-gray-900">{{ $viewAdmitCard->roll_number }}
-                                        </p>
-                                    </div>
-                                    @if ($viewAdmitCard->exam_roll_number)
-                                        <div class="bg-white p-3 rounded-lg border">
-                                            <label class="text-xs font-semibold text-gray-500 uppercase">Exam Roll
-                                                No.</label>
-                                            <p class="text-sm font-medium text-gray-900">
-                                                {{ $viewAdmitCard->exam_roll_number }}</p>
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <!-- Subjects Schedule -->
-                                @if (!empty($viewAdmitCard->subjects))
-                                    <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                                        <h4 class="text-sm font-bold text-yellow-900 mb-3 uppercase">Examination
-                                            Schedule</h4>
-                                        <div class="space-y-2">
-                                            @foreach ($viewAdmitCard->subjects as $subject)
-                                                <div class="bg-white p-3 rounded border border-yellow-200">
-                                                    <div class="flex justify-between items-start">
-                                                        <div class="flex-1">
-                                                            <p class="font-bold text-gray-900">
-                                                                {{ $subject['subject_name'] ?? 'N/A' }}
-                                                                @if (isset($subject['subject_id']))
-                                                                    @php
-                                                                        $subjectDetail = \App\Models\Student\Subject::find(
-                                                                            $subject['subject_id'],
-                                                                        );
-                                                                        $subjectCode = $subjectDetail->code ?? null;
-                                                                    @endphp
-                                                                    @if ($subjectCode)
-                                                                        <span
-                                                                            class="text-xs font-normal text-gray-600">({{ $subjectCode }})</span>
-                                                                    @endif
-                                                                @endif
-                                                            </p>
-                                                            <div class="grid grid-cols-3 gap-3 mt-2 text-xs">
-                                                                <div>
-                                                                    <span class="text-gray-600">Date:</span>
-                                                                    <p class="font-medium text-gray-900">
-                                                                        {{ isset($subject['exam_date']) ? \Carbon\Carbon::parse($subject['exam_date'])->format('d M, Y') : 'N/A' }}
-                                                                    </p>
-                                                                </div>
-                                                                <div>
-                                                                    <span class="text-gray-600">Time:</span>
-                                                                    <p class="font-medium text-gray-900">
-                                                                        {{ isset($subject['exam_time']) ? \Carbon\Carbon::parse($subject['exam_time'])->format('h:i A') : 'N/A' }}
-                                                                    </p>
-                                                                </div>
-                                                                <div>
-                                                                    <span class="text-gray-600">Duration:</span>
-                                                                    <p class="font-medium text-gray-900">
-                                                                        {{ $subject['exam_duration'] ?? 'N/A' }}</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        <div class="mt-3 pt-3 border-t border-yellow-300">
-                                            <p class="text-xs text-yellow-800">
-                                                <strong>Reporting Time:</strong>
-                                                {{ $viewAdmitCard->reporting_time ? \Carbon\Carbon::parse($viewAdmitCard->reporting_time)->format('h:i A') : 'N/A' }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                <!-- Exam Center -->
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                    <h4 class="text-sm font-semibold text-blue-800 mb-2">EXAMINATION CENTER</h4>
-                                    <p class="text-sm font-medium text-gray-900">{{ $viewAdmitCard->exam_center }}</p>
-                                    <p class="text-xs text-gray-600 mt-1">{{ $viewAdmitCard->exam_center_address }}
-                                    </p>
-                                    @if ($viewAdmitCard->seat_number || $viewAdmitCard->room_number)
-                                        <div class="grid grid-cols-2 gap-3 mt-2">
-                                            @if ($viewAdmitCard->seat_number)
-                                                <div>
-                                                    <label class="text-xs text-gray-600">Seat Number</label>
-                                                    <p class="text-sm font-medium text-gray-900">
-                                                        {{ $viewAdmitCard->seat_number }}</p>
-                                                </div>
-                                            @endif
-                                            @if ($viewAdmitCard->room_number)
-                                                <div>
-                                                    <label class="text-xs text-gray-600">Room Number</label>
-                                                    <p class="text-sm font-medium text-gray-900">
-                                                        {{ $viewAdmitCard->room_number }}</p>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <!-- Photo and QR Code -->
-                            <div class="space-y-4">
-                                <!-- Student Photo -->
-                                @if ($viewAdmitCard->studentDetail?->image)
-                                    <div class="bg-white p-4 rounded-lg border text-center">
-                                        <label class="text-xs font-semibold text-gray-500 uppercase block mb-2">Student
-                                            Photo</label>
-                                        <img src="{{ Storage::url($viewAdmitCard->studentDetail->image) }}"
-                                            class="w-32 h-32 mx-auto object-cover rounded border">
-                                    </div>
-                                @endif
-
-                                <!-- QR Code -->
-                                @if ($viewAdmitCard->qr_code)
-                                    <div class="bg-white p-4 rounded-lg border text-center">
-                                        <label
-                                            class="text-xs font-semibold text-gray-500 uppercase block mb-2">Verification
-                                            QR</label>
-                                        <img src="data:image/png;base64,{{ $viewAdmitCard->qr_code }}"
-                                            class="w-32 h-32 mx-auto">
-                                        <p class="text-xs text-gray-600 mt-2">Scan to verify</p>
-                                    </div>
-                                @endif
-
-                                <!-- Issue Date -->
-                                <div class="bg-white p-3 rounded-lg border">
-                                    <label class="text-xs font-semibold text-gray-500 uppercase">Issue Date</label>
-                                    <p class="text-sm font-medium text-gray-900">
-                                        {{ $viewAdmitCard->issue_date?->format('d M, Y') }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Instructions -->
-                        @if ($viewAdmitCard->instructions || !empty($viewAdmitCard->allowed_items) || !empty($viewAdmitCard->prohibited_items))
-                            <div class="mt-6 pt-4 border-t-2 border-gray-300">
-                                <h4 class="text-sm font-semibold text-gray-800 mb-3">IMPORTANT INSTRUCTIONS</h4>
-
-                                @if ($viewAdmitCard->instructions)
-                                    <p class="text-sm text-gray-700 mb-3">{{ $viewAdmitCard->instructions }}</p>
-                                @endif
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    @if (!empty($viewAdmitCard->allowed_items))
-                                        <div class="bg-green-50 p-3 rounded-lg border border-green-200">
-                                            <h5 class="text-xs font-semibold text-green-800 mb-2">ALLOWED ITEMS</h5>
-                                            <ul class="text-xs text-gray-700 space-y-1">
-                                                @foreach ($viewAdmitCard->allowed_items as $item)
-                                                    <li class="flex items-center">
-                                                        <x-icon name="check-circle"
-                                                            class="h-3 w-3 text-green-600 mr-2" />
-                                                        {{ $item }}
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
-
-                                    @if (!empty($viewAdmitCard->prohibited_items))
-                                        <div class="bg-red-50 p-3 rounded-lg border border-red-200">
-                                            <h5 class="text-xs font-semibold text-red-800 mb-2">PROHIBITED ITEMS</h5>
-                                            <ul class="text-xs text-gray-700 space-y-1">
-                                                @foreach ($viewAdmitCard->prohibited_items as $item)
-                                                    <li class="flex items-center">
-                                                        <x-icon name="x-circle" class="h-3 w-3 text-red-600 mr-2" />
-                                                        {{ $item }}
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Signatures -->
-                        <div class="mt-6 pt-4 border-t-2 border-gray-300">
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="text-center">
-                                    <div class="border-t-2 border-gray-400 mt-8 pt-2 mx-auto w-32"></div>
-                                    <p class="text-xs text-gray-600 mt-1">Student's Signature</p>
-                                </div>
-                                <div class="text-center">
-                                    <div class="border-t-2 border-gray-400 mt-8 pt-2 mx-auto w-32"></div>
-                                    <p class="text-xs text-gray-600 mt-1">Invigilator's Signature</p>
-                                </div>
-                                <div class="text-center">
-                                    <div class="border-t-2 border-gray-400 mt-8 pt-2 mx-auto w-32"></div>
-                                    <p class="text-xs text-gray-600 mt-1">Principal's Signature</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Class <span class="text-red-500">*</span></label>
+                        <select wire:model.live="issueStandard" class="w-full rounded-lg border-gray-300 text-sm focus:border-purple-500 focus:ring-purple-500">
+                            <option value="">Select Class</option>
+                            @foreach($this->standards as $std)
+                                <option value="{{ $std->id }}">{{ $std->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('issueStandard') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
-
-                    <div class="mt-6 flex justify-end">
-                        <button wire:click="closeViewModal"
-                            class="px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                            Close
-                        </button>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Section <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <select wire:model.live="issueSection" class="w-full rounded-lg border-gray-300 text-sm focus:border-purple-500 focus:ring-purple-500"
+                            {{ $this->issueSections->isEmpty() ? 'disabled' : '' }}>
+                            <option value="">All Sections</option>
+                            @foreach($this->issueSections as $sec)
+                                <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
-            </div>
-        </div>
-    @endif
 
-    <!-- Add/Edit Modal with Subjects -->
-    @if ($showEditModal)
-        <div class="fixed inset-0 flex justify-end bg-white/10 backdrop-blur-sm z-[9999] pt-16 pb-4 overflow-y-auto">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-bold text-gray-900">
-                            {{ $admitCardId ? 'Edit Admit Card' : 'Add New Admit Card' }}
-                        </h3>
-                        <button wire:click="closeEditModal" class="text-gray-400 hover:text-gray-600">
-                            <x-icon name="x-mark" class="h-6 w-6" />
-                        </button>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- Exam Selection -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Exam *</label>
-                                <select wire:model="examId"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                    <option value="">Select Exam</option>
-                                    @foreach ($this->exams as $exam)
-                                        <option value="{{ $exam->id }}">{{ $exam->exam_name }}
-                                            ({{ $exam->academic_year }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('examId')
-                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Admit Card Number -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Admit Card Number *</label>
-                                <input type="text" wire:model="admitCardNumber"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono"
-                                    placeholder="Auto-generated">
-                                @error('admitCardNumber')
-                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Student Search -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Student *</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <x-icon name="magnifying-glass" class="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input type="text" wire:model.live.debounce.300ms="studentSearch"
-                                    placeholder="Search by student name, admission number, or roll number..."
-                                    class="pl-10 pr-4 py-2.5 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    autocomplete="off">
-                            </div>
-
-                            @if (strlen($studentSearch) >= 2 && count($this->availableStudents) > 0)
-                                <div
-                                    class="mt-2 border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white z-50">
-                                    @foreach ($this->availableStudents as $student)
-                                        <div wire:click="selectStudent({{ $student['id'] }})"
-                                            class="px-4 py-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors">
-                                            <div class="font-medium text-gray-900">{{ $student['text'] }}</div>
-                                            <div class="text-sm text-gray-600 mt-1">
-                                                Roll: {{ $student['roll_no'] }} | Class: {{ $student['class'] }}
-                                                {{ $student['section'] ? '- ' . $student['section'] : '' }}
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-
-                            @if ($studentId && strlen($studentSearch) < 2)
-                                <div class="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <div class="font-medium text-green-800">Selected Student:</div>
-                                    <div class="text-sm text-green-700">{{ $studentSearch }}</div>
-                                </div>
-                            @endif
-
-                            @error('studentId')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- Roll Number -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Roll Number *</label>
-                                <input type="text" wire:model="rollNumber"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                @error('rollNumber')
-                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Exam Roll Number -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Exam Roll Number</label>
-                                <input type="text" wire:model="examRollNumber"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                @error('examRollNumber')
-                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Subjects Section -->
-                        <div
-                            class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-sm font-bold text-purple-900 uppercase">Subject-wise Exam Schedule *
-                                </h4>
-                                <button type="button" wire:click="addSubject"
-                                    class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1">
-                                    <x-icon name="plus" class="h-4 w-4" />
-                                    Add Subject
-                                </button>
-                            </div>
-
-                            <div class="space-y-3">
-                                @foreach ($subjects as $index => $subject)
-                                    <div class="bg-white p-4 rounded-lg border border-purple-200">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <span class="text-xs font-semibold text-purple-700">Subject
-                                                {{ $index + 1 }}</span>
-                                            @if (count($subjects) > 1)
-                                                <button type="button"
-                                                    wire:click="removeSubject({{ $index }})"
-                                                    class="text-red-600 hover:text-red-800">
-                                                    <x-icon name="x-mark" class="h-4 w-4" />
-                                                </button>
-                                            @endif
-                                        </div>
-
-                                        <div class="space-y-3">
-                                            <!-- Subject Selection -->
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-700 mb-1">Select
-                                                    Subject *</label>
-                                                <div class="relative">
-                                                    <select wire:model="subjects.{{ $index }}.subject_id"
-                                                        wire:change="addSubjectFromList({{ $index }})"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                                        <option value="">Choose Subject</option>
-                                                        @foreach ($this->availableSubjects as $subjectItem)
-                                                            <option value="{{ $subjectItem->id }}">
-                                                                {{ $subjectItem->name }}
-                                                                @if ($subjectItem->code)
-                                                                    ({{ $subjectItem->code }})
-                                                                @endif
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                @error("subjects.{$index}.subject_id")
-                                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                @enderror
-                                            </div>
-
-                                            <div class="grid grid-cols-3 gap-3">
-                                                <div class="col-span-2">
-                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Exam
-                                                        Date *</label>
-                                                    <input type="date"
-                                                        wire:model="subjects.{{ $index }}.exam_date"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                                    @error("subjects.{$index}.exam_date")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Time
-                                                        *</label>
-                                                    <input type="time"
-                                                        wire:model="subjects.{{ $index }}.exam_time"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                                    @error("subjects.{$index}.exam_time")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label
-                                                        class="block text-xs font-medium text-gray-700 mb-1">Duration
-                                                        *</label>
-                                                    <input type="text"
-                                                        wire:model="subjects.{{ $index }}.exam_duration"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                                        placeholder="3 Hrs">
-                                                    @error("subjects.{$index}.exam_duration")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            @error('subjects')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Reporting Time -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Reporting Time *</label>
-                            <input type="time" wire:model="reportingTime"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                            @error('reportingTime')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Exam Center -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Exam Center *</label>
-                            <input type="text" wire:model="examCenter"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-2"
-                                placeholder="e.g., Main Campus, Block A">
-                            @error('examCenter')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Exam Center Address *</label>
-                            <textarea wire:model="examCenterAddress" rows="3"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Full address of the exam center"></textarea>
-                            @error('examCenterAddress')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- Seat Number -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Seat Number</label>
-                                <input type="text" wire:model="seatNumber"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    placeholder="e.g., A-12">
-                            </div>
-
-                            <!-- Room Number -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                                <input type="text" wire:model="roomNumber"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    placeholder="e.g., Room 101">
-                            </div>
-                        </div>
-
-                        <!-- Allowed Items -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Allowed Items in Exam
-                                Hall</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                @foreach ($commonAllowedItems as $item)
-                                    <label class="flex items-center">
-                                        <input type="checkbox" wire:model="allowedItems" value="{{ $item }}"
-                                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                                        <span class="ml-2 text-sm text-gray-700">{{ $item }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <!-- Prohibited Items -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Prohibited Items</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                @foreach ($commonProhibitedItems as $item)
-                                    <label class="flex items-center">
-                                        <input type="checkbox" wire:model="prohibitedItems"
-                                            value="{{ $item }}"
-                                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                                        <span class="ml-2 text-sm text-gray-700">{{ $item }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <!-- Instructions -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
-                            <textarea wire:model="instructions" rows="4"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Enter any special instructions for students..."></textarea>
-                        </div>
-
-                        <!-- Status -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-                            <select wire:model="status"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="used">Used (Exam Taken)</option>
-                            </select>
-                            @error('status')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                {{-- Student List --}}
+                @if($issueExam && $issueStandard)
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                        <p class="text-xs font-bold text-gray-700">Students ({{ $this->issueAvailableStudents->count() }} available)</p>
+                        <div class="flex gap-3">
+                            <button type="button" wire:click="selectAllIssueStudents" class="text-xs text-purple-600 hover:underline font-semibold">Select All</button>
+                            <button type="button" wire:click="deselectAllIssueStudents" class="text-xs text-gray-400 hover:underline">Deselect All</button>
                         </div>
                     </div>
-
-                    <div class="flex justify-end gap-3 mt-8 pt-6 border-t">
-                        <button wire:click="closeEditModal"
-                            class="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button wire:click="saveAdmitCard"
-                            class="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                            {{ $admitCardId ? 'Update' : 'Create' }} Admit Card
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- Bulk Generate Modal -->
-    @if ($showBulkGenerateModal)
-        <div class="fixed inset-0 flex justify-end bg-white/10 backdrop-blur-sm z-[9999] pt-16 pb-4 overflow-y-auto">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-bold text-gray-900">Bulk Generate Admit Cards</h3>
-                        <button wire:click="closeBulkModal" class="text-gray-400 hover:text-gray-600">
-                            <x-icon name="x-mark" class="h-6 w-6" />
-                        </button>
-                    </div>
-
-                    <div class="space-y-4">
-                        <!-- Exam Selection -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Exam *</label>
-                            <select wire:model.live="selectedExam"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                <option value="">Select Exam</option>
-                                @foreach ($this->exams as $exam)
-                                    <option value="{{ $exam->id }}">{{ $exam->exam_name }}
-                                        ({{ $exam->academic_year }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('selectedExam')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Class Selection -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Class *</label>
-                            <select wire:model.live="selectedStandard"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                <option value="">Select Class</option>
-                                @foreach ($this->standards as $standard)
-                                    <option value="{{ $standard->id }}">{{ $standard->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('selectedStandard')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Section Selection -->
-                        @if ($selectedStandard)
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Section
-                                    (Optional)</label>
-                                <select wire:model.live="selectedSection"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                                    <option value="">All Sections</option>
-                                    @foreach ($this->sections as $section)
-                                        <option value="{{ $section->id }}">{{ $section->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @endif
-
-                        <!-- Exam Center Details -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Exam Center *</label>
-                            <input type="text" wire:model="bulkExamCenter"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-2"
-                                placeholder="e.g., Main Campus, Block A">
-                            @error('bulkExamCenter')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Exam Center Address *</label>
-                            <textarea wire:model="bulkExamCenterAddress" rows="3"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Full address of the exam center"></textarea>
-                            @error('bulkExamCenterAddress')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Instructions -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Instructions (Optional)</label>
-                            <textarea wire:model="bulkInstructions" rows="3"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Common instructions for all students..."></textarea>
-                        </div>
-
-                        <!-- Bulk Subjects Section -->
-                        <div
-                            class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-sm font-bold text-blue-900 uppercase">Exam Subjects for All Students *
-                                </h4>
-                                <button type="button" wire:click="addBulkSubject"
-                                    class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                                    <x-icon name="plus" class="h-4 w-4" />
-                                    Add Subject
-                                </button>
-                            </div>
-
-                            <div class="space-y-3">
-                                @foreach ($bulkSubjects as $index => $subject)
-                                    <div class="bg-white p-4 rounded-lg border border-blue-200">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <span class="text-xs font-semibold text-blue-700">Subject
-                                                {{ $index + 1 }}</span>
-                                            @if (count($bulkSubjects) > 1)
-                                                <button type="button"
-                                                    wire:click="removeBulkSubject({{ $index }})"
-                                                    class="text-red-600 hover:text-red-800">
-                                                    <x-icon name="x-mark" class="h-4 w-4" />
-                                                </button>
-                                            @endif
-                                        </div>
-
-                                        <div class="space-y-3">
-                                            <!-- Subject Selection -->
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-700 mb-1">Select
-                                                    Subject *</label>
-                                                <div class="relative">
-                                                    <select wire:model="bulkSubjects.{{ $index }}.subject_id"
-                                                        wire:change="addBulkSubjectFromList({{ $index }})"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                        <option value="">Choose Subject</option>
-                                                        @foreach ($this->availableSubjects as $subjectItem)
-                                                            <option value="{{ $subjectItem->id }}">
-                                                                {{ $subjectItem->name }}
-                                                                @if ($subjectItem->code)
-                                                                    ({{ $subjectItem->code }})
-                                                                @endif
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                @error("bulkSubjects.{$index}.subject_id")
-                                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                @enderror
-                                            </div>
-
-                                            <div class="grid grid-cols-3 gap-3">
-                                                <div class="col-span-2">
-                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Exam
-                                                        Date *</label>
-                                                    <input type="date"
-                                                        wire:model="bulkSubjects.{{ $index }}.exam_date"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                    @error("bulkSubjects.{$index}.exam_date")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Time
-                                                        *</label>
-                                                    <input type="time"
-                                                        wire:model="bulkSubjects.{{ $index }}.exam_time"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                    @error("bulkSubjects.{$index}.exam_time")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label
-                                                        class="block text-xs font-medium text-gray-700 mb-1">Duration
-                                                        *</label>
-                                                    <input type="text"
-                                                        wire:model="bulkSubjects.{{ $index }}.exam_duration"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                        placeholder="3 Hrs">
-                                                    @error("bulkSubjects.{$index}.exam_duration")
-                                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            @error('bulkSubjects')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Student Selection -->
-                        @if ($selectedStandard)
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="block text-sm font-medium text-gray-700">Select Students *</label>
-                                    @if (!empty($this->availableStudentsForBulk) && count($this->availableStudentsForBulk) > 0)
-                                        <div class="flex gap-2">
-                                            <button type="button" wire:click="toggleAllStudents(true)"
-                                                class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-                                                Select All
-                                            </button>
-                                            <button type="button" wire:click="toggleAllStudents(false)"
-                                                class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-                                                Deselect All
-                                            </button>
+                    @if($this->issueAvailableStudents->isEmpty())
+                        <div class="px-4 py-6 text-center text-sm text-gray-400">All students already have admit cards for this exam.</div>
+                    @else
+                        <div class="max-h-48 overflow-y-auto divide-y divide-gray-100">
+                            @foreach($this->issueAvailableStudents as $student)
+                            <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-purple-50/30 cursor-pointer">
+                                <input type="checkbox"
+                                    wire:click="toggleIssueStudent({{ $student->id }})"
+                                    @checked(in_array($student->id, $issueStudents))
+                                    class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                <div class="flex items-center gap-2 flex-1">
+                                    @if($student->image)
+                                        <img src="{{ Storage::url($student->image) }}" class="w-7 h-7 rounded-full object-cover border">
+                                    @else
+                                        <div class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">
+                                            {{ substr($student->full_name, 0, 1) }}
                                         </div>
                                     @endif
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-800">{{ $student->full_name }}</p>
+                                        <p class="text-xs text-gray-400">{{ $student->admission_no }} · {{ $student->standard?->name }}@if($student->section) / {{ $student->section->name }} @endif</p>
+                                    </div>
                                 </div>
+                            </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+                @error('issueStudents') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @endif
 
-                                @if (!empty($this->availableStudentsForBulk) && count($this->availableStudentsForBulk) > 0)
-                                    <div class="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
-                                        @foreach ($this->availableStudentsForBulk as $student)
-                                            <label
-                                                class="flex items-center px-4 py-3 hover:bg-gray-50 border-b last:border-b-0">
-                                                <input type="checkbox" wire:model.live="selectedStudents"
-                                                    value="{{ $student['id'] }}"
-                                                    class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                                                <div class="ml-3">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ $student['name'] }}</div>
-                                                    <div class="text-xs text-gray-500">
-                                                        Admission: {{ $student['admission_no'] }} |
-                                                        Roll: {{ $student['roll_no'] }} |
-                                                        Class: {{ $student['class'] }}@if ($student['section'])
-                                                            - {{ $student['section'] }}
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </label>
+                {{-- Subjects --}}
+                @if($issueStandard)
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-purple-50 border-b border-purple-100">
+                        <p class="text-xs font-bold text-purple-800">Exam Schedule (all subjects)</p>
+                        <button type="button" wire:click="addIssueSubject"
+                            class="flex items-center gap-1 text-xs text-purple-600 hover:underline font-semibold">
+                            <x-icon name="plus" class="h-3.5 w-3.5" /> Add Row
+                        </button>
+                    </div>
+                    <div class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                        @foreach($issueSubjects as $i => $subj)
+                        <div class="px-4 py-3 bg-white">
+                            <div class="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Subject *</label>
+                                    <select wire:model="issueSubjects.{{ $i }}.subject_id"
+                                        wire:change="syncIssueSubjectName({{ $i }})"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-purple-500 focus:ring-purple-500">
+                                        <option value="">Choose</option>
+                                        @foreach($this->allSubjects as $sub)
+                                            <option value="{{ $sub->id }}">{{ $sub->name }}{{ $sub->code ? ' ('.$sub->code.')' : '' }}</option>
                                         @endforeach
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-2">
-                                        Selected: {{ count($selectedStudents) }} students
-                                    </div>
-                                @elseif ($selectedStandard && $selectedExam)
-                                    <div class="text-center py-8 text-gray-500">
-                                        <x-icon name="user-group" class="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                                        <p>All students in this class already have admit cards for this exam.</p>
-                                    </div>
-                                @elseif ($selectedStandard)
-                                    <div class="text-center py-8 text-gray-500">
-                                        <x-icon name="user-group" class="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                                        <p>Please select an exam first to see available students.</p>
-                                    </div>
-                                @endif
-
-                                @error('selectedStudents')
-                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        @endif
-
-                        <!-- Info Box -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div class="flex items-start gap-3">
-                                <x-icon name="information-circle"
-                                    class="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                    </select>
+                                    @error("issueSubjects.{$i}.subject_id") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                                </div>
                                 <div>
-                                    <h4 class="text-sm font-medium text-blue-800">Note</h4>
-                                    <p class="text-sm text-blue-700 mt-1">
-                                        All selected students will receive admit cards with the same subjects, dates,
-                                        and times specified above.
-                                    </p>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Date *</label>
+                                    <input type="date" wire:model="issueSubjects.{{ $i }}.exam_date"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-purple-500 focus:ring-purple-500">
+                                    @error("issueSubjects.{$i}.exam_date") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Time *</label>
+                                    <input type="time" wire:model="issueSubjects.{{ $i }}.exam_time"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-purple-500 focus:ring-purple-500">
+                                    @error("issueSubjects.{$i}.exam_time") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Duration *</label>
+                                    <input type="text" wire:model="issueSubjects.{{ $i }}.exam_duration" placeholder="3 Hrs"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-purple-500 focus:ring-purple-500">
+                                    @error("issueSubjects.{$i}.exam_duration") <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                                </div>
+                                <div class="flex items-end justify-end">
+                                    @if(count($issueSubjects) > 1)
+                                    <button type="button" wire:click="removeIssueSubject({{ $i }})"
+                                        class="p-1.5 text-red-400 hover:text-red-600 rounded">
+                                        <x-icon name="trash" class="h-4 w-4" />
+                                    </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
+                        @endforeach
                     </div>
+                </div>
+                @error('issueSubjects') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @endif
 
-                    <div class="flex justify-end gap-3 mt-8 pt-6 border-t">
-                        <button wire:click="closeBulkModal"
-                            class="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button wire:click="bulkGenerateAdmitCards"
-                            class="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Generate Admit Cards
-                        </button>
+                {{-- Instructions + Reporting Time --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Reporting Time</label>
+                        <input type="time" wire:model="issueReportingTime"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-purple-500 focus:ring-purple-500">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Instructions <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea wire:model="issueInstructions" rows="3" placeholder="Enter exam instructions…"
+                        class="w-full rounded-lg border-gray-300 text-sm focus:border-purple-500 focus:ring-purple-500 resize-none"></textarea>
+                </div>
+
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-b-2xl">
+                <span class="text-xs text-gray-500">{{ count($issueStudents) }} student(s) selected</span>
+                <div class="flex gap-2">
+                    <button type="button" wire:click="closeIssueModal"
+                        class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                    <button type="button" wire:click="issueAdmitCards"
+                        class="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold shadow transition flex items-center gap-2">
+                        <x-icon name="ticket" class="h-4 w-4" />
+                        Issue Cards
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
     @endif
 
-    <!-- Delete Confirmation Modal -->
-    @if ($showDeleteModal)
-        <div
-            class="fixed inset-0 flex justify-center bg-white/10 backdrop-blur-sm z-[9999] pt-16 pb-4 overflow-y-auto">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-auto my-auto">
-                <div class="p-6">
-                    <div class="text-center">
-                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                            <x-icon name="exclamation-triangle" class="h-6 w-6 text-red-600" />
+
+    {{-- ══════════════════════════ EDIT MODAL ══════════════════════════ --}}
+    @if($showEditModal)
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6"
+         style="background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh]" wire:click.stop>
+
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-base font-bold text-gray-800">Edit Admit Card</h3>
+                <button wire:click="closeEditModal" class="text-gray-400 hover:text-gray-600">
+                    <x-icon name="x-mark" class="w-5 h-5" />
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Card Number *</label>
+                        <input type="text" wire:model="editAdmitCardNumber"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500 font-mono">
+                        @error('editAdmitCardNumber') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Roll Number *</label>
+                        <input type="text" wire:model="editRollNumber"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                        @error('editRollNumber') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Exam Roll No.</label>
+                        <input type="text" wire:model="editExamRollNumber"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Reporting Time</label>
+                        <input type="time" wire:model="editReportingTime"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Room No. (R)</label>
+                        <input type="text" wire:model="editRoomNumber" placeholder="e.g. 23"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Seat No. (S)</label>
+                        <input type="text" wire:model="editSeatNumber" placeholder="e.g. 18"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Exam Center</label>
+                        <input type="text" wire:model="editExamCenter"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status *</label>
+                        <select wire:model="editStatus"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="used">Used</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Exam Center Address</label>
+                        <input type="text" wire:model="editExamCenterAddress"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                    </div>
+                </div>
+
+                {{-- Subjects --}}
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-yellow-50 border-b border-yellow-100">
+                        <p class="text-xs font-bold text-yellow-800">Exam Schedule</p>
+                        <button type="button" wire:click="addEditSubject"
+                            class="flex items-center gap-1 text-xs text-yellow-700 hover:underline font-semibold">
+                            <x-icon name="plus" class="h-3.5 w-3.5" /> Add Row
+                        </button>
+                    </div>
+                    <div class="divide-y divide-gray-100 max-h-52 overflow-y-auto">
+                        @foreach($editSubjects as $i => $subj)
+                        <div class="px-4 py-3 bg-white">
+                            <div class="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Subject *</label>
+                                    <select wire:model="editSubjects.{{ $i }}.subject_id"
+                                        wire:change="syncEditSubjectName({{ $i }})"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-yellow-500 focus:ring-yellow-500">
+                                        <option value="">Choose</option>
+                                        @foreach($this->allSubjects as $sub)
+                                            <option value="{{ $sub->id }}">{{ $sub->name }}{{ $sub->code ? ' ('.$sub->code.')' : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Date *</label>
+                                    <input type="date" wire:model="editSubjects.{{ $i }}.exam_date"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-yellow-500 focus:ring-yellow-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Time *</label>
+                                    <input type="time" wire:model="editSubjects.{{ $i }}.exam_time"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-yellow-500 focus:ring-yellow-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Duration *</label>
+                                    <input type="text" wire:model="editSubjects.{{ $i }}.exam_duration" placeholder="3 Hrs"
+                                        class="w-full rounded-lg border-gray-300 text-xs focus:border-yellow-500 focus:ring-yellow-500">
+                                </div>
+                                <div class="flex items-end gap-1 justify-end">
+                                    <select wire:model="editSubjects.{{ $i }}.status"
+                                        class="rounded border-gray-300 text-xs focus:border-yellow-500 focus:ring-yellow-500">
+                                        <option value="eligible">Eligible</option>
+                                        <option value="not_eligible">Not Eligible</option>
+                                    </select>
+                                    @if(count($editSubjects) > 1)
+                                    <button type="button" wire:click="removeEditSubject({{ $i }})"
+                                        class="p-1 text-red-400 hover:text-red-600 rounded">
+                                        <x-icon name="trash" class="h-4 w-4" />
+                                    </button>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Admit Card</h3>
-                        <p class="text-gray-600 mb-6">Are you sure you want to delete this admit card? This action
-                            cannot be undone.</p>
-                    </div>
-
-                    <div class="flex justify-center gap-3">
-                        <button wire:click="closeDeleteModal"
-                            class="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                            Cancel
-                        </button>
-                        <button wire:click="deleteAdmitCard"
-                            class="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                            Delete
-                        </button>
+                        @endforeach
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Instructions</label>
+                    <textarea wire:model="editInstructions" rows="3"
+                        class="w-full rounded-lg border-gray-300 text-sm focus:border-yellow-500 focus:ring-yellow-500 resize-none"></textarea>
+                </div>
+
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50/50 rounded-b-2xl">
+                <button wire:click="closeEditModal"
+                    class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                <button wire:click="saveEditCard"
+                    class="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold shadow transition">
+                    Save Changes
+                </button>
             </div>
         </div>
+    </div>
     @endif
+
+
+    {{-- ══════════════════════════ DELETE CONFIRM ══════════════════════════ --}}
+    @if($showDeleteModal)
+    <div class="fixed inset-0 z-[10000] flex items-center justify-center px-4"
+         style="background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" wire:click.stop>
+            <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <x-icon name="trash" class="w-7 h-7 text-red-500" />
+            </div>
+            <h3 class="text-base font-bold text-gray-800 mb-1">Delete Admit Card?</h3>
+            <p class="text-sm text-gray-500 mb-5">This action cannot be undone.</p>
+            <div class="flex justify-center gap-3">
+                <button wire:click="cancelDelete"
+                    class="px-4 py-2 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                <button wire:click="deleteAdmitCard"
+                    class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold shadow transition">Delete</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>

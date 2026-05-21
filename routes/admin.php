@@ -126,5 +126,13 @@ Route::middleware(['auth:web', 'admin'])->group(function () {
         // Transport fee receipt
         Route::get('/transport/receipt/{id}', [\App\Http\Controllers\Admin\TransportReceiptController::class, 'show'])
             ->name('admin.transport.receipt');
+
+        // Admit Card view / download / print-all
+        Route::get('/admit-card/{id}/view', [\App\Http\Controllers\Admin\AdmitCardController::class, 'view'])
+            ->name('admin.admit-card.view');
+        Route::get('/admit-card/{id}/download', [\App\Http\Controllers\Admin\AdmitCardController::class, 'download'])
+            ->name('admin.admit-card.download');
+        Route::get('/admit-card/print-all', [\App\Http\Controllers\Admin\AdmitCardController::class, 'printAll'])
+            ->name('admin.admit-card.print-all');
     });
 });

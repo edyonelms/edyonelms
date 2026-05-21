@@ -56,6 +56,9 @@ Route::prefix('accounts')->group(function () {
             Route::get('/calendar', Calendar::class)->name('accounts.calendar');
             Route::get('/id-card', IdCard::class)->name('accounts.id-card');
             Route::get('/admit-card', AdmitCard::class)->name('accounts.admit-card');
+            Route::get('/admit-card/{id}/view', [\App\Http\Controllers\Admin\AdmitCardController::class, 'view'])->name('accounts.admit-card.view');
+            Route::get('/admit-card/{id}/download', [\App\Http\Controllers\Admin\AdmitCardController::class, 'download'])->name('accounts.admit-card.download');
+            Route::get('/admit-card/print-all', [\App\Http\Controllers\Admin\AdmitCardController::class, 'printAll'])->name('accounts.admit-card.print-all');
             Route::get('/report-card', ReportCard::class)->name('accounts.report-card');
             Route::get('/tc-certificate', TcCertificate::class)->name('accounts.tc-certificate');
             Route::get('/profile', Profile::class)->name('accounts.profile');
