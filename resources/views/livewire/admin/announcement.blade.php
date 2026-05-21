@@ -268,14 +268,23 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Audience <span class="text-red-500">*</span>
                         </label>
+                        @php
+                            // Full, static class strings so Tailwind compiles the peer-checked
+                            // variants. Dynamically built class names (e.g. "border-{$c}-500")
+                            // are NOT seen by the build-time scanner, so the selected state
+                            // never rendered — which made options look unselectable.
+                            $audienceOptions = [
+                                'all'     => ['label' => 'All',      'classes' => 'peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700'],
+                                'user'    => ['label' => 'Students', 'classes' => 'peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700'],
+                                'teacher' => ['label' => 'Teachers', 'classes' => 'peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700'],
+                            ];
+                        @endphp
                         <div class="grid grid-cols-3 gap-2">
-                            @foreach ([['all', 'All', 'purple'], ['user', 'Students', 'emerald'], ['teacher', 'Teachers', 'orange']] as $opt)
+                            @foreach ($audienceOptions as $value => $opt)
                                 <label class="cursor-pointer">
-                                    <input type="radio" wire:model.defer="type" value="{{ $opt[0] }}" class="peer sr-only">
-                                    <div class="px-3 py-2.5 text-center text-sm font-medium border-2 rounded-md transition-all
-                                                border-gray-200 text-gray-600 hover:bg-gray-50
-                                                peer-checked:border-{{ $opt[2] }}-500 peer-checked:bg-{{ $opt[2] }}-50 peer-checked:text-{{ $opt[2] }}-700">
-                                        {{ $opt[1] }}
+                                    <input type="radio" wire:model.defer="type" value="{{ $value }}" class="peer sr-only">
+                                    <div class="px-3 py-2.5 text-center text-sm font-medium border-2 rounded-md transition-all border-gray-200 text-gray-600 hover:bg-gray-50 {{ $opt['classes'] }}">
+                                        {{ $opt['label'] }}
                                     </div>
                                 </label>
                             @endforeach

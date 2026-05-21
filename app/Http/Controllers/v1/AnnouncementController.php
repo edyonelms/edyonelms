@@ -36,28 +36,19 @@ class AnnouncementController extends Controller
                 ->where('created_at', '>=', now()->subDays(30))
                 ->orderBy('created_at', 'desc');
 
-            // Filter based on type if provided in request
-            if (request()->has('type')) {
-                $type = request()->input('type');
+            // Audience scoping by the logged-in user's role:
+            //   teacher  → sees 'teacher' + 'all' (both)
+            //   student  → sees 'user' + 'all' (both)
+            //   admin/others → sees everything
+            $allowed = $this->allowedTypesForUser($user);
+            $query->whereIn('type', $allowed);
 
-                if ($type === 'all') {
-                    // No type filter needed - show all
-                } elseif ($type === 'user_all') {
-                    // Show both 'all' and 'user' type announcements
-                    $query->whereIn('type', ['all', 'user']);
-                } elseif ($type === 'teacher_all') {
-                    // Show both 'all' and 'teacher' type announcements
-                    $query->whereIn('type', ['all', 'teacher']);
-                } else {
-                    // Filter by specific type
+            // Optional explicit narrowing within the allowed set (for app tabs).
+            // Accepts friendly aliases: both→all, student→user.
+            if (request()->filled('type')) {
+                $type = $this->normalizeType((string) request()->input('type'));
+                if (in_array($type, $allowed, true)) {
                     $query->where('type', $type);
-                }
-            } else {
-                // Default behavior based on user type
-                if ($user->user_type === 'teacher') {
-                    $query->whereIn('type', ['all', 'teacher']);
-                } else {
-                    $query->whereIn('type', ['all', 'user']);
                 }
             }
 
@@ -124,7 +115,7 @@ class AnnouncementController extends Controller
             }
 
             // Check if user has access to this announcement type
-            $allowedTypes = ['all', $user->role];
+            $allowedTypes = $this->allowedTypesForUser($user);
             if (!in_array($announcement->type, $allowedTypes)) {
                 return $this->responseService->errorResponse(
                     'You dont have access to this announcement',
@@ -166,5 +157,35 @@ class AnnouncementController extends Controller
                 500
             );
         }
+    }
+
+    /**
+     * The announcement audience types a user is allowed to see, based on role.
+     * Teachers see teacher-targeted + both; students see student-targeted + both;
+     * admins (and any other role) see everything.
+     *
+     * @return array<int,string>
+     */
+    private function allowedTypesForUser($user): array
+    {
+        return match ($user->role) {
+            'teacher' => ['all', 'teacher'],
+            'user'    => ['all', 'user'],
+            default   => ['all', 'user', 'teacher'],
+        };
+    }
+
+    /**
+     * Normalize an incoming `type` filter to a stored value.
+     * Accepts app-friendly aliases (both→all, student→user).
+     */
+    private function normalizeType(string $type): string
+    {
+        return match (strtolower(trim($type))) {
+            'both', 'all'     => 'all',
+            'student', 'user' => 'user',
+            'teacher'         => 'teacher',
+            default           => strtolower(trim($type)),
+        };
     }
 }
