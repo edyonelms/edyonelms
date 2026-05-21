@@ -22,6 +22,7 @@ use App\Livewire\Accounts\ReportCard;
 use App\Livewire\Accounts\TcCertificate;
 use App\Livewire\Accounts\Profile;
 use App\Livewire\Accounts\Notification;
+use App\Livewire\Chat\Messenger;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('accounts')->group(function () {
@@ -62,6 +63,7 @@ Route::prefix('accounts')->group(function () {
             Route::get('/report-card', ReportCard::class)->name('accounts.report-card');
             Route::get('/tc-certificate', TcCertificate::class)->name('accounts.tc-certificate');
             Route::get('/profile', Profile::class)->name('accounts.profile');
+            Route::get('/messages', Messenger::class)->name('accounts.messages');
             Route::get('/notification', Notification::class)->name('accounts.notification');
         });
     });

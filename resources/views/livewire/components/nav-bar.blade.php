@@ -188,9 +188,16 @@
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <x-button rounded class="h-9 w-9 bg-white" icon="bell-alert" outline
                     wire:click="$toggle('showNotifications')" />
-                @if (auth()->user()->role === 'accounts' || auth()->user()->role === 'admin')
-                    <x-button rounded class="h-9 w-9 bg-white" icon="chat-bubble-oval-left-ellipsis" outline
-                        wire:click="profilePage" />
+                @if (in_array(auth()->user()->role, ['accounts', 'admin', 'sub-admin']))
+                    <button wire:click="messagesPage" title="Messages"
+                        class="relative h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 hover:text-blue-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.83L3 20l1.4-3.5A7.9 7.9 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        @if (($unreadMessages ?? 0) > 0)
+                            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{{ $unreadMessages > 99 ? '99+' : $unreadMessages }}</span>
+                        @endif
+                    </button>
                 @endif
 
                 {{-- Plus-circle icon → Admissions shortcut (admin only) --}}

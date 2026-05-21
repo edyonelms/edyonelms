@@ -152,8 +152,54 @@ class NavBar extends Component
         return redirect()->route('admin.profile', ['organization' => Auth::user()->organization]);
     }
 
+    public function messagesPage(): mixed
+    {
+        $user = Auth::user();
+
+        if (in_array($user->role, ['admin', 'sub-admin'], true)) {
+            return redirect()->route('admin.messages', ['organization' => $user->organization_id]);
+        }
+        if ($user->role === 'accounts') {
+            return redirect()->route('accounts.messages', ['organization' => $user->organization_id]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Unread panel-to-panel chat messages for the navbar badge.
+     * Guarded so a missing chat table can never break the global navbar.
+     */
+    protected function unreadMessagesCount(): int
+    {
+        $user = Auth::user();
+        if (!$user || !in_array($user->role, ['admin', 'sub-admin', 'accounts'], true)) {
+            return 0;
+        }
+
+        try {
+            $conversationIds = \App\Models\Chat\Conversation::whereHas(
+                'participants',
+                fn($q) => $q->where('user_id', $user->id)
+            )->pluck('id');
+
+            if ($conversationIds->isEmpty()) {
+                return 0;
+            }
+
+            return \App\Models\Chat\Message::whereIn('conversation_id', $conversationIds)
+                ->where('sender_id', '!=', $user->id)
+                ->whereNull('read_at')
+                ->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
     public function render()
     {
-        return view('livewire.components.nav-bar');
+        return view('livewire.components.nav-bar', [
+            'unreadMessages' => $this->unreadMessagesCount(),
+        ]);
     }
 }

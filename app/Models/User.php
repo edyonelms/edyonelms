@@ -141,7 +141,7 @@ class User extends Authenticatable
         }
 
         // Always-allowed routes for any signed-in sub-admin
-        $always = ['admin.profile', 'admin.notification'];
+        $always = ['admin.profile', 'admin.notification', 'admin.messages'];
         if (in_array($routeName, $always, true)) {
             return true;
         }
