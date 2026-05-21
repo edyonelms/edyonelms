@@ -2,6 +2,14 @@
 
     {{-- ══════════ TABS ══════════ --}}
     <div class="bg-white border-b border-gray-200 px-6 sticky top-0 z-40">
+        <div class="flex items-center gap-3 pt-4">
+            <img src="{{ asset('website-image/Group 11525.png') }}" alt="EDYONE LMS"
+                class="w-12 h-12 rounded-xl object-contain border border-gray-200 shadow-sm bg-white p-1 flex-shrink-0">
+            <div class="min-w-0">
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">Terms of Use</h1>
+                <p class="text-sm text-gray-500 mt-0.5 truncate">Manage your platform's terms of use</p>
+            </div>
+        </div>
         <nav class="flex gap-1">
             <button wire:click="switchTab('view')"
                 class="py-3.5 px-5 text-sm font-semibold border-b-2 transition-colors
