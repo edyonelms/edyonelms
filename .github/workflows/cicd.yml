@@ -198,7 +198,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     environment: production    # optional: tie to a GitHub Environment for approvals/secrets scoping
 
     steps:
@@ -217,6 +217,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          # Docker build recompiles PHP from source (cache pruned each deploy),
+          # which can exceed the action's default 10m command timeout.
+          command_timeout: 30m
           script_stop: true
           envs: GIT_TOKEN,ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
           script: |
@@ -309,6 +312,10 @@ jobs:
             echo "==> git pull"
             git remote set-url origin "https://x-access-token:${GIT_TOKEN:-}@github.com/edyonelms/edyonelms.git"
             git fetch origin main
+            # Fix ownership of files that Docker may have created as root
+            # (e.g. public/build/* built inside the container).
+            # Without this, git reset --hard fails with "Permission denied".
+            sudo chown -R "$(whoami)":"$(whoami)" . 2>/dev/null || true
             git reset --hard origin/main
 
             # Build new app image while old container keeps serving traffic.
