@@ -4,6 +4,7 @@ namespace App\Livewire\SuperAdmin;
 
 use App\Helpers\CityGetHelper;
 use App\Models\Admin\SchoolInfo;
+use App\Models\Admin\Transportation;
 use App\Models\Organization;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
@@ -77,13 +78,15 @@ class Student extends Component
     public string $addDateOfAdmission  = '';
     public string $addStandardId       = '';
     public string $addSectionId        = '';
-    public bool   $addTransportation   = false;
+    public        $addTransportation   = '0'; // '1' = Yes, '0' = No
+    public        $addRoute            = '';
     public string $addApparId          = '';
     public string $addRegNo            = '';
     public        $addStandards        = [];
     public        $addSections         = [];
     public        $addStates           = [];
     public        $addCities           = [];
+    public        $addRouteOptions     = [];
 
     // ─── Delete Confirm ───────────────────────────────────────────────────────
     public bool $showDeleteConfirm = false;
@@ -112,13 +115,15 @@ class Student extends Component
     public string $editDateOfAdmission   = '';
     public string $editStandardId        = '';
     public string $editSectionId         = '';
-    public bool   $editTransportation    = false;
+    public        $editTransportation    = '0'; // '1' = Yes, '0' = No
+    public        $editRoute             = '';
     public string $editApparId           = '';
     public string $editRegNo             = '';
     public        $editStandards         = [];
     public        $editSections          = [];
     public        $editStates            = [];
     public        $editCities            = [];
+    public        $editRouteOptions      = [];
 
     protected $listeners = ['onViewStudentSuperAdmin', 'onDeleteStudentSuperAdmin'];
 
@@ -222,7 +227,7 @@ class Student extends Component
 
     public function onViewStudentSuperAdmin($id): void
     {
-        $detail = StudentDetail::with(['user', 'standard', 'section', 'user.organization.schoolInfo'])
+        $detail = StudentDetail::with(['user', 'standard', 'section', 'user.organization.schoolInfo', 'transportations'])
             ->where('user_id', $id)
             ->first();
 
@@ -313,7 +318,8 @@ class Student extends Component
         $this->editDateOfAdmission  = $detail->date_of_admission?->format('Y-m-d') ?? '';
         $this->editStandardId       = (string) ($detail->standard_id ?? '');
         $this->editSectionId        = (string) ($detail->section_id ?? '');
-        $this->editTransportation   = (bool) $detail->transportation_required;
+        $this->editTransportation   = $detail->transportation_required ? '1' : '0';
+        $this->editRoute            = $detail->transportations()->first()?->id ?? '';
         $this->editApparId          = $detail->appar_id ?? '';
         $this->editRegNo            = $detail->registration_number ?? '';
 
@@ -323,6 +329,10 @@ class Student extends Component
 
         $this->editSections = $this->editStandardId
             ? Section::where('standard_id', $this->editStandardId)->get()
+            : [];
+
+        $this->editRouteOptions = $this->editOrgId
+            ? $this->routesForOrg($this->editOrgId)
             : [];
 
         $this->editCities = $this->editState
@@ -345,12 +355,15 @@ class Student extends Component
         $this->editSectionId  = '';
         $this->editSections   = [];
         $this->editBoard      = '';
+        $this->editRoute      = '';
 
         if ($this->editOrgId) {
-            $this->editStandards = Standard::where('organization_id', $this->editOrgId)->orderBy('name')->get();
-            $this->editBoard     = Organization::find($this->editOrgId)?->education_board ?? '';
+            $this->editStandards    = Standard::where('organization_id', $this->editOrgId)->orderBy('name')->get();
+            $this->editBoard        = Organization::find($this->editOrgId)?->education_board ?? '';
+            $this->editRouteOptions = $this->routesForOrg($this->editOrgId);
         } else {
-            $this->editStandards = [];
+            $this->editStandards    = [];
+            $this->editRouteOptions = [];
         }
     }
 
@@ -388,8 +401,15 @@ class Student extends Component
             'editPermanentAddress' => 'nullable|string|max:500',
             'editPincode'          => 'nullable|digits:6',
             'editAadharNo'         => 'nullable|digits:12',
-            'editStandardId'       => 'nullable|integer|exists:standards,id',
-            'editSectionId'        => 'nullable|integer|exists:sections,id',
+            'editStandardId'       => 'required|integer|exists:standards,id',
+            'editSectionId'        => 'required|integer|exists:sections,id',
+            'editRoute'            => $this->editTransportation
+                ? 'required|integer|exists:transportations,id'
+                : 'nullable',
+        ], [
+            'editStandardId.required' => 'Please select a class.',
+            'editSectionId.required'  => 'Please select a section.',
+            'editRoute.required'      => 'Please select a transport route.',
         ]);
 
         User::where('id', $this->editUserId)->update([
@@ -419,10 +439,15 @@ class Student extends Component
             'aadhar_no'               => $this->editAadharNo ?: null,
             'board'                   => $this->editBoard,
             'date_of_admission'       => $this->editDateOfAdmission,
-            'transportation_required' => $this->editTransportation,
+            'transportation_required' => (bool) $this->editTransportation,
             'appar_id'                => $this->editApparId ?: null,
             'registration_number'     => $this->editRegNo ?: null,
         ]);
+
+        $detail = StudentDetail::find($this->editDetailId);
+        if ($detail) {
+            $this->syncStudentRoute($detail, (bool) $this->editTransportation, $this->editRoute, $this->editOrgId);
+        }
 
         $this->closeEditPanel();
         $this->loadStats();
@@ -526,12 +551,14 @@ class Student extends Component
         $this->addDateOfAdmission = now()->format('Y-m-d');
         $this->addStandardId      = '';
         $this->addSectionId       = '';
-        $this->addTransportation  = false;
+        $this->addTransportation  = '0';
+        $this->addRoute           = '';
         $this->addApparId         = '';
         $this->addRegNo           = '';
         $this->addStandards       = [];
         $this->addSections        = [];
         $this->addCities          = [];
+        $this->addRouteOptions    = [];
         $this->resetValidation();
         $this->showAddPanel       = true;
     }
@@ -548,13 +575,51 @@ class Student extends Component
         $this->addSectionId  = '';
         $this->addSections   = [];
         $this->addBoard      = '';
+        $this->addRoute      = '';
 
         if ($this->addOrgId) {
-            $this->addStandards = Standard::where('organization_id', $this->addOrgId)->orderBy('name')->get();
+            $this->addStandards    = Standard::where('organization_id', $this->addOrgId)->orderBy('name')->get();
             $org = Organization::find($this->addOrgId);
-            $this->addBoard = $org?->education_board ?? '';
+            $this->addBoard        = $org?->education_board ?? '';
+            $this->addRouteOptions = $this->routesForOrg($this->addOrgId);
         } else {
-            $this->addStandards = [];
+            $this->addStandards    = [];
+            $this->addRouteOptions = [];
+        }
+    }
+
+    /** Active transport routes for an organization (id, name, fee). */
+    private function routesForOrg($orgId)
+    {
+        return Transportation::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('route_name')
+            ->get(['id', 'route_name', 'monthly_fee']);
+    }
+
+    public function updatedAddTransportation(): void
+    {
+        if (!$this->addTransportation) {
+            $this->addRoute = '';
+        }
+    }
+
+    public function updatedEditTransportation(): void
+    {
+        if (!$this->editTransportation) {
+            $this->editRoute = '';
+        }
+    }
+
+    /** Attach/detach the chosen route on a student detail, scoped to its org. */
+    private function syncStudentRoute(StudentDetail $detail, $transportRequired, $routeId, $orgId): void
+    {
+        if ($transportRequired && $routeId) {
+            $detail->transportations()->sync([
+                (int) $routeId => ['organization_id' => $orgId],
+            ]);
+        } else {
+            $detail->transportations()->detach();
         }
     }
 
@@ -592,8 +657,15 @@ class Student extends Component
             'addPermanentAddress'=> 'nullable|string|max:500',
             'addPincode'         => 'nullable|digits:6',
             'addAadharNo'        => 'nullable|digits:12',
-            'addStandardId'      => 'nullable|integer|exists:standards,id',
-            'addSectionId'       => 'nullable|integer|exists:sections,id',
+            'addStandardId'      => 'required|integer|exists:standards,id',
+            'addSectionId'       => 'required|integer|exists:sections,id',
+            'addRoute'           => $this->addTransportation
+                ? 'required|integer|exists:transportations,id'
+                : 'nullable',
+        ], [
+            'addStandardId.required' => 'Please select a class.',
+            'addSectionId.required'  => 'Please select a section.',
+            'addRoute.required'      => 'Please select a transport route.',
         ]);
 
         $org           = Organization::findOrFail($this->addOrgId);
@@ -612,7 +684,7 @@ class Student extends Component
         $admissionNo = $this->generateAdmissionNo($org, $this->addStandardId, $this->addSectionId);
         $rollNo      = $this->generateRollNo($this->addStandardId, $this->addSectionId);
 
-        StudentDetail::create([
+        $detail = StudentDetail::create([
             'user_id'                => $user->id,
             'organization_id'        => $this->addOrgId,
             'standard_id'            => $this->addStandardId ?: null,
@@ -635,10 +707,12 @@ class Student extends Component
             'admission_no'           => $admissionNo,
             'date_of_admission'      => $this->addDateOfAdmission,
             'roll_no'                => $rollNo,
-            'transportation_required'=> $this->addTransportation,
+            'transportation_required'=> (bool) $this->addTransportation,
             'appar_id'               => $this->addApparId ?: null,
             'registration_number'    => $this->addRegNo ?: null,
         ]);
+
+        $this->syncStudentRoute($detail, (bool) $this->addTransportation, $this->addRoute, $this->addOrgId);
 
         try {
             $templateKey = config('services.zeptomail.student_password_template_key');

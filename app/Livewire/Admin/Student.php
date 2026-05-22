@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Helpers\CityGetHelper;
+use App\Models\Admin\Transportation;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
 use App\Models\Student\StudentDetail;
@@ -45,7 +46,11 @@ class Student extends Component
     public $dateOfAdmission  = '';
     public $apparId          = null;
     public $registrationNumber = null;
-    public $transportationRequired = false;
+    public $transportationRequired = '0'; // '1' = Yes, '0' = No (string keeps Livewire select binding reliable)
+
+    // ─── Transport route selection ───────────────────────────────────────
+    public $selectedRoute = null;
+    public $routeOptions  = [];
 
     // ─── Location ────────────────────────────────────────────────────────
     public $states        = [];
@@ -111,8 +116,41 @@ class Student extends Component
         $this->states      = $cityHelper->getState();
         $this->standards   = Standard::where('organization_id', Auth::user()->organization_id)->get();
 
+        $this->loadRoutes();
         $this->loadSections();
         $this->loadStats();
+    }
+
+    private function loadRoutes(): void
+    {
+        $this->routeOptions = Transportation::where('organization_id', Auth::user()->organization_id)
+            ->where('is_active', true)
+            ->orderBy('route_name')
+            ->get(['id', 'route_name', 'monthly_fee']);
+    }
+
+    public function updatedTransportationRequired($value): void
+    {
+        // Clear any selected route when transport is turned off
+        if (!$this->transportationRequired) {
+            $this->selectedRoute = null;
+        }
+    }
+
+    /**
+     * Attach the chosen transport route to the student (or detach all when
+     * transport is not required). Assigning the route makes the route's fee
+     * flow into the Transport module's student list & fee summary.
+     */
+    private function syncTransportRoute(StudentDetail $detail): void
+    {
+        if ($this->transportationRequired && $this->selectedRoute) {
+            $detail->transportations()->sync([
+                (int) $this->selectedRoute => ['organization_id' => Auth::user()->organization_id],
+            ]);
+        } else {
+            $detail->transportations()->detach();
+        }
     }
 
     private function loadStats(): void
@@ -235,8 +273,8 @@ class Student extends Component
             'dob'               => 'required|date|before:today',
             'studentsGender'    => 'required|string|in:male,female,other',
             'studentsBoard'     => 'required|string',
-            'studentsClass'     => 'nullable|integer|exists:standards,id',
-            'studentsSection'   => 'nullable|integer|exists:sections,id',
+            'studentsClass'     => 'required|integer|exists:standards,id',
+            'studentsSection'   => 'required|integer|exists:sections,id',
             'fatherName'        => 'required|string|max:255',
             'motherName'        => 'required|string|max:255',
             'dateOfAdmission'   => 'required|date|before_or_equal:today',
@@ -244,15 +282,24 @@ class Student extends Component
             'pincode'           => 'nullable|digits:6',
             'studentImage'      => 'nullable|image|max:2048',
             'transportationRequired' => 'boolean',
+            'selectedRoute'     => $this->transportationRequired
+                ? 'required|integer|exists:transportations,id'
+                : 'nullable',
             'apparId'           => 'nullable|string',
             'registrationNumber' => 'nullable|string',
+        ];
+
+        $messages = [
+            'studentsClass.required'   => 'Please select a class.',
+            'studentsSection.required' => 'Please select a section.',
+            'selectedRoute.required'   => 'Please select a transport route.',
         ];
 
         if (empty($this->studentData['id'])) {
             $rules['studentsEmail'] .= '|unique:users,email';
         }
 
-        $this->validate($rules);
+        $this->validate($rules, $messages);
 
         try {
             $student = !empty($this->studentData['id']) ? User::find($this->studentData['id']) : new User();
@@ -318,17 +365,19 @@ class Student extends Component
                 'board'                  => $this->studentsBoard,
                 'aadhar_no'              => $this->aadharNo ?? null,
                 'phone'                  => $this->studentsMobile,
-                'transportation_required' => $this->transportationRequired ?? false,
+                'transportation_required' => (bool) $this->transportationRequired,
                 'organization_id'        => Auth::user()->organization_id,
                 'appar_id'               => $this->apparId ?? null,
                 'registration_number'    => $this->registrationNumber ?? null,
             ];
 
             if (!empty($this->studentData['id'])) {
-                StudentDetail::updateOrCreate(['user_id' => $student->id], $detailData);
+                $detail = StudentDetail::updateOrCreate(['user_id' => $student->id], $detailData);
+                $this->syncTransportRoute($detail);
                 $this->notification()->success('Student Updated Successfully!');
             } else {
-                StudentDetail::create($detailData);
+                $detail = StudentDetail::create($detailData);
+                $this->syncTransportRoute($detail);
 
                 // Send welcome email with login credentials on student creation
                 try {
@@ -371,7 +420,7 @@ class Student extends Component
 
     public function onViewStudentAdmin($id): void
     {
-        $detail = StudentDetail::with(['user', 'standard', 'section'])->find($id);
+        $detail = StudentDetail::with(['user', 'standard', 'section', 'transportations'])->find($id);
 
         if (!$detail || !$detail->user) {
             $this->notification()->error('Student not found!');
@@ -419,7 +468,8 @@ class Student extends Component
         $this->selectedCity      = $detail->city ?: null;
         $this->pincode           = (string) ($detail->pincode ?? '');
         $this->aadharNo          = (string) ($detail->aadhar_no ?? '');
-        $this->transportationRequired = (bool) ($detail->transportation_required ?? false);
+        $this->transportationRequired = $detail->transportation_required ? '1' : '0';
+        $this->selectedRoute     = $detail->transportations()->first()?->id;
         $this->apparId           = $detail->appar_id;
         $this->registrationNumber = $detail->registration_number;
         $this->studentImageUrl   = $user->image;
@@ -605,6 +655,7 @@ class Student extends Component
             'studentImage',
             'studentImageUrl',
             'transportationRequired',
+            'selectedRoute',
             'apparId',
             'registrationNumber',
             'studentsActive',

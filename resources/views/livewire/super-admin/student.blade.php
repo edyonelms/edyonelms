@@ -601,24 +601,26 @@
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Academic Details</p>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Class <span class="text-red-500">*</span></label>
                                 <select wire:model.live="addStandardId" @disabled(!$addOrgId)
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 @error('addStandardId') border-red-400 @enderror">
                                     <option value="">Select class</option>
                                     @foreach ($addStandards as $std)
                                         <option value="{{ $std->id }}">{{ $std->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('addStandardId') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Section <span class="text-red-500">*</span></label>
                                 <select wire:model.defer="addSectionId" @disabled(!$addStandardId)
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 @error('addSectionId') border-red-400 @enderror">
                                     <option value="">Select section</option>
                                     @foreach ($addSections as $sec)
                                         <option value="{{ $sec->id }}">{{ $sec->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('addSectionId') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
@@ -653,11 +655,43 @@
                             <input wire:model.defer="addRegNo" type="text" placeholder="Optional"
                                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                         </div>
-                        <div class="flex items-center gap-2">
-                            <input wire:model.defer="addTransportation" type="checkbox" id="addTransport"
-                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <label for="addTransport" class="text-sm text-gray-700">Transportation Required</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Transport Required? <span class="text-red-500">*</span></label>
+                                <select wire:model.live="addTransportation"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                            </div>
+                            @if ($addTransportation)
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Select Route <span class="text-red-500">*</span></label>
+                                    <select wire:model.live="addRoute"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white @error('addRoute') border-red-400 @enderror">
+                                        <option value="">Select route</option>
+                                        @foreach ($addRouteOptions as $route)
+                                            <option value="{{ $route->id }}">{{ $route->route_name }} — ₹{{ number_format($route->monthly_fee, 0) }}/mo</option>
+                                        @endforeach
+                                    </select>
+                                    @error('addRoute') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                                    @if (count($addRouteOptions) === 0)
+                                        <p class="text-amber-600 text-xs mt-1">No active routes for this school.</p>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
+                        @if ($addTransportation)
+                            @php $addChosenRoute = collect($addRouteOptions)->firstWhere('id', (int) $addRoute); @endphp
+                            @if ($addChosenRoute)
+                                <div class="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-600">Transport Fee</span>
+                                    <span class="text-sm font-semibold text-blue-700">
+                                        ₹{{ number_format($addChosenRoute->monthly_fee, 0) }}/mo · ₹{{ number_format($addChosenRoute->monthly_fee * 11, 0) }}/yr
+                                    </span>
+                                </div>
+                            @endif
+                        @endif
                     </div>
 
                     {{-- Address --}}
@@ -798,6 +832,11 @@
                             <div><dt class="text-xs text-gray-400">Admission Date</dt><dd class="font-medium">{{ $viewData['detail']?->date_of_admission?->format('d M Y') ?? '—' }}</dd></div>
                             <div><dt class="text-xs text-gray-400">Board</dt><dd class="font-medium">{{ $viewData['detail']?->board ?? '—' }}</dd></div>
                             <div><dt class="text-xs text-gray-400">Transportation</dt><dd class="font-medium {{ $viewData['detail']?->transportation_required ? 'text-green-700' : 'text-gray-500' }}">{{ $viewData['detail']?->transportation_required ? 'Required' : 'Not Required' }}</dd></div>
+                            @php $svRoute = $viewData['detail']?->transportations?->first(); @endphp
+                            @if ($svRoute)
+                                <div><dt class="text-xs text-gray-400">Transport Route</dt><dd class="font-medium">{{ $svRoute->route_name }}</dd></div>
+                                <div><dt class="text-xs text-gray-400">Transport Fee</dt><dd class="font-medium text-blue-700">₹{{ number_format($svRoute->monthly_fee, 0) }}/mo · ₹{{ number_format($svRoute->monthly_fee * 11, 0) }}/yr</dd></div>
+                            @endif
                         </dl>
                     </div>
                     {{-- Address --}}
@@ -946,22 +985,24 @@
                                 @error('editDateOfAdmission') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Class</label>
-                                <select wire:model.live="editStandardId" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white {{ empty($editStandards) ? 'opacity-50' : '' }}">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Class <span class="text-red-500">*</span></label>
+                                <select wire:model.live="editStandardId" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white {{ empty($editStandards) ? 'opacity-50' : '' }} @error('editStandardId') border-red-400 @enderror">
                                     <option value="">— Select Class —</option>
                                     @foreach ($editStandards as $std)
                                         <option value="{{ $std->id }}">{{ $std->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('editStandardId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Section</label>
-                                <select wire:model.defer="editSectionId" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white {{ empty($editSections) ? 'opacity-50' : '' }}">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Section <span class="text-red-500">*</span></label>
+                                <select wire:model.defer="editSectionId" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white {{ empty($editSections) ? 'opacity-50' : '' }} @error('editSectionId') border-red-400 @enderror">
                                     <option value="">— Select Section —</option>
                                     @foreach ($editSections as $sec)
                                         <option value="{{ $sec->id }}">{{ $sec->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('editSectionId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">Appar ID</label>
@@ -971,10 +1012,39 @@
                                 <label class="block text-xs font-medium text-gray-600 mb-1">Registration No</label>
                                 <input wire:model.defer="editRegNo" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 font-mono"/>
                             </div>
-                            <div class="col-span-2 flex items-center gap-3">
-                                <input wire:model.defer="editTransportation" type="checkbox" id="editTransportation" class="w-4 h-4 text-amber-600 rounded border-gray-300">
-                                <label for="editTransportation" class="text-sm text-gray-700">Transportation Required</label>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Transport Required? <span class="text-red-500">*</span></label>
+                                <select wire:model.live="editTransportation" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white">
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
                             </div>
+                            @if ($editTransportation)
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Select Route <span class="text-red-500">*</span></label>
+                                    <select wire:model.live="editRoute" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white @error('editRoute') border-red-400 @enderror">
+                                        <option value="">Select route</option>
+                                        @foreach ($editRouteOptions as $route)
+                                            <option value="{{ $route->id }}">{{ $route->route_name }} — ₹{{ number_format($route->monthly_fee, 0) }}/mo</option>
+                                        @endforeach
+                                    </select>
+                                    @error('editRoute') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    @if (count($editRouteOptions) === 0)
+                                        <p class="text-amber-600 text-xs mt-1">No active routes for this school.</p>
+                                    @endif
+                                </div>
+                            @endif
+                            @if ($editTransportation)
+                                @php $editChosenRoute = collect($editRouteOptions)->firstWhere('id', (int) $editRoute); @endphp
+                                @if ($editChosenRoute)
+                                    <div class="col-span-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 flex items-center justify-between">
+                                        <span class="text-xs text-gray-600">Transport Fee</span>
+                                        <span class="text-sm font-semibold text-amber-700">
+                                            ₹{{ number_format($editChosenRoute->monthly_fee, 0) }}/mo · ₹{{ number_format($editChosenRoute->monthly_fee * 11, 0) }}/yr
+                                        </span>
+                                    </div>
+                                @endif
+                            @endif
                         </div>
                     </div>
 

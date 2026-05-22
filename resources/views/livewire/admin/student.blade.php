@@ -761,30 +761,38 @@
 
                                 {{-- Class --}}
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Class <span class="text-red-500">*</span></label>
                                     <select wire:model.live="studentsClass"
                                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors">
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                               @error('studentsClass') border-red-400 @enderror">
                                         <option value="">Select Class</option>
                                         @foreach ($standards as $standard)
                                             <option value="{{ $standard->id }}">{{ $standard->name }}</option>
                                         @endforeach
                                     </select>
+                                    @error('studentsClass')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 {{-- Section --}}
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Section <span class="text-red-500">*</span></label>
                                     <select wire:model="studentsSection"
                                         @disabled(!$studentsClass)
                                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
                                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
-                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                               disabled:opacity-50 disabled:cursor-not-allowed
+                                               @error('studentsSection') border-red-400 @enderror">
                                         <option value="">Select Section</option>
                                         @foreach ($sections as $section)
                                             <option value="{{ $section->id }}">{{ $section->name }}</option>
                                         @endforeach
                                     </select>
+                                    @error('studentsSection')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 {{-- Appar ID --}}
@@ -879,22 +887,66 @@
                             </div>
                         </div>
 
+                        {{-- Transport --}}
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <span class="w-5 h-0.5 bg-blue-500 rounded"></span>
+                                Transport
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {{-- Transport required Yes/No --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Transport Required? <span class="text-red-500">*</span></label>
+                                    <select wire:model.live="transportationRequired"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors">
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                </div>
+
+                                {{-- Route (only when transport required) --}}
+                                @if ($transportationRequired)
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Route <span class="text-red-500">*</span></label>
+                                        <select wire:model.live="selectedRoute"
+                                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
+                                                   @error('selectedRoute') border-red-400 @enderror">
+                                            <option value="">Select Route</option>
+                                            @foreach ($routeOptions as $route)
+                                                <option value="{{ $route->id }}">{{ $route->route_name }} — ₹{{ number_format($route->monthly_fee, 0) }}/mo</option>
+                                            @endforeach
+                                        </select>
+                                        @error('selectedRoute')
+                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                        @if (count($routeOptions) === 0)
+                                            <p class="text-amber-600 text-xs mt-1">No active routes available. Add routes in the Transport module first.</p>
+                                        @endif
+
+                                        @php $chosenRoute = collect($routeOptions)->firstWhere('id', (int) $selectedRoute); @endphp
+                                        @if ($chosenRoute)
+                                            <div class="mt-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 space-y-1">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-600">Monthly Fee</span>
+                                                    <span class="text-sm font-semibold text-blue-700">₹{{ number_format($chosenRoute->monthly_fee, 2) }}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-600">Annual Fee (× 11)</span>
+                                                    <span class="text-sm font-semibold text-blue-700">₹{{ number_format($chosenRoute->monthly_fee * 11, 2) }}</span>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
                         {{-- Settings --}}
                         <div class="bg-gray-50 rounded-xl p-4">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Settings</p>
                             <div class="flex flex-wrap gap-6">
-                                <label class="flex items-center gap-3 cursor-pointer">
-                                    <div class="relative">
-                                        <input type="checkbox" wire:model="transportationRequired" class="sr-only peer">
-                                        <div
-                                            class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-500 transition-colors">
-                                        </div>
-                                        <div
-                                            class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5">
-                                        </div>
-                                    </div>
-                                    <span class="text-sm font-medium text-gray-700">Transportation Required</span>
-                                </label>
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <div class="relative">
                                         <input type="checkbox" wire:model="studentsActive" class="sr-only peer">
@@ -1102,6 +1154,20 @@
                                     {{ $viewData['detail']->transportation_required ? 'Required' : 'Not Required' }}
                                 </dd>
                             </div>
+                            @php $assignedRoute = $viewData['detail']->transportations->first() ?? null; @endphp
+                            @if ($assignedRoute)
+                                <div>
+                                    <dt class="text-xs text-gray-400">Transport Route</dt>
+                                    <dd class="font-medium">{{ $assignedRoute->route_name }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-400">Transport Fee</dt>
+                                    <dd class="font-medium text-blue-700">
+                                        ₹{{ number_format($assignedRoute->monthly_fee, 0) }}/mo
+                                        · ₹{{ number_format($assignedRoute->monthly_fee * 11, 0) }}/yr
+                                    </dd>
+                                </div>
+                            @endif
                         </dl>
                     </div>
                 @endif
