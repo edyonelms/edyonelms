@@ -132,20 +132,10 @@
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Panel Header --}}
-                <div class="flex items-start justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">{{ $editId ? 'Edit User' : 'Add New User' }}</h2>
-                        <div class="flex items-center gap-2 mt-3">
-                            <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 1 ? 'text-purple-600' : 'text-gray-400' }}">
-                                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">1</span>
-                                Personal Details
-                            </span>
-                            <span class="w-8 h-px bg-gray-200"></span>
-                            <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 2 ? 'text-purple-600' : 'text-gray-400' }}">
-                                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">2</span>
-                                Access & Permissions
-                            </span>
-                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">Create sub-admins and grant scoped access</p>
                     </div>
                     <button wire:click="closePanel"
                         class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
@@ -155,6 +145,19 @@
 
                 {{-- Body --}}
                 <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+
+                    {{-- Step indicator --}}
+                    <div class="flex items-center gap-2">
+                        <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 1 ? 'text-purple-600' : 'text-gray-400' }}">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">1</span>
+                            Personal Details
+                        </span>
+                        <span class="w-8 h-px bg-gray-200"></span>
+                        <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 2 ? 'text-purple-600' : 'text-gray-400' }}">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">2</span>
+                            Access & Permissions
+                        </span>
+                    </div>
 
                     {{-- STEP 1 --}}
                     <div class="{{ $step === 1 ? '' : 'hidden' }} space-y-5">
