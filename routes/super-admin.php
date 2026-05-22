@@ -11,6 +11,7 @@ use App\Livewire\SuperAdmin\Login;
 use App\Livewire\SuperAdmin\Payroll;
 use App\Livewire\SuperAdmin\PortalWebsite;
 use App\Livewire\SuperAdmin\PrivacyPolicy;
+use App\Livewire\SuperAdmin\QuickLinks;
 use App\Livewire\SuperAdmin\Rating;
 use App\Livewire\SuperAdmin\Schools;
 use App\Livewire\SuperAdmin\Session;
@@ -32,6 +33,7 @@ Route::middleware(['guest:web'])->group(function () {
 });
 
 Route::middleware(['auth:web', 'super-admin'])->group(function () {
+    Route::get('quick-links', QuickLinks::class)->name('super-admin.quick-links');
     Route::get('dashboard', Dashboard::class)->name('super-admin.dashboard');
     Route::get('schools', Schools::class)->name('super-admin.schools');
     Route::get('students', Student::class)->name('super-admin.students');

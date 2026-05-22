@@ -234,6 +234,12 @@ return [
 
     'super-admin' => [
         [
+            'title' => 'Quick Links',
+            'link' => 'super-admin.quick-links',
+            'icon' => 'link',
+            'prefix' => 'super-admin.quick-links',
+        ],
+        [
             'title' => 'Home',
             'link' => 'super-admin.dashboard',
             'icon' => 'home',

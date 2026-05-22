@@ -99,7 +99,7 @@ class Login extends Component
         try {
             OtpMailService::verifyOtp($user, $entered);
             Auth::login($user);
-            return redirect()->intended('/dashboard');
+            return redirect()->route('super-admin.quick-links');
         } catch (\Exception $e) {
             $this->otp = ['', '', '', '', '', ''];
             $this->addError('otp', $e->getMessage());
