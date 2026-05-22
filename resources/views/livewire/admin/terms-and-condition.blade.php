@@ -14,52 +14,38 @@
         </div>
     @else
         {{-- ══════════════════════════════════════════════════
-             HERO HEADER
+             COMPACT HEADER (super-admin about-app style)
         ══════════════════════════════════════════════════ --}}
-        <div class="bg-white border-b border-gray-200">
-            <div class="max-w-5xl mx-auto px-6 py-10">
-                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-
-                    {{-- Logo --}}
-                    <div class="flex-shrink-0">
-                        @if ($platformLogo)
-                            <img src="{{ $platformLogo }}" alt="Platform Logo"
-                                class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
-                        @else
-                            <div class="w-24 h-24 rounded-2xl bg-indigo-100 flex items-center justify-center shadow-sm">
-                                <svg class="w-12 h-12 text-indigo-500" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Title block --}}
-                    <div class="text-center sm:text-left flex-1">
-                        <h1 class="text-3xl font-bold text-gray-900">{{ $platformName }}</h1>
+        <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    @if ($platformLogo)
+                        <img src="{{ $platformLogo }}" alt="Platform Logo"
+                            class="w-12 h-12 rounded-xl object-contain border border-gray-200 shadow-sm bg-white p-1 flex-shrink-0">
+                    @else
+                        <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                    @endif
+                    <div class="min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{{ $platformName }}</h1>
                         @if ($companyName)
-                            <p class="text-gray-500 mt-1.5 text-sm max-w-xl">{{ $companyName }}</p>
-                        @endif
-
-                        @if ($companyCin)
-                            <div class="flex flex-wrap justify-center sm:justify-start gap-3 mt-4">
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-xs text-gray-600
-                                    bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    CIN: {{ $companyCin }}
-                                </span>
-                            </div>
+                            <p class="text-sm text-gray-500 mt-0.5 truncate">{{ $companyName }}</p>
                         @endif
                     </div>
-
                 </div>
+                @if ($companyCin)
+                    <span class="flex-shrink-0 inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors">
+                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        CIN: {{ $companyCin }}
+                    </span>
+                @endif
             </div>
         </div>
 

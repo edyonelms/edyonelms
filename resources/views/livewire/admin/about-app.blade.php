@@ -13,45 +13,32 @@
         </div>
     @else
         {{-- ══════════════════════════════════════════════════
-         HERO HEADER
+         COMPACT HEADER (super-admin about-app style)
     ══════════════════════════════════════════════════ --}}
-        <div class="bg-white border-b border-gray-200">
-            <div class="max-w-5xl mx-auto px-6 py-10">
-                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-
-                    {{-- Logo --}}
-                    <div class="flex-shrink-0">
-                        @if ($aboutApp->logo)
-                            <img src="{{ $aboutApp->logo }}" alt="App Logo"
-                                class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
-                        @else
-                            <div class="w-24 h-24 rounded-2xl bg-indigo-100 flex items-center justify-center shadow-sm">
-                                <svg class="w-12 h-12 text-indigo-500" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Title block --}}
-                    <div class="text-center sm:text-left flex-1">
-                        <h1 class="text-3xl font-bold text-gray-900">
-                            {{ $aboutApp->heading ?? 'About App' }}
-                        </h1>
-                        <p class="text-gray-500 mt-1.5 text-sm max-w-xl">
-                            {{ $aboutApp->sub_heading ?? 'Platform application details' }}
-                        </p>
-                        @if ($aboutApp->title ?? false)
-                            <p
-                                class="mt-3 inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700
-                                  text-sm font-semibold rounded-full border border-indigo-100">
-                                {{ $aboutApp->title }}
-                            </p>
-                        @endif
+        <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    @if ($aboutApp->logo)
+                        <img src="{{ $aboutApp->logo }}" alt="App Logo"
+                            class="w-12 h-12 rounded-xl object-contain border border-gray-200 shadow-sm bg-white p-1 flex-shrink-0">
+                    @else
+                        <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    @endif
+                    <div class="min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{{ $aboutApp->heading ?? 'About App' }}</h1>
+                        <p class="text-sm text-gray-500 mt-0.5 truncate">{{ $aboutApp->sub_heading ?? 'Platform application details' }}</p>
                     </div>
                 </div>
+                @if ($aboutApp->title ?? false)
+                    <span class="flex-shrink-0 inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-100">
+                        {{ $aboutApp->title }}
+                    </span>
+                @endif
             </div>
         </div>
 
