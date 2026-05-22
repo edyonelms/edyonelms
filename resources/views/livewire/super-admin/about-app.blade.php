@@ -242,11 +242,11 @@
                                         @endif
                                         @if ($memberUrl)
                                             <a href="{{ $memberUrl }}" target="_blank" rel="noopener noreferrer"
-                                                class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors shadow-sm">
+                                                class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors">
+                                                View Profile
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                 </svg>
-                                                View Profile
                                             </a>
                                         @endif
                                     </div>
