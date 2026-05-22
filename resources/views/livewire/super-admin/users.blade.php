@@ -131,26 +131,26 @@
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePanel"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
-                {{-- Floating close --}}
-                <button wire:click="closePanel"
-                    class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
-                {{-- Header --}}
-                <div class="px-6 pt-6 pb-4 border-b border-gray-100">
-                    <h2 class="text-lg font-bold text-gray-900">{{ $editId ? 'Edit User' : 'Add New User' }}</h2>
-                    <div class="flex items-center gap-2 mt-3">
-                        <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 1 ? 'text-purple-600' : 'text-gray-400' }}">
-                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">1</span>
-                            Personal Details
-                        </span>
-                        <span class="w-8 h-px bg-gray-200"></span>
-                        <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 2 ? 'text-purple-600' : 'text-gray-400' }}">
-                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">2</span>
-                            Access & Permissions
-                        </span>
+                {{-- Panel Header --}}
+                <div class="flex items-start justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ $editId ? 'Edit User' : 'Add New User' }}</h2>
+                        <div class="flex items-center gap-2 mt-3">
+                            <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 1 ? 'text-purple-600' : 'text-gray-400' }}">
+                                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">1</span>
+                                Personal Details
+                            </span>
+                            <span class="w-8 h-px bg-gray-200"></span>
+                            <span class="flex items-center gap-1.5 text-xs font-medium {{ $step === 2 ? 'text-purple-600' : 'text-gray-400' }}">
+                                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $step === 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500' }}">2</span>
+                                Access & Permissions
+                            </span>
+                        </div>
                     </div>
+                    <button wire:click="closePanel"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
 
                 {{-- Body --}}
@@ -288,12 +288,16 @@
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeViewPanel"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
-                <button wire:click="closeViewPanel"
-                    class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                {{-- Panel Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div><h2 class="text-lg font-semibold text-gray-900">User Details</h2></div>
+                    <button wire:click="closeViewPanel"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
 
-                <div class="flex-1 overflow-y-auto px-6 pt-8 pb-6">
+                <div class="flex-1 overflow-y-auto px-6 py-6">
                     <div class="flex flex-col items-center text-center mb-6">
                         @if (!empty($viewData['image']))
                             <img src="{{ $viewData['image'] }}" class="w-20 h-20 rounded-full object-cover border border-gray-200" alt="">

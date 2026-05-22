@@ -699,16 +699,19 @@
         <div class="fixed inset-0 z-[9999] overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEmpModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
-                <button wire:click="closeEmpModal"
-                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
-                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
+                {{-- Panel Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">{{ $editEmpId ? 'Edit Employee' : 'Add Employee' }}</h2>
                         <p class="text-xs text-gray-500 mt-0.5">For type <strong>Teacher</strong>, attendance syncs with the Attendance module.</p>
                     </div>
+                    <button wire:click="closeEmpModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
 
                     {{-- Photo --}}
                     <div>
@@ -853,12 +856,16 @@
         <div class="fixed inset-0 z-[9999] overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEmpDetailModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
-                <button wire:click="closeEmpDetailModal"
-                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                {{-- Panel Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div><h2 class="text-lg font-semibold text-gray-900">Employee Details</h2></div>
+                    <button wire:click="closeEmpDetailModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
 
-                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                     <div class="flex flex-col items-center text-center pb-4 border-b border-gray-100">
                         @if ($selectedEmployee->photo)
                             <img src="{{ $selectedEmployee->photo }}"
@@ -948,16 +955,19 @@
         <div class="fixed inset-0 z-[9999] overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePayModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
-                <button wire:click="closePayModal"
-                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 shadow-md">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
-                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-4">
+                {{-- Panel Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Pay Salary</h2>
                         <p class="text-xs text-gray-500 mt-0.5">{{ $payEmp?->name }} · {{ \Carbon\Carbon::parse($salaryMonth . '-01')->format('M Y') }}</p>
                     </div>
+                    <button wire:click="closePayModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Amount (₹) *</label>
                         <input type="number" wire:model.defer="payAmount" min="0"
