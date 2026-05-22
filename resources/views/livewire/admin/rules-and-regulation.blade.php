@@ -57,45 +57,48 @@
 
             {{-- Header --}}
             <div class="bg-white border-b border-gray-200">
-                <div class="mx-auto px-6 py-8 flex items-start justify-between gap-4">
-                    <div>
-                        <div class="flex items-center gap-3 mb-1">
-                            <div class="bg-red-100 rounded-xl flex items-center justify-center">
-                                <img src="{{ auth()->user()->organization && auth()->user()->organization->logo ? auth()->user()->organization->logo : asset('website-image/Group 11525.png') }}"
-                                    alt="Logo"
-                                    class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
-                            </div>
-                            <div class="flex flex-col">
-                                <h1 class="text-2xl font-bold text-gray-900">Rules & Regulations</h1>
-                                <span class="text-sm font-medium text-gray-500 mt-1">
-                                    Last Updated: {{ \Carbon\Carbon::parse($content['last_updated'])->format('d M Y, h:i A') }}
-                                </span>
-                            </div>
+                <div class="max-w-5xl mx-auto px-6 py-10">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+
+                        {{-- Logo --}}
+                        <div class="flex-shrink-0">
+                            <img src="{{ auth()->user()->organization && auth()->user()->organization->logo ? auth()->user()->organization->logo : asset('website-image/Group 11525.png') }}"
+                                alt="Logo"
+                                class="w-24 h-24 rounded-2xl object-contain border border-gray-200 shadow-sm bg-white p-2">
                         </div>
-                    </div>
-                    <div class="flex gap-2 items-center flex-shrink-0">
-                        @if (count($viewSections) > 0)
-                            <span
-                                class="px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold
-                                         rounded-full border border-red-100">
-                                {{ count($viewSections) }} {{ Str::plural('Rule', count($viewSections)) }}
-                            </span>
-                        @endif
-                        <button wire:click="showTab('edit')"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100
-                                   hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg
-                                   transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                        </button>
+
+                        {{-- Title block --}}
+                        <div class="text-center sm:text-left flex-1">
+                            <h1 class="text-3xl font-bold text-gray-900">Rules & Regulations</h1>
+                            <p class="text-gray-500 mt-1.5 text-sm max-w-xl">
+                                Last Updated: {{ \Carbon\Carbon::parse($content['last_updated'])->format('d M Y, h:i A') }}
+                            </p>
+                        </div>
+
+                        {{-- Actions --}}
+                        <div class="flex gap-2 items-center flex-shrink-0">
+                            @if (count($viewSections) > 0)
+                                <span
+                                    class="px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold
+                                             rounded-full border border-red-100">
+                                    {{ count($viewSections) }} {{ Str::plural('Rule', count($viewSections)) }}
+                                </span>
+                            @endif
+                            <button wire:click="showTab('edit')"
+                                class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+                                       text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mx-auto px-6 py-8 space-y-5">
+            <div class="max-w-5xl mx-auto px-6 py-8 space-y-5">
                 {{-- Rule Sections --}}
                 @foreach ($viewSections as $i => $section)
                     @if (!empty($section['head']) || !empty($section['desc']))

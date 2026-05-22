@@ -37,7 +37,7 @@
                     </div>
 
                     {{-- Title block --}}
-                    <div class="text-center sm:text-left">
+                    <div class="text-center sm:text-left flex-1">
                         <h1 class="text-3xl font-bold text-gray-900">{{ $platformName }}</h1>
                         @if ($companyName)
                             <p class="text-gray-500 mt-1.5 text-sm max-w-xl">{{ $companyName }}</p>

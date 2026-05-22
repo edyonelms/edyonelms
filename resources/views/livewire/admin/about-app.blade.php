@@ -36,7 +36,7 @@
                     </div>
 
                     {{-- Title block --}}
-                    <div class="text-center sm:text-left">
+                    <div class="text-center sm:text-left flex-1">
                         <h1 class="text-3xl font-bold text-gray-900">
                             {{ $aboutApp->heading ?? 'About App' }}
                         </h1>
