@@ -5,159 +5,226 @@
     <title>Report Card - {{ $student->full_name ?? 'Student' }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
-        .report-card { padding: 20px; }
-        .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 12px; margin-bottom: 16px; }
-        .header .school-name { font-size: 22px; font-weight: bold; color: #1e1b4b; }
-        .header .address { font-size: 10px; color: #888; margin-top: 2px; }
-        .header h1 { font-size: 16px; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }
-        .header .academic-year { font-size: 10px; color: #666; margin-top: 2px; }
-        .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #4f46e5; letter-spacing: 0.04em; margin-bottom: 6px; margin-top: 12px; }
-        .info-table { width: 100%; margin-bottom: 12px; }
-        .info-table td { padding: 3px 8px; font-size: 11px; }
-        .info-table .label { color: #888; width: 100px; }
-        .info-table .value { font-weight: 600; color: #111; }
-        .marks-table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 12px; }
-        .marks-table th { background: #eef2ff; color: #4338ca; font-size: 9px; font-weight: 600; text-transform: uppercase; padding: 6px 6px; border: 1px solid #c7d2fe; text-align: center; }
-        .marks-table th:first-child { text-align: left; }
-        .marks-table td { padding: 5px 6px; border: 1px solid #e5e7eb; font-size: 10px; text-align: center; }
-        .marks-table td:first-child { text-align: left; font-weight: 500; }
-        .marks-table tr:nth-child(even) { background: #fafafa; }
-        .marks-table .total-row { background: #eef2ff; font-weight: 700; }
-        .grade-badge { padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 600; }
-        .grade-a { background: #d1fae5; color: #065f46; }
-        .grade-b { background: #dbeafe; color: #1e40af; }
-        .grade-c { background: #fef3c7; color: #92400e; }
-        .grade-d { background: #fecaca; color: #991b1b; }
-        .footer { border-top: 1px dashed #ccc; padding-top: 12px; margin-top: 16px; }
-        .footer-table { width: 100%; }
-        .footer-table td { font-size: 10px; color: #777; vertical-align: bottom; }
-        .signature-line { border-top: 1px solid #333; width: 120px; margin-top: 40px; padding-top: 3px; text-align: center; font-size: 9px; color: #555; }
+        @page { margin: 14px; }
+        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 10px; color: #222; }
+        .sheet { border: 3px solid #2563eb; border-radius: 6px; padding: 14px 16px; }
+        .topbar { width: 100%; font-size: 9px; color: #333; margin-bottom: 6px; }
+        .topbar td { vertical-align: top; }
+        .topbar .right { text-align: right; }
+        .brand { text-align: center; margin-bottom: 8px; }
+        .brand img { height: 70px; width: 70px; object-fit: contain; }
+        .brand .school-name { font-size: 22px; font-weight: bold; color: #111; letter-spacing: 0.5px; margin-top: 2px; }
+        .brand .address { font-size: 9px; color: #444; margin-top: 3px; }
+        .brand .contact { font-size: 9px; color: #444; }
+        .brand .doc-title { font-size: 12px; font-weight: bold; color: #111; margin-top: 8px; }
+        .brand .session { font-size: 11px; font-weight: bold; color: #111; }
+
+        table.info { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.info td { border: 1px solid #9ca3af; padding: 5px 8px; font-size: 10px; }
+        table.info .label { font-weight: bold; width: 16%; background: #fff; }
+        table.info .value { width: 34%; }
+
+        table.marks { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        table.marks th, table.marks td { border: 1px solid #9ca3af; text-align: center; padding: 4px 3px; font-size: 9px; }
+        table.marks th { font-weight: bold; }
+        table.marks td.subj, table.marks th.subj { text-align: left; padding-left: 8px; }
+        table.marks .grp { background: #f3f4f6; }
+        table.marks .totrow td { font-weight: bold; background: #f9fafb; }
+        table.marks .pctrow td { font-weight: bold; }
+
+        table.co { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        table.co td { border: 1px solid #9ca3af; padding: 5px 8px; font-size: 9px; }
+        table.co .hd { font-weight: bold; background: #f3f4f6; }
+        table.co .gd { text-align: center; width: 60px; font-weight: bold; }
+
+        table.foot { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        table.foot td { border: 1px solid #9ca3af; padding: 5px 8px; font-size: 9px; }
+        table.foot .label { font-weight: bold; width: 14%; }
+
+        .result { margin-top: 10px; }
+        .result td { font-size: 10px; }
+        .sign { margin-top: 34px; width: 100%; }
+        .sign td { font-size: 10px; font-weight: bold; }
+        .sign .r { text-align: right; }
     </style>
 </head>
 <body>
+@php
+    $passed = true;
+    $grandObtained = 0;
+    $grandMax = 0;
+    // Pre-compute per-exam column totals
+    $examTotals = [];
+    foreach ($exams as $exam) { $examTotals[$exam->id] = ['obt' => 0, 'max' => 0]; }
+@endphp
+<div class="sheet">
 
-<div class="report-card">
-    <div class="header">
-        <div class="school-name">{{ $organization->name ?? 'School Name' }}</div>
-        <div class="address">{{ $organization->address ?? '' }}</div>
-        <h1>Academic Report Card</h1>
-        <div class="academic-year">Academic Year: {{ $reportCard->academic_year ?? 'N/A' }}</div>
-    </div>
-
-    <div class="section-title">Student Information</div>
-    <table class="info-table">
+    {{-- Top bar --}}
+    <table class="topbar">
         <tr>
-            <td class="label">Student Name:</td>
-            <td class="value">{{ $student->full_name ?? 'N/A' }}</td>
-            <td class="label">Admission No:</td>
-            <td class="value">{{ $student->admission_no ?? 'N/A' }}</td>
-        </tr>
-        <tr>
-            <td class="label">Class & Section:</td>
-            <td class="value">{{ $student->standard->name ?? '' }} - {{ $student->section->name ?? '' }}</td>
-            <td class="label">Roll No:</td>
-            <td class="value">{{ $student->roll_no ?? 'N/A' }}</td>
-        </tr>
-        <tr>
-            <td class="label">Father's Name:</td>
-            <td class="value">{{ $student->father_name ?? 'N/A' }}</td>
-            <td class="label">Date of Birth:</td>
-            <td class="value">{{ $student->dob ? $student->dob->format('d M Y') : 'N/A' }}</td>
+            <td>Affiliation No: {{ $organization->affiliation_no ?? '—' }}</td>
+            <td class="right">{{ $organization->email ?? '' }}</td>
         </tr>
     </table>
 
-    <div class="section-title">Examination Results</div>
-    <table class="marks-table">
+    {{-- Brand --}}
+    <div class="brand">
+        @if(!empty($organization->logo) && file_exists(public_path('storage/' . $organization->logo)))
+            <img src="{{ public_path('storage/' . $organization->logo) }}" alt="Logo">
+        @endif
+        <div class="school-name">{{ $organization->name ?? 'School Name' }}</div>
+        <div class="address">{{ $organization->address ?? '' }}</div>
+        <div class="contact">{{ $organization->mobile_number ?? '' }}</div>
+        <div class="doc-title">Record of Academic Performance</div>
+        <div class="session">Session: {{ $reportCard->academic_year ?? 'N/A' }}</div>
+    </div>
+
+    {{-- Student info --}}
+    <table class="info">
+        <tr>
+            <td class="label">Student Name:</td>
+            <td class="value" colspan="3">{{ $student->full_name ?? 'N/A' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Mother's Name:</td>
+            <td class="value">{{ $student->mother_name ?? 'N/A' }}</td>
+            <td class="label">Father's Name:</td>
+            <td class="value">{{ $student->father_name ?? 'N/A' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Admission No:</td>
+            <td class="value">{{ $student->admission_no ?? 'N/A' }}</td>
+            <td class="label">Class/Section:</td>
+            <td class="value">{{ $student->standard->name ?? '' }} / {{ $student->section->name ?? '' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Date of Birth:</td>
+            <td class="value">{{ $student->dob ? $student->dob->format('d/m/Y') : 'N/A' }}</td>
+            <td class="label">Regd. No:</td>
+            <td class="value">{{ $student->registration_number ?? 'N/A' }}</td>
+        </tr>
+    </table>
+
+    {{-- Scholastic marks --}}
+    <table class="marks">
         <thead>
             <tr>
-                <th>Subject</th>
+                <th class="subj grp">Scholastic Area</th>
                 @foreach ($exams as $exam)
-                    <th>{{ $exam->exam_name }}<br>({{ $exam->total_marks ?? 'N/A' }})</th>
+                    <th class="grp">{{ $exam->exam_name }}</th>
                 @endforeach
-                <th>Total</th>
-                <th>%</th>
-                <th>Grade</th>
+                <th class="grp">Total</th>
+                <th class="grp">%</th>
+                <th class="grp">Grade</th>
+            </tr>
+            <tr>
+                <th class="subj">Subject Name</th>
+                @foreach ($exams as $exam)
+                    <th>{{ $exam->total_marks ?? '—' }}</th>
+                @endforeach
+                <th colspan="3"></th>
             </tr>
         </thead>
         <tbody>
-            @php
-                $grandTotal = 0;
-                $grandMax = 0;
-            @endphp
-            @foreach ($subjects as $subject)
+            @forelse ($subjects as $subject)
                 @php
-                    $subjectTotal = 0;
-                    $subjectMax = 0;
+                    $rowObt = 0; $rowMax = 0;
                 @endphp
                 <tr>
-                    <td>{{ $subject->name }}</td>
+                    <td class="subj">{{ $subject->name }}</td>
                     @foreach ($exams as $exam)
                         @php
                             $copy = isset($examCopies[$exam->id])
                                 ? $examCopies[$exam->id]->firstWhere('subject_id', $subject->id)
                                 : null;
+                            $cell = '-';
                             if ($copy) {
-                                $subjectTotal += $copy->marks_obtained ?? 0;
-                                $subjectMax += $copy->max_marks ?? 0;
+                                if ($copy->is_absent) {
+                                    $cell = 'AB';
+                                } else {
+                                    $cell = $copy->marks_obtained ?? '-';
+                                    $rowObt += (float) ($copy->marks_obtained ?? 0);
+                                    $rowMax += (float) ($copy->max_marks ?? 0);
+                                    $examTotals[$exam->id]['obt'] += (float) ($copy->marks_obtained ?? 0);
+                                    $examTotals[$exam->id]['max'] += (float) ($copy->max_marks ?? 0);
+                                }
                             }
                         @endphp
-                        <td>
-                            @if ($copy)
-                                @if ($copy->is_absent)
-                                    <span style="color:#dc2626;">AB</span>
-                                @else
-                                    {{ $copy->marks_obtained ?? '-' }}/{{ $copy->max_marks ?? '-' }}
-                                @endif
-                            @else
-                                -
-                            @endif
-                        </td>
+                        <td>{{ $cell }}</td>
                     @endforeach
                     @php
-                        $pct = $subjectMax > 0 ? round(($subjectTotal / $subjectMax) * 100, 1) : 0;
-                        $grade = $pct >= 90 ? 'A+' : ($pct >= 80 ? 'A' : ($pct >= 70 ? 'B+' : ($pct >= 60 ? 'B' : ($pct >= 50 ? 'C' : ($pct >= 40 ? 'D' : 'F')))));
-                        $gradeClass = in_array($grade, ['A+', 'A']) ? 'grade-a' : (in_array($grade, ['B+', 'B']) ? 'grade-b' : ($grade === 'C' ? 'grade-c' : 'grade-d'));
-                        $grandTotal += $subjectTotal;
-                        $grandMax += $subjectMax;
+                        $rowPct = $rowMax > 0 ? round(($rowObt / $rowMax) * 100, 2) : 0;
+                        $rowGrade = $rowPct >= 90 ? 'A+' : ($rowPct >= 80 ? 'A' : ($rowPct >= 70 ? 'B+' : ($rowPct >= 60 ? 'B' : ($rowPct >= 50 ? 'C' : ($rowPct >= 33 ? 'D' : 'F')))));
+                        if ($rowMax > 0 && $rowPct < 33) { $passed = false; }
+                        $grandObtained += $rowObt;
+                        $grandMax += $rowMax;
                     @endphp
-                    <td><strong>{{ $subjectTotal }}/{{ $subjectMax }}</strong></td>
-                    <td>{{ $pct }}%</td>
-                    <td><span class="grade-badge {{ $gradeClass }}">{{ $grade }}</span></td>
+                    <td>{{ $rowObt }}/{{ $rowMax }}</td>
+                    <td>{{ $rowPct }}%</td>
+                    <td>{{ $rowGrade }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr><td class="subj" colspan="{{ count($exams) + 4 }}">No subjects found for this section.</td></tr>
+            @endforelse
 
-            @php
-                $overallPct = $grandMax > 0 ? round(($grandTotal / $grandMax) * 100, 1) : 0;
-                $overallGrade = $overallPct >= 90 ? 'A+' : ($overallPct >= 80 ? 'A' : ($overallPct >= 70 ? 'B+' : ($overallPct >= 60 ? 'B' : ($overallPct >= 50 ? 'C' : ($overallPct >= 40 ? 'D' : 'F')))));
-                $overallGradeClass = in_array($overallGrade, ['A+', 'A']) ? 'grade-a' : (in_array($overallGrade, ['B+', 'B']) ? 'grade-b' : ($overallGrade === 'C' ? 'grade-c' : 'grade-d'));
-            @endphp
-            <tr class="total-row">
-                <td>Grand Total</td>
+            {{-- Total row --}}
+            <tr class="totrow">
+                <td class="subj">Total</td>
                 @foreach ($exams as $exam)
-                    <td>-</td>
+                    <td>{{ $examTotals[$exam->id]['obt'] }}</td>
                 @endforeach
-                <td><strong>{{ $grandTotal }}/{{ $grandMax }}</strong></td>
-                <td><strong>{{ $overallPct }}%</strong></td>
-                <td><span class="grade-badge {{ $overallGradeClass }}">{{ $overallGrade }}</span></td>
+                <td>{{ $grandObtained }}/{{ $grandMax }}</td>
+                <td colspan="2"></td>
+            </tr>
+            {{-- Percentage row --}}
+            <tr class="pctrow">
+                <td class="subj">Percentage</td>
+                @foreach ($exams as $exam)
+                    @php
+                        $eMax = $examTotals[$exam->id]['max'];
+                        $ePct = $eMax > 0 ? round(($examTotals[$exam->id]['obt'] / $eMax) * 100, 2) : 0;
+                    @endphp
+                    <td>{{ $ePct }}%</td>
+                @endforeach
+                @php $overallPct = $grandMax > 0 ? round(($grandObtained / $grandMax) * 100, 2) : 0; @endphp
+                <td>{{ $overallPct }}%</td>
+                <td colspan="2"></td>
             </tr>
         </tbody>
     </table>
 
-    <div class="footer">
-        <table class="footer-table">
-            <tr>
-                <td>Issued on: {{ $reportCard->issued_at ? $reportCard->issued_at->format('d M Y') : 'N/A' }}</td>
-                <td style="text-align:center;">
-                    <div class="signature-line">Class Teacher</div>
-                </td>
-                <td style="text-align:right;">
-                    <div class="signature-line">Principal</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-</div>
+    {{-- Attendance & Remark --}}
+    <table class="foot">
+        <tr>
+            <td class="label">Attendance</td>
+            <td>Present: {{ $attendance['present'] ?? 0 }} / {{ $attendance['total'] ?? 0 }} days</td>
+            <td class="label">Result</td>
+            <td><strong>{{ $passed && $grandMax > 0 ? 'PASSED' : ($grandMax > 0 ? 'FAILED' : 'N/A') }}</strong></td>
+        </tr>
+        <tr>
+            <td class="label">Remark</td>
+            <td colspan="3">
+                @php $op = $overallPct ?? 0; @endphp
+                {{ $op >= 75 ? 'Excellent performance' : ($op >= 50 ? 'Good, keep improving' : ($op >= 33 ? 'Needs improvement' : 'Requires serious attention')) }}
+            </td>
+        </tr>
+    </table>
 
+    {{-- Result + signatures --}}
+    <table class="result">
+        <tr>
+            <td>Issue Date: {{ $reportCard->issued_at ? $reportCard->issued_at->format('d/m/Y') : now()->format('d/m/Y') }}</td>
+            <td style="text-align:right;">Overall: {{ $overallPct ?? 0 }}%</td>
+        </tr>
+    </table>
+
+    <table class="sign">
+        <tr>
+            <td>Class Teacher</td>
+            <td class="r">Principal</td>
+        </tr>
+    </table>
+
+</div>
 </body>
 </html>

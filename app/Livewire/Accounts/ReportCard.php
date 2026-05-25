@@ -2,199 +2,412 @@
 
 namespace App\Livewire\Accounts;
 
-use App\Models\Admin\Fee\FeePayment;
-use App\Models\Admin\Fee\FeeStructure;
+use App\Models\Admin\Exam;
+use App\Models\Admin\ExamCopy;
+use App\Models\Admin\ReportCard as ReportCardModel;
 use App\Models\Student\Section;
+use App\Models\Student\SectionSubject;
 use App\Models\Student\Standard;
 use App\Models\Student\StudentDetail;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use WireUi\Traits\WireUiActions;
 
 class ReportCard extends Component
 {
-    use WithPagination;
+    use WithPagination, WireUiActions;
 
-    public $filterStandardId = '';
-    public $filterSectionId = '';
-    public $filterStatus = '';
+    // View mode: 'list' or 'issue'
+    public $viewMode = 'list';
+
+    // Filters for list view
     public $search = '';
-    public $perPage = 15;
+    public $filterStandard = '';
+    public $filterSection = '';
+    public $filterStatus = '';
+    public $perPage = 10;
 
-    // Analytics
-    public $analytics = [];
+    // Issue report card screen
+    public $issueStandard = '';
+    public $issueSection = '';
+    public $selectedStudents = [];
+    public $issueStudentsLoaded = false;
 
-    // UI state
-    public bool $showReportCardNotice = false;
-
-    public function mount(): void
+    public function openIssueScreen()
     {
-        $this->loadAnalytics();
+        $this->viewMode = 'issue';
+        $this->issueStandard = '';
+        $this->issueSection = '';
+        $this->selectedStudents = [];
+        $this->issueStudentsLoaded = false;
     }
 
-    private function orgId(): int
+    public function backToList()
     {
-        return Auth::user()->organization_id;
+        $this->viewMode = 'list';
+        $this->issueStandard = '';
+        $this->issueSection = '';
+        $this->selectedStudents = [];
+        $this->issueStudentsLoaded = false;
     }
 
-    public function loadAnalytics(): void
+    public function updatedIssueStandard()
     {
-        $orgId = $this->orgId();
+        $this->issueSection = '';
+        $this->selectedStudents = [];
+        $this->issueStudentsLoaded = false;
+    }
 
-        $totalStudents = StudentDetail::where('organization_id', $orgId)->count();
-        $totalStructure = FeeStructure::where('organization_id', $orgId)->where('is_active', true)->sum('amount');
-        $totalCollected = FeePayment::where('organization_id', $orgId)->sum('amount');
-        $totalPending = max(0, $totalStructure - $totalCollected);
+    public function updatedIssueSection()
+    {
+        $this->selectedStudents = [];
+        $this->issueStudentsLoaded = false;
+    }
 
-        // Students with full payment
-        $students = StudentDetail::where('organization_id', $orgId)->get();
-        $structures = FeeStructure::where('organization_id', $orgId)->where('is_active', true)->get();
-
-        $paidFull = 0;
-        $paidPartial = 0;
-        $unpaid = 0;
-
-        foreach ($students as $student) {
-            $studentStructures = $structures->filter(function ($s) use ($student) {
-                return $s->standard_id == $student->standard_id
-                    && (is_null($s->section_id) || $s->section_id == $student->section_id);
-            });
-
-            $academicFee = $studentStructures->where('fee_type', 'academic')->sum('amount');
-            $transportFee = $student->transportation_required
-                ? $studentStructures->where('fee_type', 'transport')->sum('amount')
-                : 0;
-            $totalFee = $academicFee + $transportFee;
-
-            $paid = FeePayment::where('organization_id', $orgId)
-                ->where('student_detail_id', $student->id)
-                ->sum('amount');
-
-            if ($totalFee > 0 && $paid >= $totalFee) {
-                $paidFull++;
-            } elseif ($paid > 0) {
-                $paidPartial++;
-            } else {
-                $unpaid++;
-            }
+    public function loadStudents()
+    {
+        if (!$this->issueStandard || !$this->issueSection) {
+            $this->notification()->warning(
+                $title = 'Warning',
+                $description = 'Please select both class and section.'
+            );
+            return;
         }
 
-        $this->analytics = [
-            'totalStudents' => $totalStudents,
-            'totalFee' => $totalStructure,
-            'totalCollected' => $totalCollected,
-            'totalPending' => $totalPending,
-            'paidFull' => $paidFull,
-            'paidPartial' => $paidPartial,
-            'unpaid' => $unpaid,
-            'collectionRate' => $totalStructure > 0 ? round(($totalCollected / $totalStructure) * 100, 1) : 0,
-        ];
+        $this->issueStudentsLoaded = true;
+        $this->selectedStudents = [];
     }
 
-    public function issueReportCard(int $studentId): void
+    #[\Livewire\Attributes\Computed]
+    public function issueStudents()
     {
-        // Placeholder — feature coming soon
-        $this->showReportCardNotice = true;
-    }
-
-    public function updatedFilterStandardId(): void
-    {
-        $this->filterSectionId = '';
-        $this->resetPage();
-    }
-
-    public function updatedFilterSectionId(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedFilterStatus(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function render()
-    {
-        $orgId = $this->orgId();
-
-        $standards = Standard::where('organization_id', $orgId)
-            ->where('is_active', true)->orderBy('order')->get();
-
-        $sections = collect();
-        if ($this->filterStandardId) {
-            $sections = Section::where('standard_id', $this->filterStandardId)
-                ->where('organization_id', $orgId)->where('is_active', true)->get();
+        if (!$this->issueStudentsLoaded || !$this->issueStandard || !$this->issueSection) {
+            return collect();
         }
 
-        // Build student report list
-        $studentQuery = StudentDetail::with(['user', 'standard', 'section'])
+        $orgId = Auth::user()->organization_id;
+
+        $students = StudentDetail::with(['standard', 'section'])
             ->where('organization_id', $orgId)
-            ->when($this->filterStandardId, fn($q) => $q->where('standard_id', $this->filterStandardId))
-            ->when($this->filterSectionId, fn($q) => $q->where('section_id', $this->filterSectionId))
-            ->when($this->search, function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('full_name', 'like', "%{$this->search}%")
-                        ->orWhere('admission_no', 'like', "%{$this->search}%")
-                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$this->search}%"));
-                });
+            ->where('standard_id', $this->issueStandard)
+            ->where('section_id', $this->issueSection)
+            ->orderBy('full_name')
+            ->get();
+
+        $exams = Exam::where('organization_id', $orgId)
+            ->where('is_published', true)
+            ->get();
+
+        if ($exams->isEmpty()) {
+            return $students->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'admission_no' => $student->admission_no,
+                    'roll_no' => $student->roll_no ?? 'N/A',
+                    'marks_complete' => false,
+                    'already_issued' => false,
+                    'missing_info' => 'No published exams found',
+                ];
             });
+        }
 
-        $allStudents = $studentQuery->get();
-        $structures = FeeStructure::where('organization_id', $orgId)->where('is_active', true)->get();
+        $subjectIds = SectionSubject::where('section_id', $this->issueSection)
+            ->where('standard_id', $this->issueStandard)
+            ->where('organization_id', $orgId)
+            ->pluck('subject_id')
+            ->toArray();
 
-        $reportList = $allStudents->map(function ($student) use ($structures, $orgId) {
-            $studentStructures = $structures->filter(function ($s) use ($student) {
-                return $s->standard_id == $student->standard_id
-                    && (is_null($s->section_id) || $s->section_id == $student->section_id);
+        if (empty($subjectIds)) {
+            return $students->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'admission_no' => $student->admission_no,
+                    'roll_no' => $student->roll_no ?? 'N/A',
+                    'marks_complete' => false,
+                    'already_issued' => false,
+                    'missing_info' => 'No subjects assigned to this section',
+                ];
             });
+        }
 
-            $academicFee = $studentStructures->where('fee_type', 'academic')->sum('amount');
-            $transportFee = $student->transportation_required
-                ? $studentStructures->where('fee_type', 'transport')->sum('amount')
-                : 0;
-            $totalFee = $academicFee + $transportFee;
+        $examIds = $exams->pluck('id')->toArray();
+        $totalRequired = count($examIds) * count($subjectIds);
 
-            $paid = FeePayment::where('organization_id', $orgId)
-                ->where('student_detail_id', $student->id)
-                ->sum('amount');
+        $issuedStudentIds = ReportCardModel::where('organization_id', $orgId)
+            ->where('standard_id', $this->issueStandard)
+            ->where('section_id', $this->issueSection)
+            ->where('status', 'issued')
+            ->pluck('student_detail_id')
+            ->toArray();
 
-            if ($totalFee > 0 && $paid >= $totalFee) {
-                $status = 'paid';
-            } elseif ($paid > 0) {
-                $status = 'partial';
-            } else {
-                $status = 'unpaid';
+        $examCopyCounts = ExamCopy::where('organization_id', $orgId)
+            ->whereIn('student_detail_id', $students->pluck('id'))
+            ->whereIn('exam_id', $examIds)
+            ->whereIn('subject_id', $subjectIds)
+            ->selectRaw('student_detail_id, COUNT(DISTINCT CONCAT(exam_id, "-", subject_id)) as marks_count')
+            ->groupBy('student_detail_id')
+            ->pluck('marks_count', 'student_detail_id')
+            ->toArray();
+
+        return $students->map(function ($student) use ($totalRequired, $examCopyCounts, $issuedStudentIds) {
+            $studentMarksCount = $examCopyCounts[$student->id] ?? 0;
+            $marksComplete = $studentMarksCount >= $totalRequired;
+            $alreadyIssued = in_array($student->id, $issuedStudentIds);
+
+            $missingInfo = '';
+            if (!$marksComplete) {
+                $missing = $totalRequired - $studentMarksCount;
+                $missingInfo = "{$missing} of {$totalRequired} exam-subject marks missing";
             }
 
             return [
                 'id' => $student->id,
-                'name' => $student->user->name ?? $student->full_name ?? '-',
+                'full_name' => $student->full_name,
                 'admission_no' => $student->admission_no,
-                'class' => $student->standard->name ?? '-',
-                'section' => $student->section->name ?? '-',
-                'totalFee' => $totalFee,
-                'paid' => $paid,
-                'pending' => max(0, $totalFee - $paid),
-                'status' => $status,
+                'roll_no' => $student->roll_no ?? 'N/A',
+                'marks_complete' => $marksComplete,
+                'already_issued' => $alreadyIssued,
+                'missing_info' => $missingInfo,
             ];
         });
+    }
 
-        // Filter by status
-        if ($this->filterStatus) {
-            $reportList = $reportList->where('status', $this->filterStatus);
+    public function toggleAllEligible($select)
+    {
+        if ($select) {
+            $this->selectedStudents = $this->issueStudents
+                ->filter(fn($s) => $s['marks_complete'] && !$s['already_issued'])
+                ->pluck('id')
+                ->toArray();
+        } else {
+            $this->selectedStudents = [];
+        }
+    }
+
+    public function issueReportCards()
+    {
+        if (empty($this->selectedStudents)) {
+            $this->notification()->warning(
+                $title = 'Warning',
+                $description = 'Please select at least one student.'
+            );
+            return;
         }
 
-        $reportList = $reportList->values();
+        try {
+            $orgId = Auth::user()->organization_id;
+            $currentYear = now()->month >= 4
+                ? now()->year . '-' . (now()->year + 1)
+                : (now()->year - 1) . '-' . now()->year;
+
+            $issuedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($this->selectedStudents as $studentId) {
+                $existing = ReportCardModel::where('organization_id', $orgId)
+                    ->where('student_detail_id', $studentId)
+                    ->where('standard_id', $this->issueStandard)
+                    ->where('section_id', $this->issueSection)
+                    ->where('status', 'issued')
+                    ->first();
+
+                if ($existing) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                ReportCardModel::create([
+                    'organization_id' => $orgId,
+                    'student_detail_id' => $studentId,
+                    'standard_id' => $this->issueStandard,
+                    'section_id' => $this->issueSection,
+                    'academic_year' => $currentYear,
+                    'issued_at' => now(),
+                    'issued_by' => Auth::id(),
+                    'status' => 'issued',
+                ]);
+
+                $issuedCount++;
+            }
+
+            $message = "Successfully issued {$issuedCount} report card(s).";
+            if ($skippedCount > 0) {
+                $message .= " {$skippedCount} skipped (already issued).";
+            }
+
+            $this->notification()->success(
+                $title = 'Success!',
+                $description = $message
+            );
+
+            $this->selectedStudents = [];
+            unset($this->issueStudents);
+
+        } catch (\Exception $e) {
+            $this->notification()->error(
+                $title = 'Error!',
+                $description = 'Failed to issue report cards: ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function revokeReportCard($id)
+    {
+        try {
+            $reportCard = ReportCardModel::where('id', $id)
+                ->where('organization_id', Auth::user()->organization_id)
+                ->first();
+
+            if ($reportCard) {
+                $reportCard->update(['status' => 'revoked']);
+                $this->notification()->success(
+                    $title = 'Revoked!',
+                    $description = 'Report card has been revoked.'
+                );
+            }
+        } catch (\Exception $e) {
+            $this->notification()->error(
+                $title = 'Error!',
+                $description = 'Failed to revoke report card: ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function resetFilters()
+    {
+        $this->reset(['search', 'filterStandard', 'filterSection', 'filterStatus']);
+        $this->resetPage();
+    }
+
+    public function updatedFilterStandard()
+    {
+        $this->filterSection = '';
+        $this->resetPage();
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterSection()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterStatus()
+    {
+        $this->resetPage();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function standards()
+    {
+        return Standard::where('organization_id', Auth::user()->organization_id)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function filterSections()
+    {
+        if (!$this->filterStandard) {
+            return collect();
+        }
+
+        return Section::where('standard_id', $this->filterStandard)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function issueSections()
+    {
+        if (!$this->issueStandard) {
+            return collect();
+        }
+
+        return Section::where('standard_id', $this->issueStandard)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function analytics()
+    {
+        $orgId = Auth::user()->organization_id;
+
+        $studentsQuery = StudentDetail::where('organization_id', $orgId);
+        $reportCardsQuery = ReportCardModel::where('organization_id', $orgId);
+
+        if ($this->filterStandard) {
+            $studentsQuery->where('standard_id', $this->filterStandard);
+            $reportCardsQuery->where('standard_id', $this->filterStandard);
+        }
+        if ($this->filterSection) {
+            $studentsQuery->where('section_id', $this->filterSection);
+            $reportCardsQuery->where('section_id', $this->filterSection);
+        }
+
+        $totalStudents = (clone $studentsQuery)->count();
+        $activeStudents = (clone $studentsQuery)
+            ->whereHas('user', fn($q) => $q->where('is_active', true))
+            ->count();
+        $issued = (clone $reportCardsQuery)->where('status', 'issued')->count();
+        $pending = $totalStudents - $issued;
+        if ($pending < 0) $pending = 0;
+
+        return [
+            'total_students' => $totalStudents,
+            'active_students' => $activeStudents,
+            'issued' => $issued,
+            'pending' => $pending,
+        ];
+    }
+
+    public function render()
+    {
+        $reportCards = collect();
+
+        if ($this->viewMode === 'list') {
+            $query = ReportCardModel::with([
+                'studentDetail',
+                'studentDetail.standard',
+                'studentDetail.section',
+                'issuedBy',
+            ])->where('organization_id', Auth::user()->organization_id);
+
+            if ($this->search) {
+                $query->whereHas('studentDetail', function ($q) {
+                    $q->where('full_name', 'like', '%' . $this->search . '%')
+                        ->orWhere('admission_no', 'like', '%' . $this->search . '%');
+                });
+            }
+
+            if ($this->filterStandard) {
+                $query->where('standard_id', $this->filterStandard);
+            }
+
+            if ($this->filterSection) {
+                $query->where('section_id', $this->filterSection);
+            }
+
+            if ($this->filterStatus) {
+                $query->where('status', $this->filterStatus);
+            }
+
+            $reportCards = $query->latest('issued_at')->paginate($this->perPage);
+        }
 
         return view('livewire.accounts.report-card', [
-            'standards' => $standards,
-            'sections' => $sections,
-            'reportList' => $reportList,
+            'reportCards' => $reportCards,
         ]);
     }
 }

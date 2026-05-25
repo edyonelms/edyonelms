@@ -7,6 +7,7 @@ use App\Models\Admin\Exam;
 use App\Models\Admin\ExamCopy;
 use App\Models\Admin\ReportCard;
 use App\Models\Student\SectionSubject;
+use App\Models\Student\StudentAttendance;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -91,6 +92,15 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('exam_id');
 
+        // Attendance summary (status 1 = present)
+        $attendanceTotal = StudentAttendance::where('organization_id', $orgId)
+            ->where('student_detail_id', $studentId)
+            ->count();
+        $attendancePresent = StudentAttendance::where('organization_id', $orgId)
+            ->where('student_detail_id', $studentId)
+            ->where('status', 1)
+            ->count();
+
         return [
             'reportCard' => $reportCard,
             'student' => $reportCard->studentDetail,
@@ -98,6 +108,10 @@ class ReportCardController extends Controller
             'exams' => $exams,
             'subjects' => $subjects,
             'examCopies' => $examCopies,
+            'attendance' => [
+                'present' => $attendancePresent,
+                'total' => $attendanceTotal,
+            ],
         ];
     }
 }

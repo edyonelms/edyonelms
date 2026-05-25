@@ -20,7 +20,7 @@
         </div>
 
         {{-- Analytics Cards --}}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {{-- Total Students --}}
             <div class="bg-white rounded-xl shadow-sm border p-5">
                 <div class="flex items-center gap-4">
@@ -30,6 +30,19 @@
                     <div>
                         <p class="text-sm text-gray-500">Total Students</p>
                         <p class="text-2xl font-bold text-gray-900">{{ $this->analytics['total_students'] }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Active Students --}}
+            <div class="bg-white rounded-xl shadow-sm border p-5">
+                <div class="flex items-center gap-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <x-icon name="user-group" class="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Active Students</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ $this->analytics['active_students'] }}</p>
                     </div>
                 </div>
             </div>
@@ -186,7 +199,7 @@
                                     <div class="flex items-center justify-center gap-2">
                                         @if ($card->status === 'issued')
                                             {{-- Download --}}
-                                            <a href="{{ route('admin.report-card.download', $card->id) }}"
+                                            <a href="{{ route('admin.report-card.download', ['organization' => auth()->user()->organization_id, 'id' => $card->id]) }}"
                                                 target="_blank"
                                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
                                                 title="Download PDF">
@@ -194,7 +207,7 @@
                                             </a>
 
                                             {{-- Print --}}
-                                            <a href="{{ route('admin.report-card.print', $card->id) }}"
+                                            <a href="{{ route('admin.report-card.print', ['organization' => auth()->user()->organization_id, 'id' => $card->id]) }}"
                                                 target="_blank"
                                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
                                                 title="Print">

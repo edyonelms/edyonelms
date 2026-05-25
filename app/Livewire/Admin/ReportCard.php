@@ -409,13 +409,17 @@ class ReportCard extends Component
             $reportCardsQuery->where('section_id', $this->filterSection);
         }
 
-        $totalStudents = $studentsQuery->count();
+        $totalStudents = (clone $studentsQuery)->count();
+        $activeStudents = (clone $studentsQuery)
+            ->whereHas('user', fn($q) => $q->where('is_active', true))
+            ->count();
         $issued = (clone $reportCardsQuery)->where('status', 'issued')->count();
         $pending = $totalStudents - $issued;
         if ($pending < 0) $pending = 0;
 
         return [
             'total_students' => $totalStudents,
+            'active_students' => $activeStudents,
             'issued' => $issued,
             'pending' => $pending,
         ];
