@@ -185,12 +185,12 @@
     {{-- ══════════════════════════════════════════════════
          BODY
     ══════════════════════════════════════════════════ --}}
+    @if ($activeTab === 'homework')
+        @livewire('admin.homework')
+    @else
     <div class="p-4 sm:p-6">
 
-        @if ($activeTab === 'homework')
-            @livewire('admin.homework')
-
-        @elseif ($activeTab === 'exams')
+        @if ($activeTab === 'exams')
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
@@ -403,6 +403,7 @@
             @endif
         @endif
     </div>
+    @endif
 
     {{-- ADD / EDIT EXAM SLIDE-IN PANEL --}}
     @if ($open)

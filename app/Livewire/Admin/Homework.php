@@ -406,6 +406,14 @@ class Homework extends Component
         }
     }
 
+    public function clearFilters()
+    {
+        $this->reset(['search', 'filterTeacher', 'filterStandard', 'filterSection', 'filterSubject']);
+        $this->filterSections = [];
+        $this->filterSubjects = [];
+        $this->resetPage();
+    }
+
     public function onViewHomework($id)
     {
         $homework = ModalHomework::with(['standard', 'section', 'subject', 'user'])->find($id);
