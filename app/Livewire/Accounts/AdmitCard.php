@@ -5,6 +5,7 @@ namespace App\Livewire\Accounts;
 use App\Models\Student\AdmitCard as ModelAdmitCard;
 use App\Models\Admin\Exam;
 use App\Models\Admin\Fee\FeePayment;
+use App\Models\Admin\Fee\FeeStructure;
 use App\Models\Student\Section;
 use App\Models\Student\SectionSubject;
 use App\Models\Student\Standard;
@@ -48,6 +49,21 @@ class AdmitCard extends Component
     public string $bulkInstructions   = '';
     public string $bulkReportingTime  = '08:30';
 
+    // ─── Edit Modal ──────────────────────────────────────────────────────────────
+    public bool   $showEditModal       = false;
+    public ?int   $editCardId          = null;
+    public string $editAdmitCardNumber = '';
+    public string $editRollNumber      = '';
+    public string $editExamRollNumber  = '';
+    public string $editReportingTime   = '08:30';
+    public string $editExamCenter      = '';
+    public string $editExamCenterAddress = '';
+    public string $editSeatNumber      = '';
+    public string $editRoomNumber      = '';
+    public string $editInstructions    = '';
+    public string $editStatus          = 'active';
+    public array  $editSubjects        = [];
+
     // ─── Delete ─────────────────────────────────────────────────────────────────
     public ?int $pendingDeleteId = null;
 
@@ -60,6 +76,7 @@ class AdmitCard extends Component
     {
         $this->issueSubjects = $this->defaultSubjectRow();
         $this->bulkSubjects  = $this->defaultSubjectRow();
+        $this->editSubjects  = $this->defaultSubjectRow();
     }
 
     private function defaultSubjectRow(): array
@@ -318,7 +335,7 @@ class AdmitCard extends Component
 
         $eligible  = $students->filter(fn($s) => $this->bulkGenerateType === 'attendance'
             ? $this->meetsAttendanceCriteria($s->id)
-            : $this->meetsFeeCleared($s->id));
+            : $this->meetsFeeCriteria($s));
 
         $generated = 0;
         foreach ($eligible as $student) {
@@ -359,14 +376,31 @@ class AdmitCard extends Component
     {
         $total = StudentAttendance::where('student_detail_id', $studentId)->count();
         if ($total === 0) return true;
-        $present = StudentAttendance::where('student_detail_id', $studentId)->where('status', 'present')->count();
+        $present = StudentAttendance::where('student_detail_id', $studentId)->where('status', 1)->count();
         return ($present / $total * 100) >= $this->bulkPercentage;
     }
 
-    private function meetsFeeCleared(int $studentId): bool
+    private function meetsFeeCriteria(StudentDetail $student): bool
     {
-        return FeePayment::where('student_detail_id', $studentId)
-            ->where('organization_id', $this->orgId())->exists();
+        $structures = FeeStructure::where('organization_id', $this->orgId())
+            ->where('is_active', true)
+            ->where('standard_id', $student->standard_id)
+            ->where(fn($q) => $q->whereNull('section_id')->orWhere('section_id', $student->section_id))
+            ->get();
+
+        $academic  = $structures->where('fee_type', 'academic')->sum('amount');
+        $transport = $student->transportation_required
+            ? $structures->where('fee_type', 'transport')->sum('amount')
+            : 0;
+        $totalFee = $academic + $transport;
+
+        if ($totalFee <= 0) return true;
+
+        $paid = FeePayment::where('organization_id', $this->orgId())
+            ->where('student_detail_id', $student->id)
+            ->sum('amount');
+
+        return ($paid / $totalFee * 100) >= $this->bulkPercentage;
     }
 
     // ─── Print All URL ────────────────────────────────────────────────────────────
@@ -381,6 +415,92 @@ class AdmitCard extends Component
             'section_id'  => $this->sectionFilter,
         ]);
         return $params ? $base . '?' . http_build_query($params) : $base;
+    }
+
+    // ─── Edit Modal ──────────────────────────────────────────────────────────────
+    public function addEditSubject(): void
+    {
+        $this->editSubjects[] = [
+            'subject_id' => '', 'subject_name' => '',
+            'exam_date'  => now()->addDays(7)->format('Y-m-d'),
+            'exam_time'  => '09:00', 'exam_duration' => '3 Hours', 'status' => 'eligible',
+        ];
+    }
+
+    public function removeEditSubject(int $index): void
+    {
+        if (count($this->editSubjects) > 1) {
+            unset($this->editSubjects[$index]);
+            $this->editSubjects = array_values($this->editSubjects);
+        }
+    }
+
+    public function syncEditSubjectName(int $index): void
+    {
+        $id = $this->editSubjects[$index]['subject_id'] ?? null;
+        if ($id) {
+            $sub = Subject::find($id);
+            if ($sub) $this->editSubjects[$index]['subject_name'] = $sub->name;
+        }
+    }
+
+    public function openEditModal(int $id): void
+    {
+        $card = ModelAdmitCard::where('organization_id', $this->orgId())->findOrFail($id);
+
+        $this->editCardId            = $id;
+        $this->editAdmitCardNumber   = $card->admit_card_number;
+        $this->editRollNumber        = $card->roll_number;
+        $this->editExamRollNumber    = $card->exam_roll_number ?? '';
+        $this->editReportingTime     = $card->reporting_time?->format('H:i') ?? '08:30';
+        $this->editExamCenter        = $card->exam_center ?? '';
+        $this->editExamCenterAddress = $card->exam_center_address ?? '';
+        $this->editSeatNumber        = $card->seat_number ?? '';
+        $this->editRoomNumber        = $card->room_number ?? '';
+        $this->editInstructions      = $card->instructions ?? '';
+        $this->editStatus            = $card->status;
+        $this->editSubjects          = !empty($card->subjects) ? $card->subjects : $this->defaultSubjectRow();
+        $this->showEditModal         = true;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->editCardId    = null;
+        $this->resetValidation();
+    }
+
+    public function saveEditCard(): void
+    {
+        $this->validate([
+            'editAdmitCardNumber' => 'required|string|max:50|unique:admit_cards,admit_card_number,' . $this->editCardId,
+            'editRollNumber'      => 'required|string|max:50',
+            'editStatus'          => 'required|in:active,inactive,used',
+            'editSubjects'        => 'required|array|min:1',
+            'editSubjects.*.subject_id'    => 'required|exists:subjects,id',
+            'editSubjects.*.subject_name'  => 'required|string',
+            'editSubjects.*.exam_date'     => 'required|date',
+            'editSubjects.*.exam_time'     => 'required',
+            'editSubjects.*.exam_duration' => 'required|string',
+        ]);
+
+        ModelAdmitCard::where('organization_id', $this->orgId())->findOrFail($this->editCardId)->update([
+            'admit_card_number'   => $this->editAdmitCardNumber,
+            'roll_number'         => $this->editRollNumber,
+            'exam_roll_number'    => $this->editExamRollNumber ?: null,
+            'reporting_time'      => $this->editReportingTime,
+            'exam_center'         => $this->editExamCenter,
+            'exam_center_address' => $this->editExamCenterAddress,
+            'seat_number'         => $this->editSeatNumber ?: null,
+            'room_number'         => $this->editRoomNumber ?: null,
+            'instructions'        => $this->editInstructions,
+            'status'              => $this->editStatus,
+            'subjects'            => $this->editSubjects,
+            'updated_by'          => Auth::id(),
+        ]);
+
+        $this->closeEditModal();
+        session()->flash('success', 'Admit card updated successfully.');
     }
 
     // ─── Delete ─────────────────────────────────────────────────────────────────

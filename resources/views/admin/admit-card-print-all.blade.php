@@ -133,13 +133,15 @@
                     $subjectModel = \App\Models\Student\Subject::find($subject['subject_id'] ?? null);
                     $code = $subjectModel?->code ?? str_pad($i + 1, 3, '0', STR_PAD_LEFT);
                     $examDate = isset($subject['exam_date']) ? \Carbon\Carbon::parse($subject['exam_date']) : null;
-                    $seatingPlan = '';
-                    if ($admitCard->room_number && $admitCard->seat_number) {
-                        $seatingPlan = 'R(' . $admitCard->room_number . ')/ S(' . $admitCard->seat_number . ')';
-                    } elseif ($admitCard->seat_number) {
-                        $seatingPlan = 'S(' . $admitCard->seat_number . ')';
-                    } elseif ($admitCard->room_number) {
-                        $seatingPlan = 'R(' . $admitCard->room_number . ')';
+                    $seatingPlan = $admitCard->seating_label ?? '';
+                    if (!$seatingPlan) {
+                        if ($admitCard->room_number && $admitCard->seat_number) {
+                            $seatingPlan = 'R(' . $admitCard->room_number . ')/ S(' . $admitCard->seat_number . ')';
+                        } elseif ($admitCard->seat_number) {
+                            $seatingPlan = 'S(' . $admitCard->seat_number . ')';
+                        } elseif ($admitCard->room_number) {
+                            $seatingPlan = 'R(' . $admitCard->room_number . ')';
+                        }
                     }
                     $subjectStatus = $subject['status'] ?? 'eligible';
                 @endphp

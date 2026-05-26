@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Student\AdmitCard as ModelAdmitCard;
 use App\Models\Admin\Exam;
 use App\Models\Admin\Fee\FeePayment;
+use App\Models\Admin\Fee\FeeStructure;
 use App\Models\Student\Section;
 use App\Models\Student\SectionSubject;
 use App\Models\Student\Standard;
@@ -394,7 +395,7 @@ class AdmitCard extends Component
                 if ($this->bulkGenerateType === 'attendance') {
                     return $this->meetsAttendanceCriteria($student->id);
                 }
-                return $this->meetsFeeCleared($student->id);
+                return $this->meetsFeeCriteria($student);
             });
 
             $generated = 0;
@@ -439,15 +440,31 @@ class AdmitCard extends Component
     {
         $total   = StudentAttendance::where('student_detail_id', $studentId)->count();
         if ($total === 0) return true;
-        $present = StudentAttendance::where('student_detail_id', $studentId)->where('status', 'present')->count();
+        $present = StudentAttendance::where('student_detail_id', $studentId)->where('status', 1)->count();
         return ($present / $total * 100) >= $this->bulkPercentage;
     }
 
-    private function meetsFeeCleared(int $studentId): bool
+    private function meetsFeeCriteria(StudentDetail $student): bool
     {
-        return FeePayment::where('student_detail_id', $studentId)
-            ->where('organization_id', $this->orgId())
-            ->exists();
+        $structures = FeeStructure::where('organization_id', $this->orgId())
+            ->where('is_active', true)
+            ->where('standard_id', $student->standard_id)
+            ->where(fn($q) => $q->whereNull('section_id')->orWhere('section_id', $student->section_id))
+            ->get();
+
+        $academic  = $structures->where('fee_type', 'academic')->sum('amount');
+        $transport = $student->transportation_required
+            ? $structures->where('fee_type', 'transport')->sum('amount')
+            : 0;
+        $totalFee = $academic + $transport;
+
+        if ($totalFee <= 0) return true;
+
+        $paid = FeePayment::where('organization_id', $this->orgId())
+            ->where('student_detail_id', $student->id)
+            ->sum('amount');
+
+        return ($paid / $totalFee * 100) >= $this->bulkPercentage;
     }
 
     // ─── Edit Modal ──────────────────────────────────────────────────────────────
