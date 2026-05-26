@@ -369,7 +369,7 @@ class AdmitCard extends Component
         $this->validate([
             'bulkExam'          => 'required|exists:exams,id',
             'bulkStandard'      => 'required|exists:standards,id',
-            'bulkPercentage'    => 'required|integer|min:1|max:100',
+            'bulkPercentage'    => 'required_unless:bulkGenerateType,none|integer|min:1|max:100',
             'bulkSubjects'      => 'required|array|min:1',
             'bulkSubjects.*.subject_id'    => 'required|exists:subjects,id',
             'bulkSubjects.*.subject_name'  => 'required|string',
@@ -392,6 +392,9 @@ class AdmitCard extends Component
 
             // Filter by criteria
             $eligible = $students->filter(function ($student) {
+                if ($this->bulkGenerateType === 'none') {
+                    return true;
+                }
                 if ($this->bulkGenerateType === 'attendance') {
                     return $this->meetsAttendanceCriteria($student->id);
                 }
