@@ -178,13 +178,14 @@
 
     {{-- ══════════════ VIEW CARD MODAL ══════════════ --}}
     @if ($showViewModal && $viewCard)
-        <div class="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6" style="background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto" wire:click.stop>
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-gray-900">{{ ucfirst($cardType) }} ID Card</h3>
-                        <button wire:click="closeViewModal" class="text-gray-400 hover:text-gray-600"><x-icon name="x-mark" class="h-6 w-6" /></button>
-                    </div>
+        <div class="fixed inset-0 z-[9999] overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeViewModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col" wire:click.stop>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                    <h3 class="text-base font-bold text-gray-800">{{ ucfirst($cardType) }} ID Card</h3>
+                    <button wire:click="closeViewModal" class="text-gray-400 hover:text-gray-600"><x-icon name="x-mark" class="h-5 w-5" /></button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-6 py-5">
                     @php
                         if ($cardType === 'student') {
                             $person = $viewCard->studentDetail;
@@ -259,11 +260,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="mt-6 flex justify-end gap-3">
-                        <a href="{{ route('admin.id-card.print', ['organization' => auth()->user()->organization_id, 'type' => $cardType, 'id' => $viewCard->id]) }}" target="_blank"
-                            class="px-5 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Download / Print</a>
-                        <button wire:click="closeViewModal" class="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
-                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2 flex-shrink-0">
+                    <a href="{{ route('admin.id-card.print', ['organization' => auth()->user()->organization_id, 'type' => $cardType, 'id' => $viewCard->id]) }}" target="_blank"
+                        class="px-5 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Download / Print</a>
+                    <button wire:click="closeViewModal" class="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Close</button>
                 </div>
             </div>
         </div>
