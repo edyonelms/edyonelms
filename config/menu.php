@@ -189,6 +189,12 @@ return [
             'prefix' => 'admin.tc-certificate',
         ],
         [
+            'title' => 'Admissions',
+            'link' => 'admin.admissions',
+            'icon' => 'user-plus',
+            'prefix' => 'admin.admissions',
+        ],
+        [
             'title' => 'Rules & Regulation',
             'link' => 'admin.rules-and-regulation',
             'icon' => 'clipboard',

@@ -35,6 +35,8 @@ class QuickLinks extends Component
 
         $configLink1 = array_filter($configLink1, fn($link) => $link['link'] !== 'admin.quick-links');
 
+        usort($configLink1, fn($a, $b) => strcasecmp($a['title'], $b['title']));
+
         foreach ($configLink1 as $link) {
             $randomColor = $colors[array_rand($colors)];
             $this->links[] = [

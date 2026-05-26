@@ -198,11 +198,6 @@
                     </div>
                 @endif
 
-                {{-- Admissions shortcut (admin only) --}}
-                @if (auth()->user()->role === 'admin')
-                    <x-button rounded class="h-9 w-9 bg-white" icon="plus-circle" outline title="Admissions"
-                        href="{{ route('admin.admissions', ['organization' => auth()->user()->organization_id]) }}" />
-                @endif
                 @if (auth()->user()->role !== 'super-admin')
                     <x-button rounded class="h-9 w-9 bg-white" icon="user" outline wire:click="profilePage" />
                 @endif
