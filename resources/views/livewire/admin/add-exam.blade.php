@@ -27,7 +27,7 @@
                             <span class="hidden sm:inline">Add Exam</span>
                             <span class="sm:hidden">New</span>
                         </button>
-                    @else
+                    @elseif ($activeTab === 'syllabus')
                         <button wire:click="onAddSyllabus"
                             class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,11 +72,23 @@
                         Exam Syllabus
                     </span>
                 </button>
+                <button wire:click="setTab('homework')"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                           {{ $activeTab === 'homework' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        Homework
+                    </span>
+                </button>
             </div>
         </div>
 
         {{-- Filter bar (changes by tab) --}}
-        @if ($activeTab === 'exams')
+        @if ($activeTab === 'homework')
+            {{-- Homework tab: no filter bar in header --}}
+        @elseif ($activeTab === 'exams')
             <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
@@ -175,7 +187,10 @@
     ══════════════════════════════════════════════════ --}}
     <div class="p-4 sm:p-6">
 
-        @if ($activeTab === 'exams')
+        @if ($activeTab === 'homework')
+            @livewire('admin.homework')
+
+        @elseif ($activeTab === 'exams')
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
