@@ -1,320 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Certificate - {{ $cert->student->full_name ?? '' }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4 portrait; margin: 0; }
+        body { font-family: "DejaVu Sans", sans-serif; width: 210mm; height: 297mm; background: #fff; }
 
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
+        .page { width: 210mm; height: 297mm; position: relative; }
+        .frame { position: absolute; top: 7mm; left: 7mm; right: 7mm; bottom: 7mm; border: 2px solid #c9a24b; }
+        .frame-inner { position: absolute; top: 3mm; left: 3mm; right: 3mm; bottom: 3mm; border: 0.8px solid #e2c878; }
 
-        body {
-            font-family: "DejaVu Sans", sans-serif;
-            width: 297mm;
-            height: 210mm;
-            background: #fff;
-            overflow: hidden;
-        }
+        .content { position: absolute; top: 0; left: 0; right: 0; bottom: 0; text-align: center; padding: 22mm 22mm; }
 
-        .page {
-            width: 297mm;
-            height: 210mm;
-            position: relative;
-            background: {{ $cert->type === 'achievement' ? '#fffbeb' : '#eff6ff' }};
-            display: block;
-        }
+        .logo { height: 24mm; margin-bottom: 6mm; }
+        .school-name { font-size: 19pt; font-weight: bold; color: #1f2937; font-family: "DejaVu Serif", Georgia, serif; letter-spacing: 0.5px; }
+        .school-addr { font-size: 9pt; color: #6b7280; margin-top: 2mm; }
 
-        /* ── Outer border frame ── */
-        .outer-border {
-            position: absolute;
-            top: 6mm;
-            left: 6mm;
-            right: 6mm;
-            bottom: 6mm;
-            border: 3px solid {{ $cert->type === 'achievement' ? '#fbbf24' : '#93c5fd' }};
-        }
+        .cert-title { font-size: 34pt; font-weight: bold; color: #1f2937; font-family: "DejaVu Serif", Georgia, serif; letter-spacing: 4px; text-transform: uppercase; margin-top: 12mm; }
+        .cert-sub-wrap { margin: 3mm auto 0; width: 60%; position: relative; }
+        .cert-sub-line { border-top: 1.2px solid #c9a24b; position: absolute; top: 50%; left: 0; right: 0; }
+        .cert-sub { font-size: 12pt; color: #4b5563; letter-spacing: 4px; text-transform: uppercase; background: #fff; display: inline-block; padding: 0 5mm; position: relative; }
 
-        .inner-border {
-            position: absolute;
-            top: 3mm;
-            left: 3mm;
-            right: 3mm;
-            bottom: 3mm;
-            border: 1.5px solid {{ $cert->type === 'achievement' ? '#fde68a' : '#bfdbfe' }};
-        }
+        .presented { font-size: 10pt; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; margin-top: 12mm; }
+        .student-name { font-size: 36pt; color: #8a6d1f; font-style: italic; font-family: "DejaVu Serif", Georgia, serif; margin-top: 4mm; }
+        .name-rule { width: 62%; margin: 4mm auto 0; border-top: 1.2px solid #c9a24b; }
 
-        /* ── Corner ornaments ── */
-        .corner {
-            position: absolute;
-            width: 20mm;
-            height: 20mm;
-            opacity: 0.15;
-        }
+        .description { font-size: 11pt; color: #4b5563; line-height: 1.7; max-width: 150mm; margin: 12mm auto 0; }
+        .dated { font-size: 10pt; color: #6b7280; letter-spacing: 1px; margin-top: 8mm; }
 
-        .corner-tl {
-            top: 0;
-            left: 0;
-            border-top: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-            border-left: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-        }
+        .footer { position: absolute; left: 22mm; right: 22mm; bottom: 26mm; }
+        .footer-table { width: 100%; }
+        .footer-table td { vertical-align: bottom; font-size: 11pt; color: #374151; }
+        .sig-rule { border-top: 1.2px solid #9ca3af; width: 55mm; margin-left: auto; padding-top: 2mm; text-align: center; font-size: 9pt; color: #6b7280; }
 
-        .corner-tr {
-            top: 0;
-            right: 0;
-            border-top: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-            border-right: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-        }
-
-        .corner-bl {
-            bottom: 0;
-            left: 0;
-            border-bottom: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-            border-left: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-        }
-
-        .corner-br {
-            bottom: 0;
-            right: 0;
-            border-bottom: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-            border-right: 6px solid {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-        }
-
-        /* ── Content ── */
-        .content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            text-align: center;
-            padding: 14mm 20mm;
-        }
-
-        .org-name {
-            font-size: 9pt;
-            color: #9ca3af;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin-bottom: 3mm;
-        }
-
-        .cert-title {
-            font-size: 28pt;
-            font-weight: bold;
-            color: {{ $cert->type === 'achievement' ? '#d97706' : '#1d4ed8' }};
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-family: "DejaVu Serif", Georgia, serif;
-            margin-bottom: 4mm;
-        }
-
-        .divider {
-            width: 70%;
-            margin: 3mm auto;
-            border-top: 1.5px solid {{ $cert->type === 'achievement' ? '#fbbf24' : '#93c5fd' }};
-            position: relative;
-        }
-
-        .divider-star {
-            position: absolute;
-            top: -5px;
-            left: 50%;
-            margin-left: -6px;
-            font-size: 10pt;
-            color: {{ $cert->type === 'achievement' ? '#d97706' : '#2563eb' }};
-            background: {{ $cert->type === 'achievement' ? '#fffbeb' : '#eff6ff' }};
-            padding: 0 2mm;
-            line-height: 1;
-        }
-
-        .presented-to {
-            font-size: 9pt;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 2mm;
-        }
-
-        .student-name {
-            font-size: 26pt;
-            font-weight: bold;
-            color: #1f2937;
-            font-style: italic;
-            font-family: "DejaVu Serif", Georgia, serif;
-            margin-bottom: 1mm;
-        }
-
-        .admission-no {
-            font-size: 8pt;
-            color: #9ca3af;
-            margin-bottom: 4mm;
-        }
-
-        .for-label {
-            font-size: 9pt;
-            color: #6b7280;
-            margin-bottom: 1mm;
-        }
-
-        .event-name {
-            font-size: 16pt;
-            font-weight: bold;
-            color: {{ $cert->type === 'achievement' ? '#d97706' : '#1d4ed8' }};
-            margin-bottom: 2mm;
-        }
-
-        .description {
-            font-size: 8.5pt;
-            color: #6b7280;
-            font-style: italic;
-            max-width: 160mm;
-            margin: 0 auto 4mm;
-            line-height: 1.5;
-        }
-
-        /* ── Footer row ── */
-        .footer-table {
-            width: 100%;
-            margin-top: 6mm;
-        }
-
-        .footer-table td {
-            vertical-align: bottom;
-            padding: 0 4mm;
-        }
-
-        .footer-left {
-            text-align: left;
-        }
-
-        .footer-center {
-            text-align: center;
-        }
-
-        .footer-right {
-            text-align: right;
-        }
-
-        .cert-no-label {
-            font-size: 7pt;
-            color: #9ca3af;
-            display: block;
-        }
-
-        .cert-no-value {
-            font-size: 9pt;
-            font-weight: bold;
-            color: #374151;
-        }
-
-        .sig-line {
-            width: 40mm;
-            border-top: 1.5px solid #9ca3af;
-            padding-top: 2mm;
-            display: inline-block;
-        }
-
-        .sig-name {
-            font-size: 10pt;
-            font-weight: bold;
-            color: #111827;
-        }
-
-        .sig-title {
-            font-size: 7pt;
-            color: #6b7280;
-        }
-
-        .date-label {
-            font-size: 7pt;
-            color: #9ca3af;
-            display: block;
-        }
-
-        .date-value {
-            font-size: 9pt;
-            font-weight: bold;
-            color: #374151;
-        }
+        .contact { position: absolute; left: 22mm; right: 22mm; bottom: 14mm; }
+        .contact-table { width: 100%; }
+        .contact-table td { font-size: 9pt; color: #6b7280; }
+        .contact-right { text-align: right; }
     </style>
 </head>
-
 <body>
-    <div class="page">
+<div class="page">
+    <div class="frame"><div class="frame-inner"></div></div>
 
-        <div class="outer-border">
-            <div class="inner-border"></div>
-            <div class="corner corner-tl"></div>
-            <div class="corner corner-tr"></div>
-            <div class="corner corner-bl"></div>
-            <div class="corner corner-br"></div>
+    <div class="content">
+        @if (!empty($cert->organization->logo) && file_exists(public_path('storage/' . $cert->organization->logo)))
+            <img class="logo" src="{{ public_path('storage/' . $cert->organization->logo) }}" alt="Logo">
+        @endif
+
+        <div class="school-name">{{ strtoupper($cert->organization->name ?? 'School Name') }}</div>
+        @if ($cert->organization->address ?? false)
+            <div class="school-addr">{{ $cert->organization->address }}</div>
+        @endif
+
+        <div class="cert-title">Certificate</div>
+        <div class="cert-sub-wrap">
+            <span class="cert-sub-line"></span>
+            <span class="cert-sub">Of {{ $cert->type === 'participation' ? 'Participation' : 'Achievement' }}</span>
         </div>
 
-        <div class="content">
+        <div class="presented">This is proudly presented to</div>
+        <div class="student-name">{{ $cert->student->full_name ?? 'Student Name' }}</div>
+        <div class="name-rule"></div>
 
-            @if ($cert->organization->logo ?? false)
-                <img src="{{ $cert->organization->logo }}" height="40" style="margin-bottom:3mm;">
-            @endif
+        @if ($cert->description)
+            <div class="description">{{ $cert->description }}</div>
+        @else
+            <div class="description">
+                This certificate acknowledges
+                {{ $cert->type === 'participation' ? 'the active participation' : 'the outstanding achievement' }}
+                of {{ $cert->student->full_name ?? 'the student' }} in
+                <strong>{{ $cert->event_name }}</strong>.
+            </div>
+        @endif
 
-            <p class="org-name">{{ $cert->organization->name ?? 'School Name' }}</p>
+        @if ($cert->event_name)
+            <div class="dated">{{ strtoupper($cert->event_name) }}</div>
+        @endif
+    </div>
 
-            <p class="cert-title">Certificate of {{ ucfirst($cert->type) }}</p>
+    {{-- Footer: date (left) + signature (right) --}}
+    <div class="footer">
+        <table class="footer-table">
+            <tr>
+                <td style="width:50%; text-align:left;">{{ $cert->issued_date->format('d F, Y') }}</td>
+                <td style="width:50%;">
+                    <div class="sig-rule">
+                        {{ $cert->issued_by }}@if ($cert->issued_by_designation)<br>{{ $cert->issued_by_designation }}@endif
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
-            <div class="divider"><span class="divider-star">&#10022;</span></div>
-
-            <p class="presented-to">This certificate is proudly presented to</p>
-
-            <p class="student-name">{{ $cert->student->full_name ?? 'Student Name' }}</p>
-
-            @if ($cert->student?->admission_no)
-                <p class="admission-no">Admission No: {{ $cert->student->admission_no }}</p>
-            @endif
-
-            <p class="for-label">
-                {{ $cert->type === 'achievement' ? 'For outstanding achievement in' : 'For actively participating in' }}
-            </p>
-
-            <p class="event-name">{{ $cert->event_name }}</p>
-
-            @if ($cert->description)
-                <p class="description">{{ $cert->description }}</p>
-            @endif
-
-            <div class="divider"><span class="divider-star">&#10022;</span></div>
-
-            {{-- Footer --}}
-            <table class="footer-table">
-                <tr>
-                    <td class="footer-left" style="width:30%;">
-                        <span class="cert-no-label">Certificate No.</span>
-                        <span class="cert-no-value">{{ $cert->certificate_no }}</span>
-                    </td>
-                    <td class="footer-center" style="width:40%;">
-                        <div class="sig-line">
-                            <p class="sig-name">{{ $cert->issued_by }}</p>
-                            @if ($cert->issued_by_designation)
-                                <p class="sig-title">{{ $cert->issued_by_designation }}</p>
-                            @endif
-                        </div>
-                    </td>
-                    <td class="footer-right" style="width:30%;">
-                        <span class="date-label">Date</span>
-                        <span class="date-value">{{ $cert->issued_date->format('d M Y') }}</span>
-                    </td>
-                </tr>
-            </table>
-
-        </div>{{-- /content --}}
-    </div>{{-- /page --}}
+    {{-- Contact footer --}}
+    <div class="contact">
+        <table class="contact-table">
+            <tr>
+                <td>@if ($cert->organization->mobile_number ?? false) Mobile: {{ $cert->organization->mobile_number }} @endif</td>
+                <td class="contact-right">@if ($cert->organization->email ?? false) Email: {{ $cert->organization->email }} @endif</td>
+            </tr>
+        </table>
+    </div>
+</div>
 </body>
-
 </html>

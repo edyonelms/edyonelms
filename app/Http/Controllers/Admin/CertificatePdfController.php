@@ -22,7 +22,7 @@ class CertificatePdfController extends Controller
         abort_if($cert->organization_id !== Auth::user()?->organization_id, 403);
 
         $pdf = Pdf::loadView('pdf.admin.certificate', compact('cert'))
-            ->setPaper('a4', 'landscape')
+            ->setPaper('a4', 'portrait')
             ->setOption('dpi', 150)
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', true)

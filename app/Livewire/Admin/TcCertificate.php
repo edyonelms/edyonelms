@@ -4,6 +4,8 @@ namespace App\Livewire\Admin;
 
 use App\Models\Admin\Certificate;
 use App\Models\Admin\TransferCertificate;
+use App\Models\Student\Section;
+use App\Models\Student\Standard;
 use App\Models\Student\StudentDetail;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -64,6 +66,20 @@ class TcCertificate extends Component
     public string $search  = '';
     #[Url(keep: true)]
     public int    $perPage = 10;
+    #[Url(keep: true)]
+    public string $filterMonth   = '';   // YYYY-MM
+    #[Url(keep: true)]
+    public string $filterClass   = '';
+    #[Url(keep: true)]
+    public string $filterSection = '';
+
+    // ─── Issue form: class/section + student picker ───────────
+    public string $certClass        = '';
+    public string $certSection      = '';
+    public string $certStudentSearch = '';
+    public string $tcClass          = '';
+    public string $tcSection        = '';
+    public string $tcStudentSearch  = '';
 
     // ─── Dropdown data (plain arrays — safe for Livewire) ─────
     public array $students       = [];
@@ -99,6 +115,106 @@ class TcCertificate extends Component
             'tc'            => TransferCertificate::where('organization_id', $orgId)->count(),
         ];
     }
+
+    /**
+     * Per-tab header analytics (total / this month / last month / this week),
+     * scoped to the active tab type and the class/section filters.
+     */
+    #[Computed]
+    public function analytics(): array
+    {
+        $orgId = $this->organizationId;
+        if (!$orgId) return ['total' => 0, 'this_month' => 0, 'last_month' => 0, 'this_week' => 0];
+
+        if ($this->activeTab === 'tc') {
+            $base    = TransferCertificate::where('organization_id', $orgId);
+            $dateCol = 'issue_date';
+        } else {
+            $base    = Certificate::where('organization_id', $orgId)->where('type', $this->activeTab);
+            $dateCol = 'issued_date';
+        }
+
+        if ($this->filterClass) {
+            $base->whereHas('student', fn($q) => $q->where('standard_id', $this->filterClass));
+        }
+        if ($this->filterSection) {
+            $base->whereHas('student', fn($q) => $q->where('section_id', $this->filterSection));
+        }
+
+        $now      = now();
+        $lastMon  = $now->copy()->subMonthNoOverflow();
+
+        return [
+            'total'      => (clone $base)->count(),
+            'this_month' => (clone $base)->whereYear($dateCol, $now->year)->whereMonth($dateCol, $now->month)->count(),
+            'last_month' => (clone $base)->whereYear($dateCol, $lastMon->year)->whereMonth($dateCol, $lastMon->month)->count(),
+            'this_week'  => (clone $base)->whereBetween($dateCol, [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()])->count(),
+        ];
+    }
+
+    #[Computed]
+    public function standards()
+    {
+        if (!$this->organizationId) return collect();
+        return Standard::where('organization_id', $this->organizationId)
+            ->orderBy('name')->get();
+    }
+
+    private function sectionsFor(string $standardId)
+    {
+        if (!$standardId) return collect();
+        return Section::where('organization_id', $this->organizationId)
+            ->where('standard_id', $standardId)->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function filterSections()
+    {
+        return $this->sectionsFor($this->filterClass);
+    }
+
+    #[Computed]
+    public function certSections()
+    {
+        return $this->sectionsFor($this->certClass);
+    }
+
+    #[Computed]
+    public function tcSections()
+    {
+        return $this->sectionsFor($this->tcClass);
+    }
+
+    private function studentsFor(string $standardId, string $sectionId, string $search)
+    {
+        if (!$standardId) return collect();
+        return StudentDetail::with(['standard', 'section'])
+            ->where('organization_id', $this->organizationId)
+            ->where('standard_id', $standardId)
+            ->when($sectionId, fn($q) => $q->where('section_id', $sectionId))
+            ->when($search, fn($q) => $q->where(fn($s) =>
+                $s->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('admission_no', 'like', "%{$search}%")))
+            ->orderBy('full_name')->get();
+    }
+
+    #[Computed]
+    public function certIssueStudents()
+    {
+        return $this->studentsFor($this->certClass, $this->certSection, $this->certStudentSearch);
+    }
+
+    #[Computed]
+    public function tcIssueStudents()
+    {
+        return $this->studentsFor($this->tcClass, $this->tcSection, $this->tcStudentSearch);
+    }
+
+    public function updatedFilterClass(): void   { $this->filterSection = ''; $this->resetPage(); }
+    public function updatedFilterSection(): void  { $this->resetPage(); }
+    public function updatedFilterMonth(): void    { $this->resetPage(); }
+    public function updatedCertClass(): void      { $this->certSection = ''; $this->student_detail_id = null; }
+    public function updatedTcClass(): void        { $this->tcSection = ''; $this->tc_student_id = null; }
 
     private function loadStudents(): void
     {
@@ -187,7 +303,7 @@ class TcCertificate extends Component
                 ? Certificate::findOrFail($this->editCertId)->update($data)
                 : Certificate::create($data);
 
-            unset($this->statistics);
+            unset($this->statistics, $this->analytics);
             $this->notification()->success(
                 title: 'Success!',
                 description: $this->editCertId ? 'Certificate updated.' : 'Certificate issued successfully.'
@@ -211,7 +327,7 @@ class TcCertificate extends Component
     public function confirmDeleteCert(int $id): void
     {
         Certificate::findOrFail($id)->delete();
-        unset($this->statistics);
+        unset($this->statistics, $this->analytics);
         $this->notification()->success(title: 'Deleted!', description: 'Certificate removed.');
     }
 
@@ -225,7 +341,8 @@ class TcCertificate extends Component
 
     private function resetCertForm(): void
     {
-        $this->reset(['student_detail_id', 'event_name', 'issued_by', 'issued_by_designation', 'description']);
+        $this->reset(['student_detail_id', 'event_name', 'issued_by', 'issued_by_designation', 'description',
+            'certClass', 'certSection', 'certStudentSearch']);
         $this->type        = $this->activeTab === 'participation' ? 'participation' : 'achievement';
         $this->issued_date = now()->format('Y-m-d');
     }
@@ -303,7 +420,7 @@ class TcCertificate extends Component
                 ? TransferCertificate::findOrFail($this->editTcId)->update($data)
                 : TransferCertificate::create($data);
 
-            unset($this->statistics);
+            unset($this->statistics, $this->analytics);
             $this->notification()->success(
                 title: 'Success!',
                 description: $this->editTcId ? 'TC updated.' : 'Transfer Certificate issued.'
@@ -327,7 +444,7 @@ class TcCertificate extends Component
     public function confirmDeleteTc(int $id): void
     {
         TransferCertificate::findOrFail($id)->delete();
-        unset($this->statistics);
+        unset($this->statistics, $this->analytics);
         $this->notification()->success(title: 'Deleted!', description: 'TC removed.');
     }
 
@@ -343,6 +460,9 @@ class TcCertificate extends Component
     {
         $this->reset([
             'tc_student_id',
+            'tcClass',
+            'tcSection',
+            'tcStudentSearch',
             'book_no',
             'last_class_studied',
             'exam_last_taken',
@@ -405,6 +525,16 @@ class TcCertificate extends Component
                         );
                 });
             }
+            if ($this->filterClass) {
+                $q->whereHas('student', fn($s) => $s->where('standard_id', $this->filterClass));
+            }
+            if ($this->filterSection) {
+                $q->whereHas('student', fn($s) => $s->where('section_id', $this->filterSection));
+            }
+            if ($this->filterMonth) {
+                [$fy, $fm] = array_pad(explode('-', $this->filterMonth), 2, null);
+                if ($fy && $fm) $q->whereYear('issue_date', $fy)->whereMonth('issue_date', $fm);
+            }
             $tcList = $q->orderByDesc('issue_date')->paginate($this->perPage);
         } else {
             $q = Certificate::with('student')
@@ -422,6 +552,16 @@ class TcCertificate extends Component
                                 ->orWhere('admission_no', 'like', '%' . $this->search . '%')
                         );
                 });
+            }
+            if ($this->filterClass) {
+                $q->whereHas('student', fn($s) => $s->where('standard_id', $this->filterClass));
+            }
+            if ($this->filterSection) {
+                $q->whereHas('student', fn($s) => $s->where('section_id', $this->filterSection));
+            }
+            if ($this->filterMonth) {
+                [$fy, $fm] = array_pad(explode('-', $this->filterMonth), 2, null);
+                if ($fy && $fm) $q->whereYear('issued_date', $fy)->whereMonth('issued_date', $fm);
             }
             $certificates = $q->orderByDesc('issued_date')->paginate($this->perPage);
         }

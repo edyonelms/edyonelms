@@ -65,13 +65,15 @@
         }
 
         .tc-title {
-            font-size: 14pt;
+            font-size: 15pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             text-align: center;
-            text-decoration: underline;
-            color: #111;
+            color: #fff;
+            background: #3f3f46;
+            padding: 3mm 0;
+            margin-bottom: 2mm;
         }
 
         .book-no {
@@ -171,32 +173,18 @@
         </p>
     </div>
 
-    {{-- ── TC TITLE + BOOK NO ── --}}
-    <table class="tc-title-row">
-        <tr>
-            <td style="width:20%; font-size:8.5pt;">
-                @if ($tc->book_no)
-                    <strong>Book No:</strong> {{ $tc->book_no }}
-                @endif
-            </td>
-            <td style="width:60%;">
-                <p class="tc-title">Transfer Certificate</p>
-            </td>
-            <td style="width:20%; text-align:right; font-size:8.5pt;">
-                @if ($tc->tc_no)
-                    <strong>TC No:</strong> {{ $tc->tc_no }}
-                @endif
-            </td>
-        </tr>
-    </table>
+    {{-- ── TC TITLE BANNER ── --}}
+    <div class="tc-title">Transfer Certificate</div>
 
-    {{-- ── ADMISSION NO ── --}}
-    <table class="adm-row">
+    {{-- ── BOOK NO / ADMISSION NO ── --}}
+    <table class="adm-row" style="width:100%; margin-bottom:2mm;">
         <tr>
-            <td style="width:50%; font-size:8.5pt; padding-bottom:2mm;">
-                <strong>Admission No:</strong> {{ $tc->student->admission_no ?? '—' }}
+            <td style="width:50%; font-size:9pt; padding-bottom:2mm;">
+                <strong>Book No:</strong> {{ $tc->book_no ?: '—' }}
             </td>
-            <td style="width:50%; text-align:right; font-size:8.5pt; padding-bottom:2mm;">
+            <td style="width:50%; text-align:right; font-size:9pt; padding-bottom:2mm;">
+                <strong>Admission No:</strong> {{ $tc->student->admission_no ?? '—' }}
+                @if ($tc->tc_no) &nbsp;|&nbsp; <strong>TC No:</strong> {{ $tc->tc_no }} @endif
             </td>
         </tr>
     </table>
