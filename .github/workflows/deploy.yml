@@ -1,4 +1,4 @@
-name: CI / CD
+name: Deploy
 
 # Pull requests + pushes run the `validate` job — fast, no secrets, no infra.
 # Only pushes to main, with `validate` green, proceed to the `deploy` job.
