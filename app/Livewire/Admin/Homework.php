@@ -24,6 +24,7 @@ class Homework extends Component
     public $open = false;
     public $showViewModal = false;
     public $editId = null;
+    public $embedded = false;
     
     // Form fields
     public $title = '';
@@ -78,8 +79,9 @@ class Homework extends Component
 
     protected $listeners = ['refresh-homework-list' => '$refresh'];
 
-    public function mount()
+    public function mount($embedded = false)
     {
+        $this->embedded = $embedded;
         $this->loadStandards();
         $this->loadTeachers();
         $this->loadFilterData();

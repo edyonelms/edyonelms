@@ -186,7 +186,7 @@
          BODY
     ══════════════════════════════════════════════════ --}}
     @if ($activeTab === 'homework')
-        @livewire('admin.homework')
+        @livewire('admin.homework', ['embedded' => true])
     @else
     <div class="p-4 sm:p-6">
 
