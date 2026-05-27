@@ -56,4 +56,16 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('sessions', Session::class)->name('super-admin.sessions');
     Route::get('credit', Credit::class)->name('super-admin.credit');
     Route::get('profile', SuperAdminProfile::class)->name('super-admin.profile');
+
+    // Register the logged-in super-admin's browser for web push (FCM).
+    Route::post('fcm/token', function (\Illuminate\Http\Request $request) {
+        $data = $request->validate(['token' => 'required|string']);
+
+        \App\Models\UserFcmToken::updateOrCreate(
+            ['token' => $data['token']],
+            ['user_id' => auth()->id()]
+        );
+
+        return response()->json(['ok' => true]);
+    })->name('super-admin.fcm-token');
 });

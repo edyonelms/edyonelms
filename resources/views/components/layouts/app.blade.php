@@ -77,6 +77,60 @@
 
     @livewireScripts
     @livewireCalendarScripts
+
+    {{-- ─── Web Push (FCM) registration — super-admin only ─── --}}
+    @if (Auth::user() && in_array(Auth::user()->role, ['super-admin', 'sub-super-admin']))
+        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+        <script>
+            (function () {
+                if (typeof firebase === 'undefined' || !('serviceWorker' in navigator)) return;
+                try {
+                    firebase.initializeApp({
+                        apiKey: 'AIzaSyBRZcETdNS1gcdedGB_IW8KwOSyUUXTa6w',
+                        authDomain: 'edyone-lms-57e8c.firebaseapp.com',
+                        projectId: 'edyone-lms-57e8c',
+                        storageBucket: 'edyone-lms-57e8c.firebasestorage.app',
+                        messagingSenderId: '682389969874',
+                        appId: '1:682389969874:web:f9e4948399cdc52cc5c60b',
+                    });
+
+                    const messaging = firebase.messaging();
+                    const VAPID_KEY = 'BGrupAUEMUzVBLV9lPd4DGYo5_9AKltHbcTOKWiFMiHlpixwoP9_qfHu_OnVBqyGbUFduqdOuCADp7sjRmPSqhY';
+
+                    navigator.serviceWorker.register('/firebase-messaging-sw.js').then(function (registration) {
+                        Notification.requestPermission().then(function (permission) {
+                            if (permission !== 'granted') return;
+                            messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
+                                .then(function (token) {
+                                    if (!token) return;
+                                    fetch('{{ route('super-admin.fcm-token') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        },
+                                        body: JSON.stringify({ token: token }),
+                                    }).catch(function () {});
+                                })
+                                .catch(function (e) { console.warn('FCM getToken failed', e); });
+                        });
+                    }).catch(function (e) { console.warn('FCM SW registration failed', e); });
+
+                    // Foreground messages → show a native notification.
+                    messaging.onMessage(function (payload) {
+                        const n = payload.notification || {};
+                        try {
+                            new Notification(n.title || 'Edyone LMS', { body: n.body || '' });
+                        } catch (e) {}
+                    });
+                } catch (e) {
+                    console.warn('FCM init failed', e);
+                }
+            })();
+        </script>
+    @endif
 </body>
 
 </html>
