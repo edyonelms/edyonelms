@@ -258,6 +258,12 @@ return [
             'prefix' => 'super-admin.analytics',
         ],
         [
+            'title' => 'Reports',
+            'link' => 'super-admin.reports',
+            'icon' => 'document-text',
+            'prefix' => 'super-admin.reports',
+        ],
+        [
             'title' => 'Schools',
             'link' => 'super-admin.schools',
             'icon' => 'building-library',
