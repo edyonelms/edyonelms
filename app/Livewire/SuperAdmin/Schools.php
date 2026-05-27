@@ -41,6 +41,9 @@ class Schools extends Component
     public $selectedStudentId = null;
     public $selectedTeacherId = null;
 
+    // ── Per-school module toggles (module_key => bool) ─────────────────────────
+    public array $moduleStates = [];
+
     public bool $showModal   = false;
     public      $editId      = null;
     public      $adminUserId = null;
@@ -130,6 +133,65 @@ class Schools extends Component
         $this->detailTab         = $tab;
         $this->selectedStudentId = null;
         $this->selectedTeacherId = null;
+
+        if ($tab === 'modules') {
+            $this->loadModuleStates();
+        }
+    }
+
+    // ─── Module access (per-school feature toggles) ────────────────────────────
+
+    private function loadModuleStates(): void
+    {
+        if (!$this->detailSchool) {
+            $this->moduleStates = [];
+            return;
+        }
+
+        $saved = \App\Models\OrganizationModule::where('organization_id', $this->detailSchool->id)
+            ->pluck('enabled', 'module_key')
+            ->toArray();
+
+        $states = [];
+        foreach (config('modules', []) as $key => $def) {
+            $states[$key] = array_key_exists($key, $saved)
+                ? (bool) $saved[$key]
+                : (bool) ($def['default'] ?? true);
+        }
+
+        $this->moduleStates = $states;
+    }
+
+    public function enableAllModules(): void
+    {
+        foreach (array_keys(config('modules', [])) as $key) {
+            $this->moduleStates[$key] = true;
+        }
+    }
+
+    public function disableAllModules(): void
+    {
+        foreach (array_keys(config('modules', [])) as $key) {
+            $this->moduleStates[$key] = false;
+        }
+    }
+
+    public function saveModules(): void
+    {
+        if (!$this->detailSchool) {
+            return;
+        }
+
+        foreach (config('modules', []) as $key => $def) {
+            $enabled = (bool) ($this->moduleStates[$key] ?? ($def['default'] ?? true));
+
+            \App\Models\OrganizationModule::updateOrCreate(
+                ['organization_id' => $this->detailSchool->id, 'module_key' => $key],
+                ['enabled' => $enabled],
+            );
+        }
+
+        $this->notification()->success('Module access updated successfully!');
     }
 
     // ─── Student / Teacher selection ──────────────────────────────────────────

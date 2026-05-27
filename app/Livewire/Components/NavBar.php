@@ -53,6 +53,8 @@ class NavBar extends Component
         $role      = Auth::user()->role;
         $menuKey   = \App\Helpers\Constants::ROLEVALUE[$role] ?? $role;
         $navItems  = config('menu')[$menuKey] ?? [];
+        // Hide modules this school has not been granted (core items always stay).
+        $navItems  = \App\Support\ModuleAccess::filterMenu($navItems, Auth::user()?->organization);
         $colorKeys = array_keys($this->colorMap);
 
         $this->searchResults = collect($navItems)

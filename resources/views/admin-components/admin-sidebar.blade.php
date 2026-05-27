@@ -14,6 +14,9 @@
     } else {
         $navItems = $allItems;
     }
+
+    // Hide modules this school has not been granted (core items always stay).
+    $navItems = \App\Support\ModuleAccess::filterMenu($navItems, $authUser->organization);
 @endphp
 
 <!-- Off-canvas menu for mobile -->

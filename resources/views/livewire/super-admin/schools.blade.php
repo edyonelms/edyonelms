@@ -304,6 +304,7 @@
                 <div class="flex border-b border-gray-200 overflow-x-auto">
                     @foreach ([
         'overview' => 'Overview',
+        'modules' => 'Modules',
         'bank' => 'Bank Details',
         'fees' => 'Fees Analytics',
         'students' => 'Students',
@@ -379,6 +380,53 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ════════ MODULES TAB ════════ --}}
+                @if ($detailTab === 'modules')
+                    <div class="p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Module Access
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Turn features ON / OFF for this school. Disabled features are hidden from the
+                                    school's menu and blocked from direct access. Core features (Home, Students,
+                                    Teachers, Users, Analytics) are always available.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button type="button" wire:click="enableAllModules"
+                                    class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                                    Enable all
+                                </button>
+                                <button type="button" wire:click="disableAllModules"
+                                    class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                                    Disable all
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach (config('modules', []) as $key => $def)
+                                <label
+                                    class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition-colors">
+                                    <span class="text-sm font-medium text-gray-800">{{ $def['label'] ?? $key }}</span>
+                                    <input type="checkbox" wire:model="moduleStates.{{ $key }}"
+                                        class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div class="flex justify-end mt-5">
+                            <button type="button" wire:click="saveModules" wire:loading.attr="disabled"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-60">
+                                <span wire:loading.remove wire:target="saveModules">Save Module Access</span>
+                                <span wire:loading wire:target="saveModules">Saving…</span>
+                            </button>
                         </div>
                     </div>
                 @endif

@@ -56,7 +56,7 @@ Route::middleware(['guest:web'])->group(function () {
     Route::get('reset-password', ResetPassword::class)->name('reset.password');
 });
 
-Route::middleware(['auth:web', 'admin'])->group(function () {
+Route::middleware(['auth:web', 'admin', 'module'])->group(function () {
     Route::prefix('/{organization}')->group(function () {
         Route::get('/home', Home::class)->name('admin.home');
         Route::get('/quick-links', QuickLinks::class)->name('admin.quick-links');

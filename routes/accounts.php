@@ -39,7 +39,7 @@ Route::prefix('accounts')->group(function () {
     });
 
     // Protected routes
-    Route::middleware(['auth:web', 'accounts'])->group(function () {
+    Route::middleware(['auth:web', 'accounts', 'module'])->group(function () {
         Route::prefix('/{organization}')->group(function () {
             Route::get('/dashboard', Dashboard::class)->name('accounts.dashboard');
             Route::get('/payroll', Payroll::class)->name('accounts.payroll');

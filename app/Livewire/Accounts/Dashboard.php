@@ -100,10 +100,13 @@ class Dashboard extends Component
     public function render()
     {
         return view('livewire.accounts.dashboard', [
-            'menu' => collect(config('menu.accounts', []))
-                ->reject(fn($m) => ($m['link'] ?? '') === 'accounts.dashboard')
-                ->values()
-                ->all(),
+            'menu' => \App\Support\ModuleAccess::filterMenu(
+                collect(config('menu.accounts', []))
+                    ->reject(fn($m) => ($m['link'] ?? '') === 'accounts.dashboard')
+                    ->values()
+                    ->all(),
+                Auth::user()?->organization
+            ),
         ]);
     }
 }

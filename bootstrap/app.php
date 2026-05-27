@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureIsAccounts;
 use App\Http\Middleware\EnsureIsAdmin;
 use App\Http\Middleware\EnsureIsSuperAdmin;
+use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\VerifyOrganizationAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super-admin' => EnsureIsSuperAdmin::class,
             'accounts' => EnsureIsAccounts::class,
             'verify.organization' => VerifyOrganizationAccess::class,
+            'module' => EnsureModuleEnabled::class,
         ]);
 
         // Trust the upstream proxy (host nginx) so Laravel knows the original request was HTTPS.

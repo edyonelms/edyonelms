@@ -35,6 +35,12 @@ class QuickLinks extends Component
 
         $configLink1 = array_filter($configLink1, fn($link) => $link['link'] !== 'admin.quick-links');
 
+        // Hide modules this school has not been granted (core items always stay).
+        $configLink1 = \App\Support\ModuleAccess::filterMenu(
+            array_values($configLink1),
+            auth()->user()?->organization
+        );
+
         usort($configLink1, fn($a, $b) => strcasecmp($a['title'], $b['title']));
 
         foreach ($configLink1 as $link) {

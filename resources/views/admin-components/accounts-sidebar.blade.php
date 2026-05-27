@@ -1,3 +1,10 @@
+@php
+    // Hide modules this school has not been granted (core items always stay).
+    $navItems = \App\Support\ModuleAccess::filterMenu(
+        config('menu.accounts', []),
+        auth()->user()?->organization
+    );
+@endphp
 <!-- Off-canvas menu for mobile -->
 <div x-show="offcanvas" x-cloak class="fixed inset-0 flex z-40 md:hidden" role="dialog" aria-modal="true">
     <!-- Backdrop -->
@@ -52,7 +59,7 @@
                             @php
                                 $currentOrganization = auth()->user()->organization_id;
                             @endphp
-                            @foreach (config('menu.accounts') as $menu_item)
+                            @foreach ($navItems as $menu_item)
                                 @php
                                     $is_active = Route::is($menu_item['prefix']);
                                     $routeParams = ['organization' => $currentOrganization];
@@ -105,7 +112,7 @@
                             @php
                                 $currentOrganization = auth()->user()->organization_id;
                             @endphp
-                            @foreach (config('menu.accounts') as $menu_item)
+                            @foreach ($navItems as $menu_item)
                                 @php
                                     $is_active = Route::is($menu_item['prefix']);
                                     $routeParams = ['organization' => $currentOrganization];
