@@ -912,9 +912,9 @@
                     <div class="price-plan-label"
                         style="background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
                         School Plan</div>
-                    <div class="price-amount">₹83<span class="decimal">.33</span></div>
+                    <div class="price-amount">₹20<span class="decimal">.83</span></div>
                     <div class="price-period">per month/user <strong>(billed annually)</strong></div>
-                    <div class="price-note">= ₹1,000 / year &nbsp;·&nbsp; All features included</div>
+                    <div class="price-note">= ₹250 / year &nbsp;·&nbsp; All features included</div>
                     <div class="price-divider"></div>
                     <ul class="price-features">
                         <li>

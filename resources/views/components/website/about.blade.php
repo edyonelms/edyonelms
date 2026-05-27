@@ -1447,7 +1447,7 @@
                     <div class="about-item-icon" style="background:var(--secondary-faint);">💡</div>
                     <div>
                         <div class="about-item-title">Affordable for All Institutions</div>
-                        <div class="about-item-desc">Our flexible pricing starts at just ₹83.33/month, making advanced
+                        <div class="about-item-desc">Our flexible pricing starts at just ₹20.83/month, making advanced
                             features available to institutions of all sizes — from rural schools to large urban
                             academies.</div>
                     </div>
@@ -1882,7 +1882,7 @@
                         </div>
                         <div
                             style="font-size:12px;background:var(--grad-pink);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;">
-                            CTO &amp; Sales</div>
+                            Co-Founder &amp; CTO</div>
                         <div
                             style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--violet);background:var(--primary-faint);border:1px solid rgba(111,86,254,0.20);border-radius:20px;padding:4px 13px;">
                             View Profile <svg width="10" height="10" viewBox="0 0 24 24" fill="none">

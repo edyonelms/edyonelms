@@ -89,7 +89,7 @@
 
         </div>
         <div class="footer-bottom">
-            <div class="footer-bottom-text">© 2026 EDYONE LMS. All rights reserved. Made with ❤️ in India.</div>
+            <div class="footer-bottom-text">© 2026 EDYONE LMS (Edyone Educators Private Limited). All rights reserved. Made with ❤️ in India.</div>
             <div class="footer-bottom-links">
                 <a href="{{ route('website.privacy') }}">Privacy Policy</a>
                 <a href="{{ route('website.terms-conditions') }}">Terms of Use</a>

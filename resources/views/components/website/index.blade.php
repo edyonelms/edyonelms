@@ -2446,7 +2446,7 @@
                     </div>
                     <div class="hero-stat-divider"></div>
                     <div class="hero-stat">
-                        <div class="hero-stat-num">36</div>
+                        <div class="hero-stat-num">50+</div>
                         <div class="hero-stat-label">Modules</div>
                     </div>
                     <div class="hero-stat-divider"></div>
@@ -2691,7 +2691,7 @@
             <!-- Modules Mini Grid -->
             <div class="reveal" style="margin-top:40px;">
                 <p style="text-align:center;font-size:13px;color:var(--text3);margin-bottom:20px;font-weight:500;">And
-                    30 more modules — fully included in every plan</p>
+                    44+ more modules — fully included in every plan</p>
                 <div class="modules-mini-grid">
                     <div class="module-mini">
                         <div class="module-mini-icon">📊</div>
@@ -2745,7 +2745,7 @@
             </div>
 
             <div style="text-align:center;margin-top:36px;">
-                <a href="{{ url('web/features') }}" class="btn btn-outline btn-lg">View All 36 Features →</a>
+                <a href="{{ url('web/features') }}" class="btn btn-outline btn-lg">View All 50+ Features →</a>
             </div>
         </div>
     </section>
@@ -2945,7 +2945,7 @@
             <div class="section-center reveal">
                 <div class="section-tag tag-pink">Pricing</div>
                 <h2 class="section-title">Simple, <span class="gradient-text">Transparent</span> Pricing</h2>
-                <p class="section-subtitle">One plan. All 36 modules. No hidden fees. Pricing that makes sense for
+                <p class="section-subtitle">One plan. All 50+ modules. No hidden fees. Pricing that makes sense for
                     every school.</p>
             </div>
 
@@ -2956,10 +2956,10 @@
                     <div class="price-plan-label"
                         style="background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
                         School Plan</div>
-                    <div class="price-amount">₹83<span class="price-amount-cents">.33</span></div>
+                    <div class="price-amount">₹20<span class="price-amount-cents">.83</span></div>
                     <div class="price-sub">per month/user <span style="color:var(--violet);font-weight:600;">(billed
                             annually)</span></div>
-                    <div class="price-note">= ₹1,000/year · All 36 modules</div>
+                    <div class="price-note">= ₹250/year · All 50+ modules</div>
                     <a href="{{ url('web/pricing') }}" class="btn btn-primary"
                         style="width:100%;display:block;text-align:center;">See Full Plan →</a>
                 </div>

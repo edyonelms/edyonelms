@@ -845,18 +845,21 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Phone *</label>
-                            <input class="form-input" type="tel" name="phone" placeholder="+91 XXXXX XXXXX"
-                                required />
+                            <input class="form-input" type="tel" name="phone" placeholder="10-digit mobile number"
+                                required inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
+                                title="Enter a valid 10-digit mobile number"
+                                oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" />
                         </div>
                         <div class="form-group">
                             <label class="form-label">Email *</label>
                             <input class="form-input" type="email" name="email" placeholder="your@email.com"
-                                required />
+                                required pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                                title="Enter a valid email address" />
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Subject</label>
-                        <select class="form-select" name="subject">
+                        <label class="form-label">Subject *</label>
+                        <select class="form-select" name="subject" required>
                             <option value="">Select a subject</option>
                             <option>General Inquiry</option>
                             <option>Request Demo</option>

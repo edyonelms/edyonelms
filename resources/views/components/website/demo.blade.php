@@ -918,23 +918,26 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Phone *</label>
-                                <input class="form-input" type="tel" name="phone" placeholder="+91 XXXXX XXXXX"
-                                    required />
+                                <input class="form-input" type="tel" name="phone" placeholder="10-digit mobile number"
+                                    required inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
+                                    title="Enter a valid 10-digit mobile number"
+                                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" />
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Email *</label>
                                 <input class="form-input" type="email" name="email" placeholder="Email address"
-                                    required />
+                                    required pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                                    title="Enter a valid email address" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">City</label>
-                                <input class="form-input" type="text" name="city" placeholder="Your city" />
+                                <label class="form-label">City *</label>
+                                <input class="form-input" type="text" name="city" placeholder="Your city" required />
                             </div>
                             <div class="form-group">
-                                <label class="form-label">No. of Students</label>
-                                <select class="form-select" name="students">
+                                <label class="form-label">No. of Students *</label>
+                                <select class="form-select" name="students" required>
                                     <option value="">Select range</option>
                                     <option>Under 200</option>
                                     <option>200–500</option>
@@ -945,8 +948,8 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Your Role</label>
-                            <select class="form-select" name="role">
+                            <label class="form-label">Your Role *</label>
+                            <select class="form-select" name="role" required>
                                 <option value="">Select role</option>
                                 <option>Principal</option>
                                 <option>Administrator</option>
@@ -965,10 +968,10 @@
 
         <!-- Trust Badges -->
         <div class="trust-strip">
-            <div class="trust-badge"><span class="trust-badge-icon">🏫</span> many Schools Trust Us</div>
-            <div class="trust-badge"><span class="trust-badge-icon">⭐</span> 4.9/5 Average Rating</div>
+            <div class="trust-badge"><span class="trust-badge-icon">🏫</span> <span id="trustSchools">many</span> Schools Trust Us</div>
+            <div class="trust-badge"><span class="trust-badge-icon">⭐</span> <span id="trustRating">4.9</span>/5 Average Rating</div>
             <div class="trust-badge"><span class="trust-badge-icon">🔒</span> 256-bit SSL Encrypted</div>
-            <div class="trust-badge"><span class="trust-badge-icon">🎓</span> 100K+ Active Students</div>
+            <div class="trust-badge"><span class="trust-badge-icon">🎓</span> <span id="trustStudents">100K+</span> Active Students</div>
             <div class="trust-badge"><span class="trust-badge-icon">📱</span> iOS &amp; Android Apps</div>
         </div>
     </section>
@@ -990,6 +993,25 @@
 
 
     <script>
+        // ── Dynamic trust badges (schools / rating / students) ──
+        function fmtNum(n) {
+            if (!n || n === 0) return '0';
+            if (n >= 1000) return Math.floor(n / 1000) + 'K+';
+            return n + '+';
+        }
+        fetch('/api/website/stats')
+            .then(r => r.json())
+            .then(({ data }) => {
+                if (!data) return;
+                const sc = document.getElementById('trustSchools');
+                const ra = document.getElementById('trustRating');
+                const st = document.getElementById('trustStudents');
+                if (sc && data.schools > 0) sc.textContent = data.schools + '+';
+                if (ra && data.rating) ra.textContent = data.rating;
+                if (st && data.students > 0) st.textContent = fmtNum(data.students);
+            })
+            .catch(() => {});
+
         async function handleDemoSubmit(e) {
             e.preventDefault();
             const form = e.target;

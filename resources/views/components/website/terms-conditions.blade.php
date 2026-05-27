@@ -799,7 +799,7 @@
                     <h2><span class="sec-num">4</span> Subscription Plans &amp; Payment</h2>
                     <p>EDYONE LMS offers the following subscription plans:</p>
                     <ul>
-                        <li><strong>School Plan:</strong> ₹1,000/year (₹83.33/month), billed annually, for up to 500
+                        <li><strong>School Plan:</strong> ₹250/year (₹20.83/month), billed annually, for up to 500
                             students</li>
                         <li><strong>Enterprise Plan:</strong> Custom pricing for larger institutions — contact us for a
                             quote</li>

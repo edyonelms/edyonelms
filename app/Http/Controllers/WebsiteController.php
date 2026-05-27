@@ -138,10 +138,10 @@ class WebsiteController extends Controller
         $validated = $request->validate([
             'full_name'    => 'required|string|max:255',
             'school_name'  => 'required|string|max:255',
-            'phone_number' => 'required|string|max:20',
+            'phone_number' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
             'email'        => 'required|email|max:255',
-            'subject'      => 'nullable|string|max:255',
-            'description'  => 'nullable|string',
+            'subject'      => 'required|string|max:255',
+            'description'  => 'required|string',
         ]);
 
         WebsiteContact::create($validated);
@@ -158,11 +158,11 @@ class WebsiteController extends Controller
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'school_name'    => 'required|string|max:255',
-            'phone'          => 'required|string|max:20',
+            'phone'          => ['required', 'string', 'regex:/^[0-9]{10}$/'],
             'email'          => 'required|email|max:255',
-            'city'           => 'nullable|string|max:255',
-            'no_of_students' => 'nullable|string|max:50',
-            'role'           => 'nullable|string|max:100',
+            'city'           => 'required|string|max:255',
+            'no_of_students' => 'required|string|max:50',
+            'role'           => 'required|string|max:100',
         ]);
 
         WebsiteDemo::create($validated);
