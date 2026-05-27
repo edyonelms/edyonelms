@@ -73,7 +73,7 @@ class Login extends Component
 
     public function updatedOtp(): void
     {
-        $entered = implode('', $this->otp);
+        $entered = implode('', array_map(fn($d) => is_scalar($d) ? (string) $d : '', $this->otp));
         if (strlen($entered) === 6 && ctype_digit($entered)) {
             $this->verifyOtp();
         }
@@ -81,7 +81,7 @@ class Login extends Component
 
     public function verifyOtp()
     {
-        $entered = implode('', $this->otp);
+        $entered = implode('', array_map(fn($d) => is_scalar($d) ? (string) $d : '', $this->otp));
 
         if (strlen($entered) !== 6 || !ctype_digit($entered)) {
             $this->addError('otp', 'Please enter a valid 6-digit OTP.');
