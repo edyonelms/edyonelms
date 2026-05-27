@@ -1,65 +1,67 @@
 <div class="p-4">
+    @php
+        $typeColors = [
+            'about_app'      => 'bg-blue-100 text-blue-600',
+            'privacy_policy' => 'bg-indigo-100 text-indigo-600',
+            'terms_condition'=> 'bg-purple-100 text-purple-600',
+            'terms_of_use'   => 'bg-violet-100 text-violet-600',
+            'rating'         => 'bg-amber-100 text-amber-600',
+            'enquiry'        => 'bg-cyan-100 text-cyan-600',
+            'support'        => 'bg-rose-100 text-rose-600',
+            'credit'         => 'bg-emerald-100 text-emerald-600',
+        ];
+    @endphp
+
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-800">School Notifications</h2>
-        <button class="text-blue-500 hover:text-blue-700 text-sm font-medium">
-            Mark all as read
-        </button>
+        <h2 class="text-lg font-semibold text-gray-800">Notifications</h2>
+        @if ($items->isNotEmpty())
+            <button wire:click="markAllAsRead"
+                class="text-blue-500 hover:text-blue-700 text-sm font-medium">
+                Mark all as read
+            </button>
+        @endif
     </div>
 
-    <!-- Notification List -->
     <div class="space-y-3">
-        <!-- New Student Registration -->
-        <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-            <div class="flex items-start space-x-3">
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
+        @forelse ($items as $item)
+            @php
+                $data    = $item->data ?? [];
+                $type    = $data['type'] ?? 'activity';
+                $color   = $typeColors[$type] ?? 'bg-gray-100 text-gray-500';
+                $unread  = is_null($item->read_at);
+            @endphp
+            <div class="p-3 border rounded-lg transition-colors {{ $unread ? 'bg-blue-50/40 border-blue-100' : 'border-gray-200 hover:bg-gray-50' }}">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $color }}">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
                     </div>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-800">New Student Registration</p>
-                    <p class="text-xs text-gray-500">Rahul Sharma (Class 10-A) has completed registration.</p>
-                    <p class="text-xs text-gray-400 mt-1">30 minutes ago</p>
-                </div>
-                <div class="flex-shrink-0">
-                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800">{{ $data['title'] ?? 'Notification' }}</p>
+                        <p class="text-xs text-gray-500">{{ $data['body'] ?? '' }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ $item->created_at?->diffForHumans() }}</p>
+                    </div>
+                    @if ($unread)
+                        <div class="flex-shrink-0">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full inline-block"></span>
+                        </div>
+                    @endif
                 </div>
             </div>
-        </div>
-
-        <!-- Assignment Submission -->
-        <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-            <div class="flex items-start space-x-3">
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-500" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
+        @empty
+            <div class="py-12 text-center">
+                <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
                 </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-800">Assignment Submitted</p>
-                    <p class="text-xs text-gray-500">25 students have submitted the Science project (Due: Today).</p>
-                    <p class="text-xs text-gray-400 mt-1">2 hours ago</p>
-                </div>
-                <div class="flex-shrink-0">
-                    <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
-                </div>
+                <p class="text-sm text-gray-400">No notifications yet</p>
             </div>
-        </div>
-
-        <!-- Add more notifications as needed -->
-
-    </div>
-
-    <!-- View All Link -->
-    <div class="mt-4 text-center pt-4 border-t border-gray-200">
-        <a href="#" class="text-sm text-blue-500 hover:text-blue-700 font-medium">View all notifications</a>
+        @endforelse
     </div>
 </div>

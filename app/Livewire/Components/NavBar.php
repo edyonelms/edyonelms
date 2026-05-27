@@ -3,6 +3,7 @@
 namespace App\Livewire\Components;
 
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class NavBar extends Component
@@ -198,10 +199,36 @@ class NavBar extends Component
         }
     }
 
+    /**
+     * Unread in-app notifications for the navbar bell badge.
+     * Guarded so a missing notifications table can never break the navbar.
+     */
+    protected function unreadNotificationsCount(): int
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return 0;
+        }
+
+        try {
+            return $user->unreadNotifications()->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /** Re-render the badge when notifications are marked read. */
+    #[On('notifications-updated')]
+    public function refreshNotifications(): void
+    {
+        //
+    }
+
     public function render()
     {
         return view('livewire.components.nav-bar', [
-            'unreadMessages' => $this->unreadMessagesCount(),
+            'unreadMessages'      => $this->unreadMessagesCount(),
+            'unreadNotifications' => $this->unreadNotificationsCount(),
         ]);
     }
 }

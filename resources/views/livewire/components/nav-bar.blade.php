@@ -186,8 +186,13 @@
 
             {{-- ── RIGHT — Actions ── --}}
             <div class="flex items-center gap-1.5 flex-shrink-0">
-                <x-button rounded class="h-9 w-9 bg-white" icon="bell-alert" outline
-                    wire:click="$toggle('showNotifications')" />
+                <div class="relative inline-flex">
+                    <x-button rounded class="h-9 w-9 bg-white" icon="bell-alert" outline
+                        wire:click="$toggle('showNotifications')" />
+                    @if (($unreadNotifications ?? 0) > 0)
+                        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">{{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}</span>
+                    @endif
+                </div>
                 @if (in_array(auth()->user()->role, ['accounts', 'admin', 'sub-admin']))
                     <div class="relative inline-flex">
                         <x-button rounded class="h-9 w-9 bg-white" icon="chat-bubble-oval-left-ellipsis" outline
