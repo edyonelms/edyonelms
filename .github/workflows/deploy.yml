@@ -212,6 +212,11 @@ jobs:
           ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY: ${{ secrets.ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY }}
           ZEPTOMAIL_FROM_EMAIL: ${{ secrets.ZEPTOMAIL_FROM_EMAIL }}
           ZEPTOMAIL_FROM_NAME: ${{ secrets.ZEPTOMAIL_FROM_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+          AWS_URL: ${{ secrets.AWS_URL }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -221,7 +226,7 @@ jobs:
           # which can exceed the action's default 10m command timeout.
           command_timeout: 30m
           script_stop: true
-          envs: GIT_TOKEN,ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME
+          envs: GIT_TOKEN,ZEPTOMAIL_API_TOKEN,ZEPTOMAIL_OTP_TEMPLATE_KEY,ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY,ZEPTOMAIL_FROM_EMAIL,ZEPTOMAIL_FROM_NAME,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_BUCKET,AWS_URL
           script: |
             set -x
             cd ${{ secrets.EC2_PROJECT_PATH }}
@@ -304,6 +309,34 @@ jobs:
                 "ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY=$ZM_SPW" \
                 "ZEPTOMAIL_FROM_EMAIL=$ZM_FE" \
                 "ZEPTOMAIL_FROM_NAME=$ZM_FN"; do
+                KEY="${ENTRY%%=*}"
+                VAL="${ENTRY#*=}"
+                if [ -n "$VAL" ]; then
+                  grep -v "^${KEY}=" .env > /tmp/.env_tmp 2>/dev/null || true
+                  printf "%s=\"%s\"\n" "$KEY" "$VAL" >> /tmp/.env_tmp
+                  mv /tmp/.env_tmp .env
+                fi
+              done
+            ' || true
+
+            # ─── STEP 1b: inject AWS / S3 env vars into .env ────────────────
+            # Same self-healing pattern as ZeptoMail above: only overwrite a
+            # key when a non-empty secret is provided, so a missing GitHub
+            # secret never blanks out a working value. Values are quoted to
+            # survive special chars (the secret key can contain + / =).
+            echo "==> inject AWS S3 env vars"
+            AWS_AK="${AWS_ACCESS_KEY_ID:-}" \
+            AWS_SK="${AWS_SECRET_ACCESS_KEY:-}" \
+            AWS_RG="${AWS_DEFAULT_REGION:-}" \
+            AWS_BK="${AWS_BUCKET:-}" \
+            AWS_UR="${AWS_URL:-}" \
+            bash -c '
+              for ENTRY in \
+                "AWS_ACCESS_KEY_ID=$AWS_AK" \
+                "AWS_SECRET_ACCESS_KEY=$AWS_SK" \
+                "AWS_DEFAULT_REGION=$AWS_RG" \
+                "AWS_BUCKET=$AWS_BK" \
+                "AWS_URL=$AWS_UR"; do
                 KEY="${ENTRY%%=*}"
                 VAL="${ENTRY#*=}"
                 if [ -n "$VAL" ]; then
