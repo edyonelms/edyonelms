@@ -164,7 +164,10 @@
         ══════════════════════════════════════════════════ --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">Upcoming Events</h3>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Upcoming Events</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ $this->monthLabel }}</p>
+                </div>
                 <span class="text-xs text-gray-400">{{ count($this->upcomingEvents) }} events</span>
             </div>
 
@@ -254,7 +257,114 @@
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <p class="text-gray-500 text-sm">No upcoming events scheduled</p>
+                    <p class="text-gray-500 text-sm">No upcoming events in {{ $this->monthLabel }}</p>
+                </div>
+            @endif
+        </div>
+
+        {{-- ══════════════════════════════════════════════════
+             COMPLETED EVENTS
+        ══════════════════════════════════════════════════ --}}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Completed Events</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ $this->monthLabel }}</p>
+                </div>
+                <span class="text-xs text-gray-400">{{ count($this->completedEvents) }} events</span>
+            </div>
+
+            @if (count($this->completedEvents) > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
+                    @foreach ($this->completedEvents as $event)
+                        <div
+                            class="group relative bg-gray-50 border border-gray-200 rounded-xl p-4 opacity-80
+                                   hover:opacity-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 cursor-pointer"
+                            wire:click="viewEvent({{ $event['id'] }})"
+                        >
+                            {{-- Color bar --}}
+                            <div class="absolute top-0 left-0 w-1 h-full rounded-l-xl"
+                                style="background-color: {{ $event['color'] }}"></div>
+
+                            <div class="pl-3">
+                                {{-- Title + completed tag --}}
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <h4 class="font-semibold text-gray-700 text-sm group-hover:text-gray-900
+                                               transition-colors leading-snug line-clamp-1">
+                                        {{ $event['title'] }}
+                                    </h4>
+                                    <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full flex-shrink-0">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Done
+                                    </span>
+                                </div>
+
+                                {{-- Description --}}
+                                @if (!empty($event['description']))
+                                    <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">
+                                        {{ $event['description'] }}
+                                    </p>
+                                @endif
+
+                                {{-- Date --}}
+                                <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {{ $event['date_formatted'] }}
+
+                                    @if ($event['start_time'] && !$event['is_all_day'])
+                                        <span class="text-gray-300 mx-1">&bull;</span>
+                                        <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {{ $event['start_time'] }}
+                                    @elseif($event['is_all_day'])
+                                        <span class="text-gray-300 mx-1">&bull;</span>
+                                        <span class="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full">All Day</span>
+                                    @endif
+                                </div>
+
+                                {{-- Badges --}}
+                                <div class="flex flex-wrap gap-1.5 mt-2">
+                                    @if (!empty($event['location']))
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            </svg>
+                                            {{ $event['location'] }}
+                                        </span>
+                                    @endif
+                                    @if (!empty($event['class']))
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            {{ $event['class'] }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-16">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <p class="text-gray-500 text-sm">No completed events in {{ $this->monthLabel }}</p>
                 </div>
             @endif
         </div>

@@ -205,36 +205,68 @@ class Calendar extends Component
         return $weeks;
     }
 
+    /** Upcoming events within the selected month (today onward). */
     #[Computed]
     public function upcomingEvents(): array
     {
-        $organizationId = Auth::user()->organization_id;
+        return $this->monthEvents(completed: false);
+    }
 
-        return TimeTable::with(['academic.standard', 'academic.section', 'location'])
+    /** Events within the selected month that have already passed. */
+    #[Computed]
+    public function completedEvents(): array
+    {
+        return $this->monthEvents(completed: true);
+    }
+
+    /**
+     * Events for the currently selected month, split by whether they are in
+     * the past (completed) or still upcoming relative to today.
+     */
+    private function monthEvents(bool $completed): array
+    {
+        $organizationId = Auth::user()->organization_id;
+        $today = Carbon::today();
+
+        $monthStart = Carbon::create($this->currentYear, $this->currentMonth, 1)->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+
+        $query = TimeTable::with(['academic.standard', 'academic.section', 'location'])
             ->where('organization_id', $organizationId)
             ->where('is_cancelled', false)
-            ->where('date', '>=', Carbon::today())
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->limit(5)
-            ->get()
-            ->map(function ($event) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'description' => $event->description,
-                    'date' => $event->date->format('Y-m-d'),
-                    'date_formatted' => $event->date->format('D, M d'),
-                    'start_time' => $event->start_time?->format('h:i A'),
-                    'is_all_day' => $event->is_all_day,
-                    'color' => $event->color ?? $this->getEventColor($event->event_type),
-                    'event_type' => $event->event_type,
-                    'location' => $event->location?->location_display,
-                    'class' => $event->academic?->standard?->name
-                        . ($event->academic?->section?->name ? ' - ' . $event->academic->section->name : ''),
-                ];
-            })
+            ->whereBetween('date', [$monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d')]);
+
+        if ($completed) {
+            $query->whereDate('date', '<', $today)
+                ->orderByDesc('date')
+                ->orderBy('start_time');
+        } else {
+            $query->whereDate('date', '>=', $today)
+                ->orderBy('date')
+                ->orderBy('start_time');
+        }
+
+        return $query->get()
+            ->map(fn($event) => $this->mapEventForList($event))
             ->toArray();
+    }
+
+    private function mapEventForList($event): array
+    {
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'description' => $event->description,
+            'date' => $event->date->format('Y-m-d'),
+            'date_formatted' => $event->date->format('D, M d'),
+            'start_time' => $event->start_time?->format('h:i A'),
+            'is_all_day' => $event->is_all_day,
+            'color' => $event->color ?? $this->getEventColor($event->event_type),
+            'event_type' => $event->event_type,
+            'location' => $event->location?->location_display,
+            'class' => $event->academic?->standard?->name
+                . ($event->academic?->section?->name ? ' - ' . $event->academic->section->name : ''),
+        ];
     }
 
     #[Computed]
