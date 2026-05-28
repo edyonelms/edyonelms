@@ -2,60 +2,75 @@
 
 namespace App\Livewire\Admin;
 
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class QuickLinks extends Component
 {
-    public $links = [];
+    public array $links = [];
 
-    public function mount()
+    /** Display order: 'sidebar' (menu order) or 'asc' (A–Z by title). */
+    #[Url]
+    public string $sort = 'sidebar';
+
+    /** Columns per row. Defaults to a 10-wide grid (≈ 10×4). */
+    #[Url]
+    public int $columns = 10;
+
+    public array $columnOptions = [4, 5, 6, 8, 10];
+
+    public function mount(): void
     {
-        $configLink1 = config('menu.admin');
+        $configLinks = config('menu.admin', []);
 
-
-        $colors = [
-            'blue',
-            'indigo',
-            'purple',
-            'green',
-            'yellow',
-            'pink',
-            'teal',
-            'rose',
-            'cyan',
-            'lime',
-            'fuchsia',
-            'red',
-            'orange',
-            'amber',
-            'sky',
-            'violet',
-            'gray'
-        ];
-
-        $configLink1 = array_filter($configLink1, fn($link) => $link['link'] !== 'admin.quick-links');
+        // Drop the Quick Links tile itself.
+        $configLinks = array_filter($configLinks, fn($link) => $link['link'] !== 'admin.quick-links');
 
         // Hide modules this school has not been granted (core items always stay).
-        $configLink1 = \App\Support\ModuleAccess::filterMenu(
-            array_values($configLink1),
+        $configLinks = \App\Support\ModuleAccess::filterMenu(
+            array_values($configLinks),
             auth()->user()?->organization
         );
 
-        usort($configLink1, fn($a, $b) => strcasecmp($a['title'], $b['title']));
+        $colors = [
+            'blue', 'indigo', 'purple', 'green', 'yellow', 'pink', 'teal', 'rose',
+            'cyan', 'lime', 'fuchsia', 'red', 'orange', 'amber', 'sky', 'violet', 'gray',
+        ];
 
-        foreach ($configLink1 as $link) {
-            $randomColor = $colors[array_rand($colors)];
+        // Preserve sidebar (config) order; give each tile a STABLE colour so
+        // re-sorting / changing columns never reshuffles the palette.
+        foreach (array_values($configLinks) as $i => $link) {
             $this->links[] = [
                 'title' => $link['title'],
                 'route' => $link['link'],
-                'icon' => $link['icon'],
-                'color' => $randomColor
+                'icon'  => $link['icon'],
+                'color' => $colors[abs(crc32($link['title'])) % count($colors)],
+                'order' => $i,
             ];
         }
     }
 
+    /** Columns the grid should actually use (guarded against bad URL input). */
+    protected function safeColumns(): int
+    {
+        return in_array((int) $this->columns, $this->columnOptions, true)
+            ? (int) $this->columns
+            : 10;
+    }
+
     public function render()
     {
-        return view('livewire.admin.quick-links');
+        $links = $this->links;
+
+        if ($this->sort === 'asc') {
+            usort($links, fn($a, $b) => strcasecmp($a['title'], $b['title']));
+        } else {
+            usort($links, fn($a, $b) => $a['order'] <=> $b['order']);
+        }
+
+        return view('livewire.admin.quick-links', [
+            'orderedLinks' => $links,
+            'columns'      => $this->safeColumns(),
+        ]);
     }
 }
