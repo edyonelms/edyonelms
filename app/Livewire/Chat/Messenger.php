@@ -6,16 +6,17 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use WireUi\Traits\WireUiActions;
 
 /**
- * Near-real-time messaging between the School panel (admin / sub-admin) and the
- * Accounts panel of the SAME organization. Uses Livewire polling for live
- * updates (no third-party / websocket infra). One-to-one conversations; the
- * schema also supports groups.
+ * Near-real-time messaging between everyone in a school (organization):
+ * admins, sub-admins and the accounts team can all chat with each other.
+ * Uses Livewire polling for live updates (no websocket infra). One-to-one
+ * conversations; the schema also supports groups.
  */
 class Messenger extends Component
 {
@@ -27,7 +28,12 @@ class Messenger extends Component
     public        $attachment     = null;
     public string $contactSearch  = '';
 
-    /** Roles allowed to use this panel-to-panel chat. */
+    /** Multi-select / delete state. */
+    public bool  $selectMode        = false;
+    public array $selectedThreads   = []; // conversation ids
+    public bool  $showDeleteConfirm = false;
+
+    /** Roles that share this organization-wide chat. */
     protected const CHAT_ROLES = ['admin', 'sub-admin', 'accounts'];
 
     public function mount(): void
@@ -47,28 +53,37 @@ class Messenger extends Component
         return (int) Auth::user()->organization_id;
     }
 
+    public static function roleLabel(?string $role): string
+    {
+        return match ($role) {
+            'admin'     => 'Admin',
+            'sub-admin' => 'Sub-admin',
+            'accounts'  => 'Accounts',
+            default     => ucfirst((string) $role),
+        };
+    }
+
     /**
-     * Users on the *other* panel within the same organization — the people the
-     * current user is allowed to chat with.
+     * The people the current user is allowed to chat with: everyone else in
+     * the same organization whose role is admin / sub-admin / accounts but is
+     * a different role than the current user (cross-role chat).
      */
     protected function candidateQuery()
     {
-        $query = User::where('organization_id', $this->orgId())
-            ->where('is_active', 1);
-
-        if (Auth::user()->role === 'accounts') {
-            // Accounts user talks to the school's admins.
-            $query->whereIn('role', ['admin', 'sub-admin']);
-        } else {
-            // Admin / sub-admin talk to the accounts team.
-            $query->where('role', 'accounts');
-        }
-
-        return $query;
+        return User::where('organization_id', $this->orgId())
+            ->where('is_active', 1)
+            ->whereIn('role', self::CHAT_ROLES)
+            ->where('role', '!=', Auth::user()->role)
+            ->where('id', '!=', $this->meId());
     }
 
     public function openChat(int $userId): void
     {
+        // In select mode a row tap toggles selection, never opens the thread.
+        if ($this->selectMode) {
+            return;
+        }
+
         $other = $this->candidateQuery()->where('id', $userId)->first();
         if (!$other) {
             return; // not a valid counterpart — ignore
@@ -186,6 +201,84 @@ class Messenger extends Component
         $conversation?->participants()->updateExistingPivot($this->meId(), ['last_read_at' => now()]);
     }
 
+    // ─── Select / delete ────────────────────────────────────────────────────
+
+    /** Ids of every conversation the current user belongs to. */
+    protected function myConversationIds(): array
+    {
+        return Conversation::where('organization_id', $this->orgId())
+            ->whereHas('participants', fn($q) => $q->where('user_id', $this->meId()))
+            ->pluck('id')
+            ->all();
+    }
+
+    public function toggleSelectMode(): void
+    {
+        $this->selectMode      = !$this->selectMode;
+        $this->selectedThreads = [];
+    }
+
+    public function toggleThread(int $conversationId): void
+    {
+        if (in_array($conversationId, $this->selectedThreads, true)) {
+            $this->selectedThreads = array_values(array_diff($this->selectedThreads, [$conversationId]));
+        } else {
+            $this->selectedThreads[] = $conversationId;
+        }
+    }
+
+    public function selectAllThreads(): void
+    {
+        $all = $this->myConversationIds();
+        // Toggle: if everything is already selected, clear; otherwise select all.
+        $this->selectedThreads = count($this->selectedThreads) === count($all) ? [] : $all;
+    }
+
+    /** Single-thread delete (trash icon) — routes through the same confirm modal. */
+    public function confirmDeleteThread(int $conversationId): void
+    {
+        $this->selectedThreads   = [$conversationId];
+        $this->showDeleteConfirm = true;
+    }
+
+    public function confirmDelete(): void
+    {
+        if (empty($this->selectedThreads)) {
+            return;
+        }
+        $this->showDeleteConfirm = true;
+    }
+
+    /** Permanently remove the selected conversations, their messages and pivots. */
+    public function deleteSelected(): void
+    {
+        $ids = array_map('intval', $this->selectedThreads);
+
+        // Restrict to conversations the current user is actually part of.
+        $owned = Conversation::where('organization_id', $this->orgId())
+            ->whereIn('id', $ids)
+            ->whereHas('participants', fn($q) => $q->where('user_id', $this->meId()))
+            ->pluck('id')
+            ->all();
+
+        if (!empty($owned)) {
+            DB::transaction(function () use ($owned) {
+                Message::whereIn('conversation_id', $owned)->delete();
+                DB::table('chat_conversation_user')->whereIn('conversation_id', $owned)->delete();
+                Conversation::whereIn('id', $owned)->delete();
+            });
+
+            if (in_array((int) $this->conversationId, $owned, true)) {
+                $this->conversationId = null;
+                $this->selectedUserId = null;
+            }
+        }
+
+        $this->selectedThreads   = [];
+        $this->selectMode        = false;
+        $this->showDeleteConfirm = false;
+    }
+
     public function render()
     {
         $meId = $this->meId();
@@ -217,6 +310,7 @@ class Messenger extends Component
 
                 return [
                     'user'            => $u,
+                    'role_label'      => self::roleLabel($u->role),
                     'conversation_id' => $conversation?->id,
                     'unread'          => $unread,
                     'last'            => $last,
@@ -238,11 +332,12 @@ class Messenger extends Component
         $other = $this->selectedUserId ? User::find($this->selectedUserId) : null;
 
         return view('livewire.chat.messenger', [
-            'contacts'    => $contacts,
-            'messages'    => $messages,
-            'otherUser'   => $other,
-            'myId'        => $meId,
-            'panelLabel'  => Auth::user()->role === 'accounts' ? 'School Admins' : 'Accounts Team',
+            'contacts'        => $contacts,
+            'messages'        => $messages,
+            'otherUser'       => $other,
+            'otherRoleLabel'  => $other ? self::roleLabel($other->role) : '',
+            'myId'            => $meId,
+            'panelLabel'      => 'Admins · Sub-admins · Accounts',
         ]);
     }
 }

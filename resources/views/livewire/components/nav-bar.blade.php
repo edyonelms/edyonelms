@@ -194,12 +194,13 @@
                     @endif
                 </div>
                 @if (in_array(auth()->user()->role, ['accounts', 'admin', 'sub-admin']))
-                    <div class="relative inline-flex">
+                    <div class="relative inline-flex"
+                        x-data="{ count: {{ (int) ($unreadMessages ?? 0) }} }"
+                        x-on:chat-sync.window="count = $event.detail.unread">
                         <x-button rounded class="h-9 w-9 bg-white" icon="chat-bubble-oval-left-ellipsis" outline
                             wire:click="messagesPage" title="Messages" />
-                        @if (($unreadMessages ?? 0) > 0)
-                            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">{{ $unreadMessages > 99 ? '99+' : $unreadMessages }}</span>
-                        @endif
+                        <span x-show="count > 0" x-cloak x-text="count > 99 ? '99+' : count"
+                            class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none"></span>
                     </div>
                 @endif
 

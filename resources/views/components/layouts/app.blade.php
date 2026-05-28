@@ -75,6 +75,11 @@
 
     </div>
 
+    {{-- ─── Live chat notifications (toast preview + badge sync) ─── --}}
+    @if (Auth::user() && in_array(Auth::user()->role, ['admin', 'sub-admin', 'accounts']))
+        @livewire('chat.notifier')
+    @endif
+
     @livewireScripts
     @livewireCalendarScripts
 
