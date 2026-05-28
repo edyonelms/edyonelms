@@ -356,6 +356,20 @@ jobs:
             sudo chown -R "$(whoami)":"$(whoami)" . 2>/dev/null || true
             git reset --hard origin/main
 
+            # ─── Drop stale compiled caches so new routes take effect ───────
+            # bootstrap/cache is bind-mounted from the host and is chown'd to
+            # the SSH user just above, so the in-container www-data user can no
+            # longer delete or overwrite it. The route table also can't be
+            # re-cached (some routes use closures, which makes route:cache fail
+            # and the entrypoint swallows it). The net effect is a STALE
+            # routes-v7.php — generated before newer routes (e.g. the
+            # certificate / TC PDF download routes) existed — keeps being
+            # served, so those URLs 404 even though the code is deployed.
+            # Remove the compiled caches here on the host (we own them); the
+            # container regenerates config/view on boot and falls back to
+            # dynamic route resolution, so every route is reachable.
+            rm -f bootstrap/cache/*.php || true
+
             # Build new app image while old container keeps serving traffic.
             # Compose only recreates services whose image/config changed —
             # nginx, mysql, redis stay untouched (no DB/cache downtime).
