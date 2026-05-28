@@ -47,8 +47,18 @@
     <div class="frame"><div class="frame-inner"></div></div>
 
     <div class="content">
-        @if (!empty($cert->organization->logo) && file_exists(public_path('storage/' . $cert->organization->logo)))
-            <img class="logo" src="{{ public_path('storage/' . $cert->organization->logo) }}" alt="Logo">
+        @php
+            $logoSrc = null;
+            if (!empty($cert->organization?->logo)) {
+                if (\Illuminate\Support\Str::startsWith($cert->organization->logo, ['http://', 'https://'])) {
+                    $logoSrc = $cert->organization->logo;
+                } elseif (file_exists(public_path('storage/' . $cert->organization->logo))) {
+                    $logoSrc = public_path('storage/' . $cert->organization->logo);
+                }
+            }
+        @endphp
+        @if ($logoSrc)
+            <img class="logo" src="{{ $logoSrc }}" alt="Logo">
         @endif
 
         <div class="school-name">{{ strtoupper($cert->organization->name ?? 'School Name') }}</div>
