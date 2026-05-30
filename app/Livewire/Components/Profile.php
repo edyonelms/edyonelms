@@ -26,7 +26,17 @@ class Profile extends Component
     public $showPassword = false;
     public $photo;
     public $tempPhotoUrl;
+
+    /** 'profile' (descriptive info) or 'info' (one card: bank + details + password). */
     public $activeTab = 'profile';
+
+    /** When on the 'info' tab: 'view' (default, read-only card) or 'edit' (form). */
+    public string $infoMode = 'view';
+
+    /** Modal toggles. */
+    public bool $showLogoModal      = false;
+    public bool $showPasswordPanel  = false;
+
     public $schoolInfo;
     public $showNewPassword = false;
     public $showConfirmPassword = false;
@@ -258,6 +268,42 @@ class Profile extends Component
     public function showTab($tab)
     {
         $this->activeTab = $tab;
+
+        // School Info tab always opens in view mode; the user clicks
+        // Edit on the card header to enter the form.
+        if ($tab === 'info') {
+            $this->infoMode = 'view';
+            $this->showPasswordPanel = false;
+        }
+    }
+
+    public function setInfoMode(string $mode): void
+    {
+        $this->infoMode = in_array($mode, ['view', 'edit'], true) ? $mode : 'view';
+        $this->resetErrorBag();
+    }
+
+    public function openLogoModal(): void
+    {
+        $this->reset('photo', 'tempPhotoUrl');
+        $this->resetErrorBag('photo');
+        $this->showLogoModal = true;
+    }
+
+    public function closeLogoModal(): void
+    {
+        $this->reset('photo', 'tempPhotoUrl');
+        $this->resetErrorBag('photo');
+        $this->showLogoModal = false;
+    }
+
+    public function togglePasswordPanel(): void
+    {
+        $this->showPasswordPanel = !$this->showPasswordPanel;
+        if (!$this->showPasswordPanel) {
+            $this->reset(['currentPassword', 'newPassword', 'confirmPassword']);
+            $this->resetErrorBag();
+        }
     }
 
     public function updatedPhoto()
@@ -287,7 +333,8 @@ class Profile extends Component
         $this->organization->refresh();
 
         $this->reset('photo', 'tempPhotoUrl');
-        $this->notification()->success('Profile photo updated successfully!!!');
+        $this->showLogoModal = false;
+        $this->notification()->success('School logo updated.');
     }
 
     public function togglePasswordVisibility($field)
@@ -321,7 +368,8 @@ class Profile extends Component
         ]);
 
         $this->reset(['currentPassword', 'newPassword', 'confirmPassword']);
-        $this->notification()->success('Password updated successfully!!');
+        $this->showPasswordPanel = false;
+        $this->notification()->success('Password updated.');
     }
 
     public function addManagement()
@@ -468,10 +516,12 @@ class Profile extends Component
                 ]);
             }
 
-            $this->notification()->success('Saved successfully!');
+            $this->notification()->success('School information saved.');
             $this->loadSchoolInfo();
             $this->pendingDocuments = [];
-            $this->activeTab = 'view';
+            // Return to view mode inside the School Info tab.
+            $this->activeTab = 'info';
+            $this->infoMode  = 'view';
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = collect($e->errors())->flatten()->implode('<br>');
             $this->notification()->error('Please fix the following errors:<br>' . $errors);
