@@ -1,10 +1,16 @@
 <div class="bg-gray-50">
 
-    {{-- ─── Filter bar (Enquiries-style) — Sort + Rows + Columns + counter
-         Stacks cleanly on phones. ─── --}}
-    <div class="bg-gray-50 border-b border-gray-200 px-3 sm:px-6 py-2.5 sm:py-3">
+    {{-- ─── Filter bar — Quick Links heading + Sort + static rows/cols info. ─── --}}
+    <div class="bg-white border-b border-gray-200 px-3 sm:px-6 py-2.5 sm:py-3">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mr-1">
+
+            {{-- Page heading (first item in the filter row). --}}
+            <h1 class="text-base sm:text-lg font-semibold text-gray-900 mr-1">Quick Links</h1>
+
+            {{-- Divider --}}
+            <span class="hidden sm:block h-5 w-px bg-gray-200"></span>
+
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -23,39 +29,17 @@
                 </select>
             </div>
 
-            {{-- Rows + Cols — hidden on phones (mobile grid uses its own adaptive size). --}}
-            <div class="hidden sm:flex items-center gap-1.5">
-                <span class="text-xs text-gray-500">Rows</span>
-                <select wire:model.live="rows"
-                    class="text-xs bg-white border border-gray-200 rounded-md px-2 py-1.5 text-gray-700
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    @foreach ($rowOptions as $opt)
-                        <option value="{{ $opt }}">{{ $opt }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="hidden sm:flex items-center gap-1.5">
-                <span class="text-xs text-gray-500">Columns</span>
-                <select wire:model.live="columns"
-                    class="text-xs bg-white border border-gray-200 rounded-md px-2 py-1.5 text-gray-700
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    @foreach ($columnOptions as $opt)
-                        <option value="{{ $opt }}">{{ $opt }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- Counter pill, right-aligned. --}}
-            <span class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full
-                         bg-white border border-gray-200 text-[11px] font-medium text-gray-600">
+            {{-- Read-only layout info (no sorting controls). --}}
+            <div class="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                        bg-gray-50 border border-gray-200 text-[11px] font-medium text-gray-600">
                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                {{ count($orderedLinks) }}
-                <span class="hidden sm:inline">tiles</span>
-            </span>
+                <span><strong class="text-gray-800">{{ $rows }}</strong> rows</span>
+                <span class="text-gray-300">·</span>
+                <span><strong class="text-gray-800">{{ $columns }}</strong> columns</span>
+            </div>
         </div>
     </div>
 
