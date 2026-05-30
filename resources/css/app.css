@@ -10,6 +10,14 @@
 @source inline("bg-{blue,indigo,purple,green,yellow,pink,teal,rose,cyan,lime,fuchsia,red,orange,amber,sky,violet,gray}-100");
 @source inline("text-{blue,indigo,purple,green,yellow,pink,teal,rose,cyan,lime,fuchsia,red,orange,amber,sky,violet,gray}-600");
 
+/* School-info "USM" cards (Vision / Mission / Values / Goals) build the
+   gradient header + checkmark badge + hover border from a per-card colour,
+   so pin every shade the section actually emits. */
+@source inline("bg-{blue,green,purple,orange,amber,rose,indigo}-500");
+@source inline("from-{blue,green,purple,orange,amber,rose,indigo}-50");
+@source inline("to-{blue,green,purple,orange,amber,rose,indigo,white}-50");
+@source inline("hover:border-{blue,green,purple,orange,amber,rose,indigo}-200");
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

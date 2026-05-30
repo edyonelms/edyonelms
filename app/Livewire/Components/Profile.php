@@ -33,8 +33,8 @@ class Profile extends Component
     /** When on the 'info' tab: 'view' (default, read-only card) or 'edit' (form). */
     public string $infoMode = 'view';
 
-    /** Modal toggles. */
-    public bool $showLogoModal      = false;
+    /** Slide-in panel toggles (same UI template as member / document panels). */
+    public bool $showLogoPanel      = false;
     public bool $showPasswordPanel  = false;
 
     public $schoolInfo;
@@ -282,27 +282,32 @@ class Profile extends Component
         $this->resetErrorBag();
     }
 
-    public function openLogoModal(): void
+    public function openLogoPanel(): void
     {
         $this->reset('photo', 'tempPhotoUrl');
         $this->resetErrorBag('photo');
-        $this->showLogoModal = true;
+        $this->showLogoPanel = true;
     }
 
-    public function closeLogoModal(): void
+    public function closeLogoPanel(): void
     {
         $this->reset('photo', 'tempPhotoUrl');
         $this->resetErrorBag('photo');
-        $this->showLogoModal = false;
+        $this->showLogoPanel = false;
     }
 
-    public function togglePasswordPanel(): void
+    public function openPasswordPanel(): void
     {
-        $this->showPasswordPanel = !$this->showPasswordPanel;
-        if (!$this->showPasswordPanel) {
-            $this->reset(['currentPassword', 'newPassword', 'confirmPassword']);
-            $this->resetErrorBag();
-        }
+        $this->reset(['currentPassword', 'newPassword', 'confirmPassword']);
+        $this->resetErrorBag();
+        $this->showPasswordPanel = true;
+    }
+
+    public function closePasswordPanel(): void
+    {
+        $this->reset(['currentPassword', 'newPassword', 'confirmPassword']);
+        $this->resetErrorBag();
+        $this->showPasswordPanel = false;
     }
 
     public function updatedPhoto()
@@ -332,7 +337,7 @@ class Profile extends Component
         $this->organization->refresh();
 
         $this->reset('photo', 'tempPhotoUrl');
-        $this->showLogoModal = false;
+        $this->showLogoPanel = false;
         $this->notification()->success('School logo updated.');
     }
 

@@ -86,7 +86,7 @@
                             <x-icon name="building-office-2" class="w-9 h-9 text-blue-500" />
                         </div>
                     @endif
-                    <button type="button" wire:click="openLogoModal"
+                    <button type="button" wire:click="openLogoPanel"
                             title="Change logo"
                             class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700
                                    text-white flex items-center justify-center shadow-md ring-2 ring-white transition">
@@ -177,132 +177,186 @@
                 || count($schoolManagement) > 0
                 || count($uploadedDocuments) > 0;
         @endphp
-        <div class="max-w-5xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5">
 
-            {{-- Add / Edit toolbar --}}
-            <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-800">School Info</p>
-                    <p class="text-xs text-gray-500">
-                        {{ $hasAnySchoolInfo
-                            ? 'About, vision, management & documents.'
-                            : 'Nothing added yet — tap Add to fill it in.' }}
-                    </p>
+        {{-- Empty state — about-app-style "no information" panel with an Add button. --}}
+        @unless ($hasAnySchoolInfo)
+            <div class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No School Info Yet</h3>
+                <p class="text-gray-400 text-sm max-w-sm mb-5">
+                    Add your school's about, vision, management team and documents to bring this profile to life.
+                </p>
                 <button wire:click="setInfoMode('edit')"
-                        class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700
-                               text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
-                    @if ($hasAnySchoolInfo)
-                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                    @else
-                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add School Info
-                    @endif
+                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add School Info
                 </button>
             </div>
+        @else
 
-            {{-- About --}}
-            @if ($aboutSchool)
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
-                    <h2 class="text-base font-semibold text-gray-900 mb-2">About Our School</h2>
-                    <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $aboutSchool }}</p>
+            {{-- ══════════════════════════════════════════════════
+                 Compact header (matches admin about-app template)
+            ══════════════════════════════════════════════════ --}}
+            <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        @if ($organization && $organization->logo)
+                            <img src="{{ $organization->logo }}" alt="School logo"
+                                class="w-12 h-12 rounded-xl object-contain border border-gray-200 shadow-sm bg-white p-1 flex-shrink-0">
+                        @else
+                            <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                <x-icon name="building-office-2" class="w-6 h-6 text-indigo-500" />
+                            </div>
+                        @endif
+                        <div class="min-w-0">
+                            <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">School Info</h1>
+                            <p class="text-sm text-gray-500 mt-0.5 truncate">About, vision, management &amp; documents</p>
+                        </div>
+                    </div>
+                    <button wire:click="setInfoMode('edit')"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                    </button>
                 </div>
-            @endif
+            </div>
 
-            {{-- Vision / Mission / Values / Goals --}}
-            @if ($usmVision || $usmMission || $usmValues || $usmGoals)
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    @foreach ([
+            <div class="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
+
+                {{-- ── About Our School ── --}}
+                @if ($aboutSchool)
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
+                                hover:border-indigo-200 hover:shadow-md transition-all duration-200">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
+                                    bg-gradient-to-r from-indigo-50 to-blue-50">
+                            <span class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-sm font-bold rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                1
+                            </span>
+                            <h2 class="text-base font-semibold text-gray-900">About Our School</h2>
+                        </div>
+                        <div class="px-4 sm:px-6 py-5">
+                            <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $aboutSchool }}</p>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ── Vision / Mission / Values / Goals ── --}}
+                @php
+                    $usmCards = array_values(array_filter([
                         ['label' => 'Vision',  'value' => $usmVision,  'color' => 'blue'],
                         ['label' => 'Mission', 'value' => $usmMission, 'color' => 'green'],
                         ['label' => 'Values',  'value' => $usmValues,  'color' => 'purple'],
                         ['label' => 'Goals',   'value' => $usmGoals,   'color' => 'orange'],
-                    ] as $item)
-                        @if ($item['value'])
-                            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                                <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-{{ $item['color'] }}-500"></span>
-                                    {{ $item['label'] }}
-                                </h3>
-                                <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $item['value'] }}</p>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
-            @endif
-
-            {{-- Management Team --}}
-            @if (count($schoolManagement) > 0)
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
-                    <h2 class="text-base font-semibold text-gray-900 mb-4">Management Team</h2>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        @foreach ($schoolManagement as $member)
-                            <div class="text-center">
-                                @if (!empty($member['photo_path']))
-                                    <img src="{{ $member['photo_path'] }}"
-                                         class="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200 shadow-sm mb-2">
-                                @else
-                                    <div class="w-16 h-16 rounded-full mx-auto bg-gray-100 flex items-center justify-center mb-2">
-                                        <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    ], fn ($i) => !empty($i['value'])));
+                @endphp
+                @if (count($usmCards) > 0)
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        @foreach ($usmCards as $card)
+                            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
+                                        hover:border-{{ $card['color'] }}-200 hover:shadow-md transition-all duration-200">
+                                <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
+                                            bg-gradient-to-r from-{{ $card['color'] }}-50 to-white">
+                                    <div class="w-8 h-8 bg-{{ $card['color'] }}-500 rounded-xl flex items-center justify-center shadow-sm">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                         </svg>
                                     </div>
-                                @endif
-                                <p class="text-sm font-medium text-gray-800">{{ $member['name'] }}</p>
-                                <p class="text-xs text-gray-500">{{ $member['designation'] }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
-            {{-- Documents --}}
-            @if (count($uploadedDocuments) > 0)
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
-                    <h2 class="text-base font-semibold text-gray-900 mb-4">School Documents</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        @foreach ($uploadedDocuments as $document)
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center shrink-0">
-                                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-medium text-gray-800 truncate">{{ $document['title'] }}</p>
-                                        <p class="text-xs text-gray-400">{{ strtoupper($document['file_type']) }}</p>
-                                    </div>
+                                    <h2 class="text-base font-semibold text-gray-900">{{ $card['label'] }}</h2>
                                 </div>
-                                <a href="{{ $document['file_path'] }}" target="_blank"
-                                   class="ml-3 shrink-0 text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">View</a>
+                                <div class="px-4 sm:px-6 py-5">
+                                    <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $card['value'] }}</p>
+                                </div>
                             </div>
                         @endforeach
                     </div>
-                </div>
-            @endif
+                @endif
 
-            {{-- Empty state --}}
-            @unless ($hasAnySchoolInfo)
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
-                    <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center mb-3">
-                        <x-icon name="document-text" class="w-7 h-7 text-blue-500" />
+                {{-- ── Management Team ── --}}
+                @if (count($schoolManagement) > 0)
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
+                                hover:border-amber-200 hover:shadow-md transition-all duration-200">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <h2 class="text-base font-semibold text-gray-900">Management Team</h2>
+                        </div>
+                        <div class="px-4 sm:px-6 py-5">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                @foreach ($schoolManagement as $member)
+                                    <div class="text-center">
+                                        @if (!empty($member['photo_path']))
+                                            <img src="{{ $member['photo_path'] }}"
+                                                class="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200 shadow-sm mb-2">
+                                        @else
+                                            <div class="w-16 h-16 rounded-full mx-auto bg-amber-100 flex items-center justify-center mb-2">
+                                                <svg class="h-8 w-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <p class="text-sm font-medium text-gray-800">{{ $member['name'] }}</p>
+                                        <p class="text-xs text-gray-500">{{ $member['designation'] }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-base font-semibold text-gray-800">Nothing added yet</h3>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Tap <strong>Add School Info</strong> above to add about, vision, management and documents.
-                    </p>
-                </div>
-            @endunless
-        </div>
+                @endif
+
+                {{-- ── School Documents ── --}}
+                @if (count($uploadedDocuments) > 0)
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
+                                hover:border-rose-200 hover:shadow-md transition-all duration-200">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-red-50 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-rose-500 rounded-xl flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h2 class="text-base font-semibold text-gray-900">School Documents</h2>
+                        </div>
+                        <div class="px-4 sm:px-6 py-5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach ($uploadedDocuments as $document)
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <div class="w-8 h-8 bg-rose-100 rounded flex items-center justify-center shrink-0">
+                                                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-medium text-gray-800 truncate">{{ $document['title'] }}</p>
+                                                <p class="text-xs text-gray-400">{{ strtoupper($document['file_type']) }}</p>
+                                            </div>
+                                        </div>
+                                        <a href="{{ $document['file_path'] }}" target="_blank"
+                                           class="ml-3 shrink-0 text-xs px-3 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 transition">View</a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @endunless
     @endif
 
     {{-- ══════════════════════════════════════════════════════════
@@ -313,10 +367,11 @@
     @if ($activeTab === 'profile' && $infoMode === 'view')
         <div class="max-w-5xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5">
 
-            {{-- One unified School Information card (accounts/profile template) --}}
+            {{-- One unified School Information card (accounts/profile template).
+                 Mirrors every field super-admin sets when adding a school. --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-                {{-- Card header: org LOGO + title + Edit button --}}
+                {{-- Card header: org LOGO + title + Change Password button --}}
                 <div class="px-5 sm:px-6 py-4 flex items-center justify-between border-b border-gray-50 gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         @if ($organization && $organization->logo)
@@ -332,33 +387,31 @@
                             <p class="text-xs text-gray-400">Contact, bank &amp; credentials</p>
                         </div>
                     </div>
-                    <button wire:click="setInfoMode('edit')"
+                    <button wire:click="openPasswordPanel"
                             class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700
                                    text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
-                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
+                        <x-icon name="lock-closed" class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        Change Password
                     </button>
                 </div>
 
                 {{-- Stacked sections: School Details first, then Bank Details (with divider). --}}
                 <div>
-                    {{-- School Details --}}
+                    {{-- School Details — every field the super-admin sets when adding a school. --}}
                     <div class="px-5 sm:px-6 py-5">
                         <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">School Details</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
                             @foreach ([
-                                'School Name'    => $organization->name ?? null,
-                                'Email'          => $schoolEmail ?: ($organization->email ?? null),
-                                'Mobile'         => $schoolMobileNo ?: ($organization->mobile_number ?? null),
-                                'Website'        => $websiteUrl ?: null,
-                                'State'          => $organization->state ?? null,
-                                'Board'          => $organization->education_board ?? null,
-                                'School Code'    => $organization->school_code ?? null,
-                                'Serial Number'  => $organization->serial_number ?? null,
-                                'Address'        => $schoolAddress ?: ($organization->address ?? null),
+                                'School Name'         => $organization->name ?? null,
+                                'Email'               => $organization->email ?? null,
+                                'Mobile Number'       => $organization->mobile_number ?? null,
+                                'State'               => $organization->state ?? null,
+                                'Education Board'     => $organization->education_board ?? null,
+                                'School Code'         => $organization->school_code ?? null,
+                                'Affiliation Number'  => $organization->affiliation_no ?? null,
+                                'UDISE Number'        => $organization->udise_number ?? null,
+                                'Serial Number'       => $organization->serial_number ?? null,
+                                'Address'             => $organization->address ?? null,
                             ] as $label => $value)
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="text-sm text-gray-400 flex-shrink-0">{{ $label }}</span>
@@ -371,7 +424,7 @@
                     {{-- Divider between School Details and Bank Details --}}
                     <div class="border-t border-gray-100"></div>
 
-                    {{-- Bank Details --}}
+                    {{-- Bank Details — every field super-admin sets in Bank Details modal. --}}
                     <div class="px-5 sm:px-6 py-5">
                         <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Bank Details</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
@@ -379,6 +432,7 @@
                                 'Bank Name'        => $organization->bank_name ?? null,
                                 'Account Number'   => $organization->bank_account_no ?? null,
                                 'IFSC Code'        => $organization->bank_ifsc ?? null,
+                                'Branch'           => $organization->bank_branch ?? null,
                                 'Account Holder'   => $organization->bank_holder_name ?? null,
                             ] as $label => $value)
                                 <div class="flex justify-between items-start gap-3">
@@ -388,91 +442,6 @@
                             @endforeach
                         </div>
                     </div>
-                </div>
-
-                {{-- Change Password section --}}
-                <div class="border-t border-gray-100 px-5 sm:px-6 py-4 sm:py-5 bg-gray-50/40">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-800">Account Password</p>
-                            <p class="text-xs text-gray-500 mt-0.5">Update the admin login password.</p>
-                        </div>
-                        <button wire:click="togglePasswordPanel"
-                                class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-gray-300
-                                       hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-medium rounded-lg transition flex-shrink-0">
-                            <x-icon name="lock-closed" class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            {{ $showPasswordPanel ? 'Cancel' : 'Change Password' }}
-                        </button>
-                    </div>
-
-                    @if ($showPasswordPanel)
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3"
-                             x-data="{ pwd: @entangle('newPassword').live }">
-                            @foreach ([
-                                ['label' => 'Current Password', 'model' => 'currentPassword', 'show' => $showCurrentPassword, 'toggle' => 'current', 'error' => 'currentPassword'],
-                                ['label' => 'New Password',     'model' => 'newPassword',     'show' => $showNewPassword,     'toggle' => 'new',     'error' => 'newPassword'],
-                                ['label' => 'Confirm Password', 'model' => 'confirmPassword', 'show' => $showConfirmPassword, 'toggle' => 'confirm', 'error' => null],
-                            ] as $field)
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">{{ $field['label'] }}</label>
-                                    <div class="relative">
-                                        <input wire:model.live.debounce.150ms="{{ $field['model'] }}"
-                                               type="{{ $field['show'] ? 'text' : 'password' }}"
-                                               placeholder="{{ $field['label'] }}"
-                                               autocomplete="new-password"
-                                               class="w-full p-2.5 pr-10 border border-gray-300 rounded-lg text-sm
-                                                      focus:outline-none focus:ring-2 focus:ring-blue-400">
-                                        <button type="button" wire:click="togglePasswordVisibility('{{ $field['toggle'] }}')"
-                                                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                @if ($field['show'])
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                @else
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                @endif
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    @if ($field['error'])
-                                        @error($field['error'])
-                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
-                                    @endif
-                                </div>
-                            @endforeach
-
-                            {{-- Strong-password live checklist (Alpine-driven, no Livewire round-trip per keystroke) --}}
-                            <div class="sm:col-span-3 grid grid-cols-2 sm:grid-cols-5 gap-2 mt-1">
-                                @foreach ([
-                                    ['label' => '8+ characters', 'test' => 'pwd && pwd.length >= 8'],
-                                    ['label' => 'Uppercase A-Z', 'test' => '/[A-Z]/.test(pwd || "")'],
-                                    ['label' => 'Lowercase a-z', 'test' => '/[a-z]/.test(pwd || "")'],
-                                    ['label' => 'Number 0-9',    'test' => '/[0-9]/.test(pwd || "")'],
-                                    ['label' => 'Symbol !@#…',   'test' => '/[^A-Za-z0-9]/.test(pwd || "")'],
-                                ] as $rule)
-                                    <div class="flex items-center gap-1.5 text-[11px] sm:text-xs"
-                                         :class="{{ $rule['test'] }} ? 'text-emerald-600' : 'text-gray-400'">
-                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span class="leading-tight">{{ $rule['label'] }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="sm:col-span-3 flex justify-end mt-1">
-                                <button wire:click="updatePassword" wire:loading.attr="disabled"
-                                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-3 hover:opacity-90 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-60">
-                                    <span wire:loading.remove wire:target="updatePassword">Update Password</span>
-                                    <span wire:loading wire:target="updatePassword">Updating…</span>
-                                </button>
-                            </div>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -950,69 +919,166 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════
-         LOGO CHANGE MODAL
+         LOGO CHANGE — slide-in panel (same template as member /
+         document panels above)
     ══════════════════════════════════════════════════ --}}
-    @if ($showLogoModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="closeLogoModal"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-semibold text-gray-900">Change School Logo</h3>
-                    <button wire:click="closeLogoModal" class="text-gray-400 hover:text-gray-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+    @if ($showLogoPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeLogoPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                <button wire:click="closeLogoPanel"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Change School Logo</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Upload a square JPG or PNG, up to 2 MB.</p>
+                    </div>
+
+                    <div x-data="{ isUploading: false }"
+                         x-on:livewire-upload-start="isUploading = true"
+                         x-on:livewire-upload-finish="isUploading = false"
+                         x-on:livewire-upload-error="isUploading = false"
+                         class="space-y-5">
+
+                        {{-- Preview --}}
+                        <div class="flex items-center gap-4">
+                            @if ($tempPhotoUrl)
+                                <img src="{{ $tempPhotoUrl }}"
+                                     class="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow ring-1 ring-gray-200 flex-shrink-0">
+                            @elseif ($organization && $organization->logo)
+                                <img src="{{ $organization->logo }}"
+                                     class="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow ring-1 ring-gray-200 flex-shrink-0">
+                            @else
+                                <div class="w-20 h-20 rounded-2xl bg-blue-50 flex items-center justify-center border-2 border-white shadow ring-1 ring-gray-200 flex-shrink-0">
+                                    <x-icon name="building-office-2" class="w-9 h-9 text-blue-500" />
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Current logo</p>
+                                <p class="text-xs text-gray-400">Pick a file below to replace it.</p>
+                            </div>
+                        </div>
+
+                        {{-- File picker --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                                New logo <span class="text-red-500">*</span>
+                                <span class="text-gray-400 font-normal">(JPG/PNG — max 2 MB)</span>
+                            </label>
+                            <input type="file" wire:model="photo" accept="image/*"
+                                   class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-md">
+                            <div wire:loading wire:target="photo" class="text-xs text-blue-600 mt-1.5">Uploading…</div>
+                            @error('photo')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                 </div>
 
-                <div x-data="{ isUploading: false }"
-                     x-on:livewire-upload-start="isUploading = true"
-                     x-on:livewire-upload-finish="isUploading = false"
-                     x-on:livewire-upload-error="isUploading = false">
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeLogoPanel" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="savePhoto" wire:loading.attr="disabled" @disabled(!$photo)
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="savePhoto">Save Logo</span>
+                        <span wire:loading wire:target="savePhoto">Saving…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
-                    {{-- Preview --}}
-                    <div class="flex justify-center mb-4">
-                        @if ($tempPhotoUrl)
-                            <img src="{{ $tempPhotoUrl }}"
-                                 class="w-28 h-28 rounded-2xl object-cover border-2 border-white shadow ring-1 ring-gray-200">
-                        @elseif ($organization && $organization->logo)
-                            <img src="{{ $organization->logo }}"
-                                 class="w-28 h-28 rounded-2xl object-cover border-2 border-white shadow ring-1 ring-gray-200">
-                        @else
-                            <div class="w-28 h-28 rounded-2xl bg-gray-100 flex items-center justify-center border-2 border-white shadow ring-1 ring-gray-200">
-                                <x-icon name="building-office-2" class="w-12 h-12 text-gray-400" />
+    {{-- ══════════════════════════════════════════════════
+         CHANGE PASSWORD — slide-in panel
+    ══════════════════════════════════════════════════ --}}
+    @if ($showPasswordPanel)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePasswordPanel"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
+
+                <button wire:click="closePasswordPanel"
+                    class="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex-1 overflow-y-auto px-6 pt-6 pb-6 space-y-5"
+                     x-data="{ pwd: @entangle('newPassword').live }">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Change Password</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Set a new strong password for the admin login.</p>
+                    </div>
+
+                    @foreach ([
+                        ['label' => 'Current Password', 'model' => 'currentPassword', 'show' => $showCurrentPassword, 'toggle' => 'current', 'error' => 'currentPassword'],
+                        ['label' => 'New Password',     'model' => 'newPassword',     'show' => $showNewPassword,     'toggle' => 'new',     'error' => 'newPassword'],
+                        ['label' => 'Confirm Password', 'model' => 'confirmPassword', 'show' => $showConfirmPassword, 'toggle' => 'confirm', 'error' => null],
+                    ] as $field)
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                                {{ $field['label'] }} <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input wire:model.live.debounce.150ms="{{ $field['model'] }}"
+                                       type="{{ $field['show'] ? 'text' : 'password' }}"
+                                       placeholder="{{ $field['label'] }}"
+                                       autocomplete="new-password"
+                                       class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 pr-10 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <button type="button" wire:click="togglePasswordVisibility('{{ $field['toggle'] }}')"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        @if ($field['show'])
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        @else
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        @endif
+                                    </svg>
+                                </button>
                             </div>
-                        @endif
+                            @if ($field['error'])
+                                @error($field['error'])<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                            @endif
+                        </div>
+                    @endforeach
+
+                    {{-- Strong-password live checklist --}}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Password must include</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach ([
+                                ['label' => 'At least 8 characters', 'test' => 'pwd && pwd.length >= 8'],
+                                ['label' => 'An uppercase letter',   'test' => '/[A-Z]/.test(pwd || "")'],
+                                ['label' => 'A lowercase letter',    'test' => '/[a-z]/.test(pwd || "")'],
+                                ['label' => 'A number',              'test' => '/[0-9]/.test(pwd || "")'],
+                                ['label' => 'A symbol (!@#$…)',      'test' => '/[^A-Za-z0-9]/.test(pwd || "")'],
+                            ] as $rule)
+                                <div class="flex items-center gap-1.5 text-xs"
+                                     :class="{{ $rule['test'] }} ? 'text-emerald-600' : 'text-gray-400'">
+                                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span class="leading-tight">{{ $rule['label'] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
+                </div>
 
-                    <label class="block">
-                        <span class="block text-xs font-medium text-gray-600 mb-1">Choose new logo</span>
-                        <input type="file" wire:model="photo" accept="image/*"
-                               class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg
-                                      file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700
-                                      hover:file:bg-blue-100 border border-gray-300 rounded-md">
-                        <p class="text-xs text-gray-400 mt-1">JPG/PNG up to 2 MB.</p>
-                    </label>
-
-                    <div wire:loading wire:target="photo" class="text-xs text-blue-600 mt-2">Uploading…</div>
-                    @error('photo')<p class="text-xs text-red-500 mt-2">{{ $message }}</p>@enderror
-
-                    <div class="flex items-center justify-end gap-2 mt-5">
-                        <button wire:click="closeLogoModal"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-                            Cancel
-                        </button>
-                        <button wire:click="savePhoto" wire:loading.attr="disabled"
-                                @disabled(!$photo)
-                                class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md
-                                       disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span wire:loading.remove wire:target="savePhoto">Save Logo</span>
-                            <span wire:loading wire:target="savePhoto">Saving…</span>
-                        </button>
-                    </div>
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closePasswordPanel" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="updatePassword" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="updatePassword">Update Password</span>
+                        <span wire:loading wire:target="updatePassword">Updating…</span>
+                    </button>
                 </div>
             </div>
         </div>
