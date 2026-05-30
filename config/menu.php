@@ -21,12 +21,6 @@ return [
             'prefix' => 'admin.analytics',
         ],
         [
-            'title' => 'Users',
-            'link' => 'admin.users',
-            'icon' => 'user-group',
-            'prefix' => 'admin.users',
-        ],
-        [
             'title' => 'Standard',
             'link' => 'admin.standard',
             'icon' => 'book-open',
@@ -49,6 +43,12 @@ return [
             'link' => 'admin.fee',
             'icon' => 'currency-rupee',
             'prefix' => 'admin.fee',
+        ],
+        [
+            'title' => 'Ledger',
+            'link' => 'admin.ledger',
+            'icon' => 'calculator',
+            'prefix' => 'admin.ledger',
         ],
         [
             'title' => 'Payroll',
@@ -183,52 +183,10 @@ return [
             'prefix' => 'admin.tc-certificate',
         ],
         [
-            'title' => 'Admissions',
-            'link' => 'admin.admissions',
-            'icon' => 'user-plus',
-            'prefix' => 'admin.admissions',
-        ],
-        [
-            'title' => 'Rules & Regulation',
-            'link' => 'admin.rules-and-regulation',
-            'icon' => 'clipboard',
-            'prefix' => 'admin.rules-and-regulation',
-        ],
-        [
-            'title' => 'Contact Admin',
-            'link' => 'admin.contact-admin',
-            'icon' => 'chat-bubble-left',
-            'prefix' => 'admin.contact-admin',
-        ],
-        [
-            'title' => 'About App',
-            'link' => 'admin.about-app',
-            'icon' => 'information-circle',
-            'prefix' => 'admin.about-app',
-        ],
-        [
-            'title' => 'Rate LMS',
-            'link' => 'admin.rate-lms',
-            'icon' => 'star',
-            'prefix' => 'admin.rate-lms',
-        ],
-        [
-            'title' => 'Terms of Use',
-            'link' => 'admin.terms-and-condition',
-            'icon' => 'document-text',
-            'prefix' => 'admin.terms-and-condition',
-        ],
-        [
-            'title' => 'Privacy Policy',
-            'link' => 'admin.privacy-policy',
-            'icon' => 'lock-closed',
-            'prefix' => 'admin.privacy-policy',
-        ],
-        [
-            'title' => 'Terms And Condition',
-            'link' => 'admin.terms-of-use',
-            'icon' => 'document-text',
-            'prefix' => 'admin.terms-of-use',
+            'title' => 'More',
+            'link' => 'admin.more',
+            'icon' => 'squares-2x2',
+            'prefix' => 'admin.more',
         ],
     ],
 

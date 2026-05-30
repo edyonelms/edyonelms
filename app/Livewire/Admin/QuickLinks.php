@@ -11,18 +11,19 @@ class QuickLinks extends Component
     /** Display order: 'sidebar' (menu order) or 'asc' (A–Z by title). */
     public string $sort = 'sidebar';
 
-    /** Columns per row (untyped on purpose — plays nice with live binding). */
-    public $columns = 7;
-
+    /** Desktop columns per row (mobile is forced to a comfortable count via CSS). */
+    public $columns = 6;
     public array $columnOptions = [4, 5, 6, 7, 8, 10];
+
+    /** Rows preference — purely informational for the grid sizing on desktop. */
+    public $rows = 5;
+    public array $rowOptions = [3, 4, 5, 6, 8];
 
     /** Captured at mount so route() works during Livewire updates. */
     public $organization = null;
 
     public function mount(): void
     {
-        // Prefer the URL segment (matches how the user landed here),
-        // otherwise fall back to the logged-in user's organization.
         $this->organization = request()->route('organization')
             ?? auth()->user()?->organization;
 
@@ -42,8 +43,6 @@ class QuickLinks extends Component
             'cyan', 'lime', 'fuchsia', 'red', 'orange', 'amber', 'sky', 'violet', 'gray',
         ];
 
-        // Preserve sidebar (config) order; give each tile a STABLE colour so
-        // re-sorting / changing columns never reshuffles the palette.
         foreach (array_values($configLinks) as $i => $link) {
             $this->links[] = [
                 'title' => $link['title'],
@@ -55,11 +54,16 @@ class QuickLinks extends Component
         }
     }
 
-    /** Columns the grid should actually use (guarded against bad input). */
     protected function safeColumns(): int
     {
         $c = (int) $this->columns;
-        return in_array($c, $this->columnOptions, true) ? $c : 7;
+        return in_array($c, $this->columnOptions, true) ? $c : 6;
+    }
+
+    protected function safeRows(): int
+    {
+        $r = (int) $this->rows;
+        return in_array($r, $this->rowOptions, true) ? $r : 5;
     }
 
     public function render()
@@ -75,6 +79,7 @@ class QuickLinks extends Component
         return view('livewire.admin.quick-links', [
             'orderedLinks' => $links,
             'columns'      => $this->safeColumns(),
+            'rows'         => $this->safeRows(),
             'organization' => $this->organization,
         ]);
     }

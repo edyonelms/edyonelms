@@ -44,6 +44,8 @@ use App\Livewire\Admin\TermsAndCondition;
 use App\Livewire\Admin\Transport;
 use App\Livewire\Admin\AccountUsers;
 use App\Livewire\Admin\Admissions;
+use App\Livewire\Admin\Ledger;
+use App\Livewire\Admin\More;
 use App\Livewire\Admin\Users;
 use App\Livewire\Chat\Messenger;
 use App\Livewire\Components\Notification;
@@ -70,6 +72,8 @@ Route::middleware(['auth:web', 'admin', 'module'])->group(function () {
         Route::get('/arrangement', Arrangement::class)->name('admin.arrangement');
         Route::get('/fee', Fee::class)->name('admin.fee');
         Route::get('/fee-structure', FeeStructure::class)->name('admin.fee-structure');
+        Route::get('/ledger', Ledger::class)->name('admin.ledger');
+        Route::get('/more', More::class)->name('admin.more');
         Route::get('/fee/receipt/{id}', [FeeReceiptController::class, 'show'])->name('admin.fee.receipt');
         Route::get('/homework', Homework::class)->name('admin.homework');
         Route::get('/attendance', Attendance::class)->name('admin.attendance');
