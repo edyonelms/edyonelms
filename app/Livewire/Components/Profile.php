@@ -269,12 +269,11 @@ class Profile extends Component
     {
         $this->activeTab = $tab;
 
-        // School Info tab always opens in view mode; the user clicks
-        // Edit on the card header to enter the form.
-        if ($tab === 'info') {
-            $this->infoMode = 'view';
-            $this->showPasswordPanel = false;
-        }
+        // Switching tabs always drops back to view (the form is a global
+        // mode driven by $infoMode and is reached from either tab via
+        // an Edit / Add button).
+        $this->infoMode = 'view';
+        $this->showPasswordPanel = false;
     }
 
     public function setInfoMode(string $mode): void
@@ -519,7 +518,8 @@ class Profile extends Component
             $this->notification()->success('School information saved.');
             $this->loadSchoolInfo();
             $this->pendingDocuments = [];
-            // Return to view mode inside the School Info tab.
+            // Land back in view mode on the descriptive tab so the user
+            // sees the freshly-saved content.
             $this->activeTab = 'info';
             $this->infoMode  = 'view';
         } catch (\Illuminate\Validation\ValidationException $e) {

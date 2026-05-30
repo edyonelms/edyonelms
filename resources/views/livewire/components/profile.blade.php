@@ -166,12 +166,46 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════════════
-         TAB: School Profile — descriptive cards (about / vision /
-         management / documents). Read-only on this tab; edits live
-         in the School Info → Edit form.
+         TAB: School Info — descriptive cards (about / vision /
+         management / documents). Read-only on this tab; the form
+         is reached via the Add / Edit button at the top.
     ══════════════════════════════════════════════════════════ --}}
-    @if ($activeTab === 'profile')
+    @if ($activeTab === 'info' && $infoMode === 'view')
+        @php
+            $hasAnySchoolInfo = $aboutSchool
+                || $usmVision || $usmMission || $usmValues || $usmGoals
+                || count($schoolManagement) > 0
+                || count($uploadedDocuments) > 0;
+        @endphp
         <div class="max-w-5xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5">
+
+            {{-- Add / Edit toolbar --}}
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">School Info</p>
+                    <p class="text-xs text-gray-500">
+                        {{ $hasAnySchoolInfo
+                            ? 'About, vision, management & documents.'
+                            : 'Nothing added yet — tap Add to fill it in.' }}
+                    </p>
+                </div>
+                <button wire:click="setInfoMode('edit')"
+                        class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700
+                               text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
+                    @if ($hasAnySchoolInfo)
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                    @else
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add School Info
+                    @endif
+                </button>
+            </div>
 
             {{-- About --}}
             @if ($aboutSchool)
@@ -257,39 +291,45 @@
             @endif
 
             {{-- Empty state --}}
-            @if (!$aboutSchool && !$usmVision && !$usmMission && !$usmValues && !$usmGoals
-                 && count($schoolManagement) === 0 && count($uploadedDocuments) === 0)
+            @unless ($hasAnySchoolInfo)
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
                     <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center mb-3">
                         <x-icon name="document-text" class="w-7 h-7 text-blue-500" />
                     </div>
                     <h3 class="text-base font-semibold text-gray-800">Nothing added yet</h3>
                     <p class="text-sm text-gray-500 mt-1">
-                        Switch to <strong>School Info</strong> and tap <em>Edit</em> to add your school's profile content.
+                        Tap <strong>Add School Info</strong> above to add about, vision, management and documents.
                     </p>
                 </div>
-            @endif
+            @endunless
         </div>
     @endif
 
     {{-- ══════════════════════════════════════════════════════════
-         TAB: School Info → VIEW mode (one accounts-template card)
+         TAB: School Profile — one unified School Information card
+              (org logo header + School Details → divider → Bank Details
+               → Change Password)
     ══════════════════════════════════════════════════════════ --}}
-    @if ($activeTab === 'info' && $infoMode === 'view')
+    @if ($activeTab === 'profile' && $infoMode === 'view')
         <div class="max-w-5xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5">
 
             {{-- One unified School Information card (accounts/profile template) --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-                {{-- Card header: title + Edit button --}}
+                {{-- Card header: org LOGO + title + Edit button --}}
                 <div class="px-5 sm:px-6 py-4 flex items-center justify-between border-b border-gray-50 gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
-                            <x-icon name="information-circle" class="w-5 h-5 text-blue-500" />
-                        </div>
+                        @if ($organization && $organization->logo)
+                            <img src="{{ $organization->logo }}" alt="{{ $organization->name }}"
+                                 class="w-10 h-10 rounded-xl object-cover border border-gray-100 bg-white flex-shrink-0">
+                        @else
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
+                                <x-icon name="building-office-2" class="w-5 h-5 text-blue-500" />
+                            </div>
+                        @endif
                         <div class="min-w-0">
                             <h2 class="text-base font-semibold text-gray-900 truncate">School Information</h2>
-                            <p class="text-xs text-gray-400">Bank, contact &amp; credentials</p>
+                            <p class="text-xs text-gray-400">Contact, bank &amp; credentials</p>
                         </div>
                     </div>
                     <button wire:click="setInfoMode('edit')"
@@ -303,44 +343,50 @@
                     </button>
                 </div>
 
-                {{-- Details: 2-column on sm+, stacked on phones --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-50">
-
-                    {{-- Bank Details --}}
-                    <div class="px-5 sm:px-6 py-5 space-y-3">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Bank Details</p>
-                        @foreach ([
-                            'Bank Name'        => $organization->bank_name ?? null,
-                            'Account Number'   => $organization->bank_account_no ?? null,
-                            'IFSC Code'        => $organization->bank_ifsc ?? null,
-                            'Account Holder'   => $organization->bank_holder_name ?? null,
-                        ] as $label => $value)
-                            <div class="flex justify-between items-start gap-3">
-                                <span class="text-sm text-gray-400 flex-shrink-0">{{ $label }}</span>
-                                <span class="text-sm text-gray-700 text-right break-words">{{ $value ?: '—' }}</span>
-                            </div>
-                        @endforeach
+                {{-- Stacked sections: School Details first, then Bank Details (with divider). --}}
+                <div>
+                    {{-- School Details --}}
+                    <div class="px-5 sm:px-6 py-5">
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">School Details</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                            @foreach ([
+                                'School Name'    => $organization->name ?? null,
+                                'Email'          => $schoolEmail ?: ($organization->email ?? null),
+                                'Mobile'         => $schoolMobileNo ?: ($organization->mobile_number ?? null),
+                                'Website'        => $websiteUrl ?: null,
+                                'State'          => $organization->state ?? null,
+                                'Board'          => $organization->education_board ?? null,
+                                'School Code'    => $organization->school_code ?? null,
+                                'Serial Number'  => $organization->serial_number ?? null,
+                                'Address'        => $schoolAddress ?: ($organization->address ?? null),
+                            ] as $label => $value)
+                                <div class="flex justify-between items-start gap-3">
+                                    <span class="text-sm text-gray-400 flex-shrink-0">{{ $label }}</span>
+                                    <span class="text-sm text-gray-700 text-right break-words">{{ $value ?: '—' }}</span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
-                    {{-- School Details --}}
-                    <div class="px-5 sm:px-6 py-5 space-y-3">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">School Details</p>
-                        @foreach ([
-                            'School Name'    => $organization->name ?? null,
-                            'Email'          => $schoolEmail ?: ($organization->email ?? null),
-                            'Mobile'         => $schoolMobileNo ?: ($organization->mobile_number ?? null),
-                            'Website'        => $websiteUrl ?: null,
-                            'State'          => $organization->state ?? null,
-                            'Board'          => $organization->education_board ?? null,
-                            'School Code'    => $organization->school_code ?? null,
-                            'Serial Number'  => $organization->serial_number ?? null,
-                            'Address'        => $schoolAddress ?: ($organization->address ?? null),
-                        ] as $label => $value)
-                            <div class="flex justify-between items-start gap-3">
-                                <span class="text-sm text-gray-400 flex-shrink-0">{{ $label }}</span>
-                                <span class="text-sm text-gray-700 text-right break-words">{{ $value ?: '—' }}</span>
-                            </div>
-                        @endforeach
+                    {{-- Divider between School Details and Bank Details --}}
+                    <div class="border-t border-gray-100"></div>
+
+                    {{-- Bank Details --}}
+                    <div class="px-5 sm:px-6 py-5">
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Bank Details</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                            @foreach ([
+                                'Bank Name'        => $organization->bank_name ?? null,
+                                'Account Number'   => $organization->bank_account_no ?? null,
+                                'IFSC Code'        => $organization->bank_ifsc ?? null,
+                                'Account Holder'   => $organization->bank_holder_name ?? null,
+                            ] as $label => $value)
+                                <div class="flex justify-between items-start gap-3">
+                                    <span class="text-sm text-gray-400 flex-shrink-0">{{ $label }}</span>
+                                    <span class="text-sm text-gray-700 text-right break-words">{{ $value ?: '—' }}</span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 
@@ -433,9 +479,10 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════════════
-         TAB: School Info → EDIT mode (the existing about-app style form)
+         EDIT mode — reachable from either tab (replaces view content
+         while the form is open).
     ══════════════════════════════════════════════════════════ --}}
-    @if ($activeTab === 'info' && $infoMode === 'edit')
+    @if ($infoMode === 'edit')
         <div class="max-w-5xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
 
             {{-- Top action bar — back to view --}}
