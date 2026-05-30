@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Admin;
 
-use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class QuickLinks extends Component
@@ -10,14 +9,12 @@ class QuickLinks extends Component
     public array $links = [];
 
     /** Display order: 'sidebar' (menu order) or 'asc' (A–Z by title). */
-    #[Url]
     public string $sort = 'sidebar';
 
-    /** Columns per row. Defaults to a 10-wide grid (≈ 10×4). */
-    #[Url]
-    public int $columns = 10;
+    /** Columns per row (untyped on purpose — plays nice with live binding). */
+    public $columns = 7;
 
-    public array $columnOptions = [4, 5, 6, 8, 10];
+    public array $columnOptions = [4, 5, 6, 7, 8, 10];
 
     public function mount(): void
     {
@@ -44,18 +41,17 @@ class QuickLinks extends Component
                 'title' => $link['title'],
                 'route' => $link['link'],
                 'icon'  => $link['icon'],
-                'color' => $colors[abs(crc32($link['title'])) % count($colors)],
+                'color' => $colors[abs(crc32((string) $link['title'])) % count($colors)],
                 'order' => $i,
             ];
         }
     }
 
-    /** Columns the grid should actually use (guarded against bad URL input). */
+    /** Columns the grid should actually use (guarded against bad input). */
     protected function safeColumns(): int
     {
-        return in_array((int) $this->columns, $this->columnOptions, true)
-            ? (int) $this->columns
-            : 10;
+        $c = (int) $this->columns;
+        return in_array($c, $this->columnOptions, true) ? $c : 7;
     }
 
     public function render()
