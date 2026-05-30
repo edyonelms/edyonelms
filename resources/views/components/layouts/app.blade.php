@@ -24,17 +24,30 @@
             height: 100%;
             width: 100%;
         }
+
+        /* Lock body scroll when the mobile drawer is open */
+        body.drawer-open {
+            overflow: hidden;
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 h-screen w-screen overflow-hidden">
+{{-- offcanvas drives the mobile sidebar drawer (the navbar hamburger flips it).
+     Kept at body level so every page inherits the same state. --}}
+<body class="bg-gray-50 h-screen w-screen overflow-hidden"
+      x-data="{ offcanvas: false }"
+      x-effect="document.body.classList.toggle('drawer-open', offcanvas)"
+      x-on:keydown.escape.window="offcanvas = false">
 
     <x-notifications position="top-end" />
     <x-dialog z-index="z-50" blur="md" align="center" />
 
     @if (Auth::user())
-        {{-- ─── SIDEBAR (fixed, never scrolls horizontally) ─── --}}
-        <aside class="fixed inset-y-0 left-0 w-64 shadow-md z-50 overflow-y-auto overflow-x-hidden">
+        {{-- ─── SIDEBAR — invisible/non-blocking on mobile, fixed rail on md+
+             (each sidebar partial includes BOTH a `md:hidden` off-canvas
+              drawer and a `hidden md:flex` static rail). ─── --}}
+        <aside class="z-50 w-0 md:w-64 md:fixed md:inset-y-0 md:left-0
+                      md:shadow-md md:overflow-y-auto md:overflow-x-hidden">
             @if (in_array(Auth::user()->role, ['super-admin', 'sub-super-admin']))
                 @include('admin-components.super-admin-sidebar')
             @elseif (in_array(Auth::user()->role, ['admin', 'sub-admin']))
@@ -45,7 +58,7 @@
         </aside>
     @endif
 
-    {{-- ─── NAVBAR (fixed, sits above everything) ─── --}}
+    {{-- ─── NAVBAR (fixed, sits above everything; offset by sidebar on md+) ─── --}}
     <header class="fixed top-0 left-0 right-0 z-40 md:pl-64">
         @livewire('components.nav-bar')
     </header>

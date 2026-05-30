@@ -20,7 +20,9 @@
 @endphp
 
 <!-- Off-canvas menu for mobile -->
-<div x-show="offcanvas" x-cloak class="fixed inset-0 flex z-40 md:hidden" role="dialog" aria-modal="true">
+<div x-show="offcanvas" x-cloak class="fixed inset-0 flex z-[60] md:hidden"
+     role="dialog" aria-modal="true"
+     x-on:click="if ($event.target.closest('a')) offcanvas = false">
     <!-- Backdrop -->
     <div x-show="offcanvas" x-on:click="offcanvas = false" class="fixed inset-0 bg-black bg-opacity-50"
         x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0"

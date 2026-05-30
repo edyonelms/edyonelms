@@ -1,6 +1,6 @@
 <div>
-    <nav class="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16 gap-4">
+    <nav class="bg-white border-b border-gray-200 px-2 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 gap-2 sm:gap-4">
 
             {{-- ── LEFT ── --}}
             <div class="flex items-center gap-3 flex-shrink-0">
@@ -47,8 +47,9 @@
                 </div>
             </div>
 
-            {{-- ── CENTER — Search ── --}}
-            <div class="flex-1 max-w-md mx-auto" x-data="{ open: false }" x-on:click.away="open = false"
+            {{-- ── CENTER — Search (hidden on the smallest phones; reach pages via the
+                 hamburger menu instead so the navbar stays uncluttered) ── --}}
+            <div class="hidden sm:block flex-1 max-w-md mx-auto" x-data="{ open: false }" x-on:click.away="open = false"
                 x-on:keydown.escape.window="open = false">
 
                 <div class="relative">
