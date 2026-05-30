@@ -16,8 +16,16 @@ class QuickLinks extends Component
 
     public array $columnOptions = [4, 5, 6, 7, 8, 10];
 
+    /** Captured at mount so route() works during Livewire updates. */
+    public $organization = null;
+
     public function mount(): void
     {
+        // Prefer the URL segment (matches how the user landed here),
+        // otherwise fall back to the logged-in user's organization.
+        $this->organization = request()->route('organization')
+            ?? auth()->user()?->organization;
+
         $configLinks = config('menu.admin', []);
 
         // Drop the Quick Links tile itself.
@@ -67,6 +75,7 @@ class QuickLinks extends Component
         return view('livewire.admin.quick-links', [
             'orderedLinks' => $links,
             'columns'      => $this->safeColumns(),
+            'organization' => $this->organization,
         ]);
     }
 }

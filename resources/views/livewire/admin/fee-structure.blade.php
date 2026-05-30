@@ -1,5 +1,6 @@
-<div class="min-h-screen bg-gray-50">
+<div class="{{ $embedded ? '' : 'min-h-screen' }} bg-gray-50">
 
+    @unless ($embedded)
     {{-- ══════════ HEADER (admin template) ══════════ --}}
     <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-30">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -27,6 +28,27 @@
             </div>
         </div>
     </div>
+    @endunless
+
+    @if ($embedded && $activeTab === 'academic')
+    {{-- Embedded toolbar: stats + Add button (replaces the hidden page header) --}}
+    <div class="flex flex-wrap items-center justify-end gap-2 mb-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-xs font-medium text-gray-600">
+            Academic <strong class="text-gray-900">{{ $academicCount }}</strong>
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-medium text-blue-600">
+            Total ₹<strong>{{ number_format($totalAcademicAmt, 0) }}</strong>
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-600">
+            Routes <strong>{{ $routeCount }}</strong>
+        </span>
+        <button wire:click="openStructureModal()"
+            class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Add Fee Structure
+        </button>
+    </div>
+    @endif
 
     {{-- ══════════ TABS ══════════ --}}
     <div class="bg-white border-b border-gray-200 px-4 sm:px-6">

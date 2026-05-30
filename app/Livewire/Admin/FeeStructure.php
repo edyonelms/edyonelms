@@ -43,13 +43,25 @@ class FeeStructure extends Component
     // ─── Tabs: academic | transport_routes | transport_fees ──────────────────────
     public string $activeTab = 'academic';
 
-    protected $queryString = [
-        'activeTab' => ['except' => 'academic'],
-        'search'    => ['except' => ''],
-    ];
+    /** True when rendered inside the Fee page's "Fee Structure" tab. */
+    public bool $embedded = false;
 
-    public function mount(): void
+    protected function queryString(): array
     {
+        // Skip URL sync when embedded — avoids activeTab/search clashes with the parent Fee page.
+        if ($this->embedded) {
+            return [];
+        }
+
+        return [
+            'activeTab' => ['except' => 'academic'],
+            'search'    => ['except' => ''],
+        ];
+    }
+
+    public function mount($embedded = false): void
+    {
+        $this->embedded = $embedded;
         $this->academicYear = '2026-27';
         $this->feeRows = [['name' => '', 'amount' => '']];
     }

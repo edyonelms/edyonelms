@@ -51,12 +51,6 @@ return [
             'prefix' => 'admin.fee',
         ],
         [
-            'title' => 'Fee Structure',
-            'link' => 'admin.fee-structure',
-            'icon' => 'document-text',
-            'prefix' => 'admin.fee-structure',
-        ],
-        [
             'title' => 'Payroll',
             'link' => 'admin.payroll',
             'icon' => 'banknotes',

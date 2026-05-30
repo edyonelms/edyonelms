@@ -7,16 +7,8 @@
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Fees</h1>
                 <p class="text-sm text-gray-500 mt-0.5">Manage fee structures, submissions and analytics</p>
             </div>
-            @if ($activeTab === 'fee_structure')
-                <button wire:click="openStructureModal()"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700
-                           text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Fee Structure
-                </button>
-            @endif
+            {{-- Fee Structure tab now renders the nested admin.fee-structure component
+                 (with its own Add button), so no header action here. --}}
         </div>
     </div>
 
@@ -46,167 +38,13 @@
     <div class="p-4 sm:p-6 space-y-5">
 
     {{-- ════════════════════════════════════════════════════════════════ --}}
-    {{-- TAB 1: FEE STRUCTURE                                            --}}
+    {{-- TAB 1: FEE STRUCTURE  (embeds the standalone admin.fee-structure  --}}
+    {{--          component so the two stay 1:1 in sync.)                  --}}
     {{-- ════════════════════════════════════════════════════════════════ --}}
     @if ($activeTab === 'fee_structure')
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {{-- Filters --}}
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                <select wire:model.live="filterStructureStandard"
-                    class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Classes</option>
-                    @foreach ($standards as $std)
-                        <option value="{{ $std->id }}">{{ $std->name }}</option>
-                    @endforeach
-                </select>
-                <select wire:model.live="filterStructureSection"
-                    class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Sections</option>
-                    @foreach ($sections as $sec)
-                        <option value="{{ $sec->id }}">{{ $sec->name }}</option>
-                    @endforeach
-                </select>
-                <input type="text" wire:model.live="filterStructureYear" placeholder="Academic Year (e.g. 2025-2026)"
-                    class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search fee name..."
-                    class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Section</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fee Name</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Academic Year</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($structures as $s)
-                            <tr class="hover:bg-gray-50/50 transition-colors">
-                                <td class="px-4 py-3">{{ $loop->iteration }}</td>
-                                <td class="px-4 py-3 font-medium">{{ $s->standard->name ?? '-' }}</td>
-                                <td class="px-4 py-3">{{ $s->section->name ?? 'All' }}</td>
-                                <td class="px-4 py-3">{{ $s->fee_name }}</td>
-                                <td class="px-4 py-3 font-semibold">₹{{ number_format($s->amount, 2) }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium {{ $s->fee_type === 'academic' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700' }}">
-                                        {{ ucfirst($s->fee_type) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">{{ $s->academic_year }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium {{ $s->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
-                                        {{ $s->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex gap-2">
-                                        <button wire:click="openStructureModal({{ $s->id }})"
-                                            class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 transition-all">
-                                            Edit
-                                        </button>
-                                        <button wire:click="deleteStructure({{ $s->id }})"
-                                            class="text-red-600 hover:text-red-800 text-xs px-2 py-1 border border-red-300 rounded hover:bg-red-50 transition-all">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-gray-400">No fee structures found.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-4">{{ $structures->links() }}</div>
-        </div>
-
-        {{-- Add/Edit Fee Structure Modal --}}
-        @if ($structureModalOpen)
-            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="text-lg font-semibold">{{ $editStructureId ? 'Edit' : 'Add' }} Fee Structure</h4>
-                        <button wire:click="$set('structureModalOpen', false)" class="text-gray-400 hover:text-gray-600">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Class <span class="text-red-500">*</span></label>
-                                <select wire:model.live="structureStandardId"
-                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                                    <option value="">Select Class</option>
-                                    @foreach ($standards as $std)
-                                        <option value="{{ $std->id }}">{{ $std->name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('structureStandardId') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Section (optional)</label>
-                                <select wire:model="structureSectionId"
-                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                                    <option value="">All Sections</option>
-                                    @foreach ($sections as $sec)
-                                        <option value="{{ $sec->id }}">{{ $sec->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Fee Name <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model="feeName" placeholder="e.g. Tuition Fee, Lab Fee"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                            @error('feeName') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹) <span class="text-red-500">*</span></label>
-                                <input type="number" wire:model="feeAmount" placeholder="0.00" step="0.01" min="0"
-                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                                @error('feeAmount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Fee Type <span class="text-red-500">*</span></label>
-                                <select wire:model="structureFeeType"
-                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                                    <option value="academic">Academic</option>
-                                    <option value="transport">Transport</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Academic Year <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model="academicYear" placeholder="e.g. 2025-2026"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                            @error('academicYear') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-3 mt-6">
-                        <button wire:click="$set('structureModalOpen', false)"
-                            class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-                        <button wire:click="saveStructure"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
-                            {{ $editStructureId ? 'Update' : 'Save' }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        @endif
+        <livewire:admin.fee-structure :embedded="true" />
     @endif
+
 
     {{-- ════════════════════════════════════════════════════════════════ --}}
     {{-- TAB 2: FEE SUBMISSION                                           --}}
