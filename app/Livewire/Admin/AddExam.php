@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Admin\Exam;
 use App\Models\Admin\ExamSyllabusChapter;
 use App\Models\Student\Chapter;
+use App\Models\Student\Section;
 use App\Models\Student\Standard;
 use App\Models\Student\Subject;
 use Illuminate\Support\Facades\Auth;
@@ -52,19 +53,23 @@ class AddExam extends Component
     public $filterExamType     = '';
     public $filterStatus       = '';
 
-    // ─── Syllabus filters (Class → Subject → Exam) ──────────────────────────
-    public $syllabusFilterStandard = '';
-    public $syllabusFilterSubject  = '';
+    // ─── Syllabus filters (Exam → Class → Section → Subject) ────────────────
     public $syllabusFilterExam     = '';
+    public $syllabusFilterStandard = '';
+    public $syllabusFilterSection  = '';
+    public $syllabusFilterSubject  = '';
 
     // ─── Syllabus modal ─────────────────────────────────────────────────────
     public bool $openSyllabusModal = false;
+    public bool $sylModalIsEdit    = false; // false = add (taken chapters disabled), true = edit (taken chapters selectable + transferred on save)
     public $sylModalExamId         = '';
     public $sylModalStandardId     = '';
+    public $sylModalSectionId      = '';
     public $sylModalSubjectId      = '';
     public array $sylModalChapterIds  = []; // selected chapter ids
-    public array $sylModalSubjects = [];    // subjects for selected class
-    public array $sylModalChapters = [];    // chapters for selected class+subject
+    public array $sylModalSections = [];    // sections for selected class
+    public array $sylModalSubjects = [];    // subjects for selected class+section
+    public array $sylModalChapters = [];    // chapters for selected class+section+subject (each row carries owning_exam_id/name)
 
     // ─── Data options ───────────────────────────────────────────────────────
     public $academicYearOptions = [];
@@ -88,16 +93,25 @@ class AddExam extends Component
     public $totalSyllabusRows = 0;
 
     protected $queryString = [
-        'activeTab'          => ['except' => 'exams'],
-        'search'             => ['except' => ''],
-        'filterAcademicYear' => ['except' => ''],
-        'filterExamType'     => ['except' => ''],
-        'filterStatus'       => ['except' => ''],
-        'perPage'            => ['except' => 10],
+        'activeTab'                => ['except' => 'exams'],
+        'search'                   => ['except' => ''],
+        'filterAcademicYear'       => ['except' => ''],
+        'filterExamType'           => ['except' => ''],
+        'filterStatus'             => ['except' => ''],
+        'syllabusFilterExam'       => ['except' => ''],
+        'syllabusFilterStandard'   => ['except' => ''],
+        'syllabusFilterSection'    => ['except' => ''],
+        'syllabusFilterSubject'    => ['except' => ''],
+        'perPage'                  => ['except' => 10],
     ];
 
     public function mount(): void
     {
+        // Homework tab was removed — quietly snap stale bookmarks back to Exams.
+        if (!in_array($this->activeTab, ['exams', 'syllabus'], true)) {
+            $this->activeTab = 'exams';
+        }
+
         $this->loadAcademicYearOptions();
         $this->loadLookups();
         $this->loadStatistics();
@@ -105,7 +119,7 @@ class AddExam extends Component
 
     public function setTab(string $tab): void
     {
-        $this->activeTab = $tab;
+        $this->activeTab = in_array($tab, ['exams', 'syllabus'], true) ? $tab : 'exams';
         $this->resetPage();
     }
 
@@ -138,8 +152,10 @@ class AddExam extends Component
             ->get(['id', 'name'])
             ->toArray();
 
+        // Earliest exams first — matches the new default sort on the list.
         $this->allExams = Exam::where('organization_id', $orgId)
-            ->orderBy('start_date', 'desc')
+            ->orderByRaw('start_date IS NULL, start_date ASC')
+            ->orderBy('id', 'asc')
             ->get(['id', 'exam_name', 'academic_year'])
             ->toArray();
     }
@@ -172,22 +188,30 @@ class AddExam extends Component
         $this->resetPage();
     }
 
-    // ─── Syllabus filter cascading ──────────────────────────────────────────
+    // ─── Syllabus filter cascading (Exam → Class → Section → Subject) ───────
+
+    public function updatedSyllabusFilterExam($value): void
+    {
+        // Reset downstream
+        $this->syllabusFilterStandard = '';
+        $this->syllabusFilterSection  = '';
+        $this->syllabusFilterSubject  = '';
+    }
 
     public function updatedSyllabusFilterStandard($value): void
     {
+        $this->syllabusFilterSection = '';
         $this->syllabusFilterSubject = '';
-        $this->syllabusFilterExam    = '';
     }
 
-    public function updatedSyllabusFilterSubject($value): void
+    public function updatedSyllabusFilterSection($value): void
     {
-        $this->syllabusFilterExam = '';
+        $this->syllabusFilterSubject = '';
     }
 
     public function clearSyllabusFilters(): void
     {
-        $this->reset(['syllabusFilterStandard', 'syllabusFilterSubject', 'syllabusFilterExam']);
+        $this->reset(['syllabusFilterExam', 'syllabusFilterStandard', 'syllabusFilterSection', 'syllabusFilterSubject']);
     }
 
     // ─── Exam: Add / Edit ───────────────────────────────────────────────────
@@ -390,37 +414,112 @@ class AddExam extends Component
 
     public function onAddSyllabus(): void
     {
-        $this->reset(['sylModalExamId', 'sylModalStandardId', 'sylModalSubjectId', 'sylModalChapterIds', 'sylModalSubjects', 'sylModalChapters']);
+        $this->resetSyllabusModal();
+        $this->sylModalIsEdit    = false;
+        $this->openSyllabusModal = true;
+    }
+
+    /**
+     * Open the syllabus modal pre-populated for editing the existing
+     * (exam, class, section, subject) syllabus group. In edit mode chapters
+     * already owned by *other* exams remain selectable — saving transfers
+     * them over.
+     */
+    public function onEditSyllabus($examId, $standardId, $subjectId, $sectionId = null): void
+    {
+        $this->resetSyllabusModal();
+        $this->sylModalIsEdit    = true;
+        $this->sylModalExamId    = (string) $examId;
+        $this->sylModalStandardId = (string) $standardId;
+        $this->sylModalSectionId  = $sectionId !== null ? (string) $sectionId : '';
+        $this->sylModalSubjectId  = (string) $subjectId;
+
+        // Re-run the cascading loaders so dependent option lists are populated.
+        $this->updatedSylModalStandardId($this->sylModalStandardId);
+        $this->updatedSylModalSectionId($this->sylModalSectionId);
+        $this->updatedSylModalSubjectId($this->sylModalSubjectId);
+
         $this->openSyllabusModal = true;
     }
 
     public function closeSyllabusModal(): void
     {
         $this->openSyllabusModal = false;
-        $this->reset(['sylModalExamId', 'sylModalStandardId', 'sylModalSubjectId', 'sylModalChapterIds', 'sylModalSubjects', 'sylModalChapters']);
+        $this->resetSyllabusModal();
+    }
+
+    protected function resetSyllabusModal(): void
+    {
+        $this->reset([
+            'sylModalExamId',
+            'sylModalStandardId',
+            'sylModalSectionId',
+            'sylModalSubjectId',
+            'sylModalChapterIds',
+            'sylModalSections',
+            'sylModalSubjects',
+            'sylModalChapters',
+            'sylModalIsEdit',
+        ]);
     }
 
     public function updatedSylModalStandardId($value): void
     {
+        // Reset everything downstream when class changes.
+        $this->sylModalSectionId   = '';
         $this->sylModalSubjectId   = '';
         $this->sylModalChapterIds  = [];
+        $this->sylModalSubjects    = [];
         $this->sylModalChapters    = [];
 
         if (!$value) {
+            $this->sylModalSections = [];
+            return;
+        }
+
+        $orgId = Auth::user()->organization_id;
+        $this->sylModalSections = Section::where('organization_id', $orgId)
+            ->where('standard_id', $value)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->toArray();
+    }
+
+    public function updatedSylModalSectionId($value): void
+    {
+        // Reset subject + chapters when section changes.
+        $this->sylModalSubjectId  = '';
+        $this->sylModalChapterIds = [];
+        $this->sylModalChapters   = [];
+
+        if (!$value || !$this->sylModalStandardId) {
             $this->sylModalSubjects = [];
             return;
         }
 
-        // Subjects linked to this standard
-        $orgId      = Auth::user()->organization_id;
-        $subjectIds = DB::table('standard_subjects')
-            ->where('standard_id', $value)
+        $orgId = Auth::user()->organization_id;
+
+        // Subjects mapped to THIS (class + section) via the section_subjects
+        // pivot. Fall back to the standard_subjects pivot if the section has
+        // no specific mapping so the dropdown is never silently empty.
+        $sectionSubjectIds = DB::table('section_subjects')
+            ->where('section_id', $value)
+            ->where('standard_id', $this->sylModalStandardId)
             ->pluck('subject_id')
             ->toArray();
 
+        if (empty($sectionSubjectIds)) {
+            $sectionSubjectIds = DB::table('standard_subjects')
+                ->where('standard_id', $this->sylModalStandardId)
+                ->pluck('subject_id')
+                ->toArray();
+        }
+
         $this->sylModalSubjects = Subject::where('organization_id', $orgId)
-            ->whereIn('id', $subjectIds)
+            ->whereIn('id', $sectionSubjectIds)
             ->where('is_active', true)
+            ->orderBy('name')
             ->get(['id', 'name'])
             ->toArray();
     }
@@ -436,15 +535,56 @@ class AddExam extends Component
 
         $orgId = Auth::user()->organization_id;
 
-        $this->sylModalChapters = Chapter::with('topics:id,chapter_id,topic_name')
+        // Chapters for this class + subject (section-scoped if section provided
+        // AND chapters carry a section_id; otherwise show class-wide chapters).
+        $chapterQuery = Chapter::with('topics:id,chapter_id,topic_name')
             ->where('organization_id', $orgId)
             ->where('standard_id', $this->sylModalStandardId)
-            ->where('subject_id', $value)
+            ->where('subject_id', $value);
+
+        if ($this->sylModalSectionId) {
+            $chapterQuery->where(function ($q) {
+                $q->where('section_id', $this->sylModalSectionId)
+                  ->orWhereNull('section_id'); // class-wide chapter
+            });
+        }
+
+        $chapters = $chapterQuery
             ->orderBy('order')
             ->get(['id', 'name', 'description', 'order'])
             ->toArray();
 
-        // If exam already chosen + we have existing syllabus, pre-tick those chapters
+        // Find which chapters are already owned by ANOTHER exam's syllabus.
+        // We annotate each chapter row with owning_exam_id / owning_exam_name
+        // so the blade can disable (add mode) or label (edit mode) them.
+        $chapterIds = array_column($chapters, 'id');
+        $ownership  = [];
+
+        if (!empty($chapterIds)) {
+            $ownership = ExamSyllabusChapter::with('exam:id,exam_name,academic_year')
+                ->where('organization_id', $orgId)
+                ->whereIn('chapter_id', $chapterIds)
+                ->get()
+                ->keyBy('chapter_id');
+        }
+
+        foreach ($chapters as &$row) {
+            $row['owning_exam_id']   = null;
+            $row['owning_exam_name'] = null;
+
+            $owner = $ownership[$row['id']] ?? null;
+            if ($owner) {
+                $row['owning_exam_id']   = $owner->exam_id;
+                $row['owning_exam_name'] = $owner->exam?->exam_name;
+            }
+        }
+        unset($row);
+
+        $this->sylModalChapters = $chapters;
+
+        // Pre-select chapters that already belong to the chosen exam (so the
+        // edit flow opens with current selections ticked). Works in both
+        // add and edit modes for convenience.
         if ($this->sylModalExamId) {
             $this->sylModalChapterIds = ExamSyllabusChapter::where('organization_id', $orgId)
                 ->where('exam_id', $this->sylModalExamId)
@@ -476,6 +616,7 @@ class AddExam extends Component
         $this->validate([
             'sylModalExamId'     => 'required|integer|exists:exams,id',
             'sylModalStandardId' => 'required|integer',
+            'sylModalSectionId'  => 'nullable|integer',
             'sylModalSubjectId'  => 'required|integer',
             'sylModalChapterIds' => 'required|array|min:1',
         ], [
@@ -490,25 +631,49 @@ class AddExam extends Component
 
         try {
             DB::transaction(function () use ($orgId) {
-                // Replace strategy: delete existing rows for this exam+class+subject, insert fresh selection
+                $chapterIds = array_map('intval', $this->sylModalChapterIds);
+
+                // ── Chapter-exclusivity / transfer-on-edit ──
+                // A chapter can only live in ONE syllabus row at a time. So
+                // for every chapter we're about to attach to THIS exam, drop
+                // any rows that mapped it to a different exam (or to this
+                // exam under a different class/subject). This handles both
+                // re-runs in add mode and the edit mode where the admin
+                // re-claims chapters that were sitting in another exam.
+                if (!empty($chapterIds)) {
+                    ExamSyllabusChapter::where('organization_id', $orgId)
+                        ->whereIn('chapter_id', $chapterIds)
+                        ->where(function ($q) {
+                            $q->where('exam_id', '!=', $this->sylModalExamId)
+                              ->orWhere('standard_id', '!=', $this->sylModalStandardId)
+                              ->orWhere('subject_id',  '!=', $this->sylModalSubjectId);
+                        })
+                        ->delete();
+                }
+
+                // Replace the current (exam, class, subject) bucket with the
+                // fresh selection so unticked chapters get removed too.
                 ExamSyllabusChapter::where('organization_id', $orgId)
                     ->where('exam_id', $this->sylModalExamId)
                     ->where('standard_id', $this->sylModalStandardId)
                     ->where('subject_id', $this->sylModalSubjectId)
                     ->delete();
 
-                foreach ($this->sylModalChapterIds as $chapterId) {
+                foreach ($chapterIds as $chapterId) {
                     ExamSyllabusChapter::create([
                         'organization_id' => $orgId,
-                        'exam_id'         => $this->sylModalExamId,
-                        'standard_id'     => $this->sylModalStandardId,
-                        'subject_id'      => $this->sylModalSubjectId,
-                        'chapter_id'      => (int) $chapterId,
+                        'exam_id'         => (int) $this->sylModalExamId,
+                        'standard_id'     => (int) $this->sylModalStandardId,
+                        'subject_id'      => (int) $this->sylModalSubjectId,
+                        'section_id'      => $this->sylModalSectionId ? (int) $this->sylModalSectionId : null,
+                        'chapter_id'      => $chapterId,
                     ]);
                 }
             });
 
-            $this->notification()->success('Syllabus saved successfully!');
+            $this->notification()->success(
+                $this->sylModalIsEdit ? 'Syllabus updated successfully!' : 'Syllabus saved successfully!'
+            );
             $this->loadStatistics();
             $this->closeSyllabusModal();
         } catch (\Exception $e) {
@@ -522,36 +687,41 @@ class AddExam extends Component
     {
         $exams    = $this->getExams();
         $syllabus = $this->getSyllabusView();
+        $orgId    = Auth::user()->organization_id;
 
-        // Cascading dropdown options for syllabus filter
+        // Cascading dropdown options for syllabus filter (Exam → Class → Section → Subject)
+        $filterSections = [];
         $filterSubjects = [];
-        $filterExams    = [];
 
         if ($this->syllabusFilterStandard) {
-            $subjectIds = DB::table('standard_subjects')
+            $filterSections = Section::where('organization_id', $orgId)
                 ->where('standard_id', $this->syllabusFilterStandard)
-                ->pluck('subject_id')->toArray();
-
-            $filterSubjects = Subject::where('organization_id', Auth::user()->organization_id)
-                ->whereIn('id', $subjectIds)
+                ->where('is_active', true)
+                ->orderBy('name')
                 ->get(['id', 'name'])
                 ->toArray();
         }
 
-        if ($this->syllabusFilterSubject) {
-            // All exams that have syllabus rows for this standard+subject
-            $examIds = ExamSyllabusChapter::where('organization_id', Auth::user()->organization_id)
+        if ($this->syllabusFilterStandard && $this->syllabusFilterSection) {
+            $subjectIds = DB::table('section_subjects')
+                ->where('section_id', $this->syllabusFilterSection)
                 ->where('standard_id', $this->syllabusFilterStandard)
-                ->where('subject_id', $this->syllabusFilterSubject)
-                ->distinct()->pluck('exam_id')->toArray();
+                ->pluck('subject_id')->toArray();
 
-            $filterExams = Exam::whereIn('id', $examIds)
-                ->orderBy('start_date', 'desc')
-                ->get(['id', 'exam_name', 'academic_year'])
+            if (empty($subjectIds)) {
+                $subjectIds = DB::table('standard_subjects')
+                    ->where('standard_id', $this->syllabusFilterStandard)
+                    ->pluck('subject_id')->toArray();
+            }
+
+            $filterSubjects = Subject::where('organization_id', $orgId)
+                ->whereIn('id', $subjectIds)
+                ->orderBy('name')
+                ->get(['id', 'name'])
                 ->toArray();
         }
 
-        return view('livewire.admin.add-exam', compact('exams', 'syllabus', 'filterSubjects', 'filterExams'));
+        return view('livewire.admin.add-exam', compact('exams', 'syllabus', 'filterSections', 'filterSubjects'));
     }
 
     private function getExams()
@@ -579,20 +749,34 @@ class AddExam extends Component
             };
         }
 
-        return $query->orderBy('created_at', 'desc')->paginate($this->perPage);
+        // Default sort: by exam start date, earliest first. Exams without a
+        // start date sink to the bottom; ties break by oldest-added first so
+        // "the exam added first appears at the top" as requested.
+        return $query
+            ->orderByRaw('start_date IS NULL, start_date ASC')
+            ->orderBy('id', 'asc')
+            ->paginate($this->perPage);
     }
 
     /**
-     * When all three filters set, return the chapters (with topics) selected
-     * as syllabus for that exam+class+subject.
-     * Otherwise return a grouped list of (exam, class, subject) syllabus groups.
+     * When the full chain (Exam → Class → Section → Subject) is selected,
+     * return the chapters (with topics) selected as syllabus for that
+     * combination. Otherwise return a grouped overview of (exam, class,
+     * section, subject) syllabus groups filtered by whatever the admin
+     * narrowed down.
      */
     private function getSyllabusView(): array
     {
         $orgId = Auth::user()->organization_id;
 
-        // All three selected → full chapter+topic detail
-        if ($this->syllabusFilterStandard && $this->syllabusFilterSubject && $this->syllabusFilterExam) {
+        // Full chain → chapter detail (section optional in the DB schema, but
+        // section is now required in the filter UI for the "view detail" flow).
+        if (
+            $this->syllabusFilterExam
+            && $this->syllabusFilterStandard
+            && $this->syllabusFilterSection
+            && $this->syllabusFilterSubject
+        ) {
             $chapterIds = ExamSyllabusChapter::where('organization_id', $orgId)
                 ->where('exam_id', $this->syllabusFilterExam)
                 ->where('standard_id', $this->syllabusFilterStandard)
@@ -606,23 +790,32 @@ class AddExam extends Component
                 ->toArray();
 
             return [
-                'mode'     => 'detail',
-                'chapters' => $chapters,
+                'mode'        => 'detail',
+                'chapters'    => $chapters,
+                'exam_id'     => (int) $this->syllabusFilterExam,
+                'standard_id' => (int) $this->syllabusFilterStandard,
+                'section_id'  => (int) $this->syllabusFilterSection,
+                'subject_id'  => (int) $this->syllabusFilterSubject,
             ];
         }
 
-        // Otherwise grouped overview
-        $rows = ExamSyllabusChapter::with(['exam:id,exam_name,academic_year', 'standard:id,name', 'subject:id,name'])
+        // Otherwise grouped overview — keyed by exam+class+section+subject so
+        // the same trio in different sections shows up as distinct rows.
+        $rows = ExamSyllabusChapter::with(['exam:id,exam_name,academic_year', 'standard:id,name', 'subject:id,name', 'section:id,name'])
             ->where('organization_id', $orgId)
+            ->when($this->syllabusFilterExam,     fn($q) => $q->where('exam_id',     $this->syllabusFilterExam))
             ->when($this->syllabusFilterStandard, fn($q) => $q->where('standard_id', $this->syllabusFilterStandard))
-            ->when($this->syllabusFilterSubject, fn($q) => $q->where('subject_id', $this->syllabusFilterSubject))
+            ->when($this->syllabusFilterSection,  fn($q) => $q->where('section_id',  $this->syllabusFilterSection))
+            ->when($this->syllabusFilterSubject,  fn($q) => $q->where('subject_id',  $this->syllabusFilterSubject))
             ->get()
-            ->groupBy(fn($r) => $r->exam_id . '-' . $r->standard_id . '-' . $r->subject_id)
+            ->groupBy(fn($r) => $r->exam_id . '-' . $r->standard_id . '-' . ($r->section_id ?? 0) . '-' . $r->subject_id)
             ->map(fn($group) => [
                 'exam_id'      => $group->first()->exam_id,
                 'exam_name'    => $group->first()->exam->exam_name ?? 'N/A',
                 'standard_id'  => $group->first()->standard_id,
                 'standard_name' => $group->first()->standard->name ?? 'N/A',
+                'section_id'   => $group->first()->section_id,
+                'section_name' => $group->first()->section->name ?? null,
                 'subject_id'   => $group->first()->subject_id,
                 'subject_name' => $group->first()->subject->name ?? 'N/A',
                 'chapter_count' => $group->count(),
