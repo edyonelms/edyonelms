@@ -152,7 +152,9 @@
                                     @php
                                         $isCurrentMonth = $day->month == $startsAt->month;
                                         $isToday = $day->isToday();
-                                        $dayEvents = $getEventsForDay($day);
+                                        // Only the active month's cells get events — adjacent-month
+                                        // fillers stay empty.
+                                        $dayEvents = $isCurrentMonth ? $getEventsForDay($day) : [];
                                         $eventsCount = count($dayEvents);
                                     @endphp
                                     <div class="min-h-32 p-2 border border-gray-100 cursor-pointer transition-all duration-200
@@ -195,7 +197,7 @@
                     </div>
                 @endif
 
-                {{-- Yearly View --}}
+                {{-- Yearly View — overview only, no event markers --}}
                 @if ($view === 'year')
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach ($yearlyCalendar as $month)
@@ -203,30 +205,23 @@
                                 transition-all duration-200 cursor-pointer group"
                                 wire:click="switchToMonthlyView('{{ $month['year'] }}', '{{ $month['month'] }}')">
                                 <div class="flex justify-between items-center mb-3">
-                                    <h3
-                                        class="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                                    <h3 class="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
                                         {{ $month['name'] }}
                                     </h3>
-                                    <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
-                                        {{ count(array_filter($month['days'], fn($day) => count($day['events']) > 0)) }}
-                                        events
-                                    </span>
+                                    <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </div>
                                 <div class="grid grid-cols-7 gap-0.5 text-center text-xs">
                                     @foreach (['S', 'M', 'T', 'W', 'T', 'F', 'S'] as $day)
                                         <div class="font-medium text-gray-400 py-1">{{ $day }}</div>
                                     @endforeach
                                     @foreach ($month['days'] as $day)
-                                        <div
-                                            class="py-1.5 rounded-lg relative transition-colors
+                                        <div class="py-1.5 rounded-lg transition-colors
                                             {{ $day['isCurrentMonth'] ? 'text-gray-700 hover:bg-blue-50' : 'text-gray-300' }}
                                             {{ $day['isToday'] ? 'bg-blue-100 text-blue-700 font-bold' : '' }}">
                                             {{ $day['day'] }}
-                                            @if (count($day['events']) > 0)
-                                                <div
-                                                    class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full">
-                                                </div>
-                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
@@ -238,103 +233,26 @@
         </div>
 
         {{-- ══════════════════════════════════════════════════
-             UPCOMING EVENTS — FULL WIDTH
+             EVENTS — Upcoming + Completed (divider in between)
         ══════════════════════════════════════════════════ --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+            {{-- UPCOMING --}}
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="text-base font-semibold text-gray-900">Upcoming Events</h3>
-                <span class="text-xs text-gray-400">{{ count($upcomingEvents) }} events</span>
+                <span class="text-xs text-gray-400">{{ count($upcomingEvents) }} {{ count($upcomingEvents) === 1 ? 'event' : 'events' }}</span>
             </div>
 
             @if (count($upcomingEvents) > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
                     @foreach ($upcomingEvents as $event)
-                        <div class="group relative bg-gray-50 border border-gray-200 rounded-xl p-4
-                hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer"
-                            wire:click="onEventClick({{ $event['id'] }})">
-
-                            {{-- Color bar --}}
-                            <div class="absolute top-0 left-0 w-1 h-full rounded-l-xl"
-                                style="background-color: {{ $event['color'] }}"></div>
-
-                            <div class="pl-3">
-                                {{-- Title + dot --}}
-                                <div class="flex items-start justify-between gap-2 mb-2">
-                                    <h4
-                                        class="font-semibold text-gray-900 text-sm group-hover:text-blue-600
-                            transition-colors leading-snug line-clamp-1">
-                                        {{ $event['title'] }}
-                                    </h4>
-                                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5"
-                                        style="background-color: {{ $event['color'] }}"></div>
-                                </div>
-
-                                {{-- Description --}}
-                                @if (!empty($event['description']))
-                                    <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">
-                                        {{ $event['description'] }}
-                                    </p>
-                                @endif
-
-                                {{-- Date --}}
-                                <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    {{ Carbon\Carbon::parse($event['date'])->format('D, M d') }}
-
-                                    @if ($event['start_time'] && !$event['is_all_day'])
-                                        <span class="text-gray-300 mx-1">•</span>
-                                        <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        {{ $event['start_time'] }}
-                                    @elseif($event['is_all_day'])
-                                        <span class="text-gray-300 mx-1">•</span>
-                                        <span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">All
-                                            Day</span>
-                                    @endif
-                                </div>
-
-                                {{-- Badges --}}
-                                <div class="flex flex-wrap gap-1.5 mt-2">
-                                    @if ($event['location'])
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs px-2 py-0.5
-                                bg-gray-100 text-gray-600 rounded-full">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            </svg>
-                                            {{ $event['location'] }}
-                                        </span>
-                                    @endif
-                                    @if ($event['class'])
-                                        <span
-                                            class="inline-flex items-center gap-1 text-xs px-2 py-0.5
-                                bg-purple-100 text-purple-700 rounded-full">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                            {{ $event['class'] }}
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
+                        @include('livewire.admin._event-card', ['event' => $event, 'completed' => false])
                     @endforeach
                 </div>
             @else
-                <div class="text-center py-16">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="text-center py-12">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -342,13 +260,35 @@
                     <p class="text-gray-500 text-sm mb-3">No upcoming events scheduled</p>
                     <button wire:click="onAddEvent"
                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700
-                   text-white text-sm font-semibold rounded-lg transition-colors">
+                               text-white text-sm font-semibold rounded-lg transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4v16m8-8H4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         Add Upcoming Event
                     </button>
+                </div>
+            @endif
+
+            {{-- DIVIDER + COMPLETED --}}
+            @if (count($completedEvents) > 0)
+                <div class="px-6 pt-4 pb-3 border-t border-gray-200 bg-gray-50/60">
+                    <div class="flex items-center gap-3">
+                        <span class="h-px bg-gray-200 flex-1"></span>
+                        <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            Completed
+                            <span class="text-gray-400 font-normal">· {{ count($completedEvents) }}</span>
+                        </div>
+                        <span class="h-px bg-gray-200 flex-1"></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 pt-3">
+                    @foreach ($completedEvents as $event)
+                        @include('livewire.admin._event-card', ['event' => $event, 'completed' => true])
+                    @endforeach
                 </div>
             @endif
         </div>
@@ -497,15 +437,37 @@
                 {{-- ✅ Fixed footer (always at bottom of panel) --}}
                 <div class="flex items-center justify-between px-6 py-3.5 border-t border-gray-200 flex-shrink-0 bg-white">
                     @if (isset($sliderData['mode']) && $sliderData['mode'] === 'view')
-                        <p class="text-xs text-gray-400">#{{ $sliderData['event']['id'] }}</p>
-                        <button wire:click="onEditEvent({{ $sliderData['event']['id'] ?? 0 }})"
-                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit Event
-                        </button>
+                        <p class="text-xs text-gray-400">
+                            #{{ $sliderData['event']['id'] }}
+                            @if ($sliderData['event']['is_completed'] ?? false)
+                                <span class="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 uppercase tracking-wide text-[10px] font-semibold">
+                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Completed
+                                </span>
+                            @endif
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <button wire:click="onDeleteEvent({{ $sliderData['event']['id'] ?? 0 }})"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-sm font-medium rounded-md transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                            </button>
+                            @if (!($sliderData['event']['is_completed'] ?? false))
+                                <button wire:click="onEditEvent({{ $sliderData['event']['id'] ?? 0 }})"
+                                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit Event
+                                </button>
+                            @endif
+                        </div>
                     @else
                         <button wire:click="closeSlider"
                             class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
@@ -515,6 +477,40 @@
                     @endif
                 </div>
 
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         DELETE EVENT CONFIRMATION OVERLAY
+    ══════════════════════════════════════════════════ --}}
+    @if ($showDeleteEventConfirm)
+        <div class="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteEvent"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete event?</h3>
+                        <p class="text-sm text-gray-500">
+                            This will permanently remove the event from the calendar. This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDeleteEvent"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="confirmDeleteEvent" wire:loading.attr="disabled"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="confirmDeleteEvent">Delete</span>
+                        <span wire:loading wire:target="confirmDeleteEvent">Deleting...</span>
+                    </button>
+                </div>
             </div>
         </div>
     @endif

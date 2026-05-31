@@ -20,6 +20,10 @@ class TimeTableCalendar extends LivewireCalendar
     public $selectedEvent = null;
     public $showCalendar = true;
 
+    // Inline delete confirm (kept here so the View slider can use it)
+    public bool $showDeleteEventConfirm = false;
+    public ?int $deleteEventId         = null;
+
     public function mount(
         $initialYear = null,
         $initialMonth = null,
@@ -123,10 +127,15 @@ class TimeTableCalendar extends LivewireCalendar
     {
         $organizationId = Auth::user()->organization_id;
 
+        // Strictly only events inside the active month — leading/trailing grid
+        // cells (which belong to the previous/next month) get no events.
+        $monthStart = $this->startsAt->copy()->startOfMonth()->startOfDay();
+        $monthEnd   = $this->startsAt->copy()->endOfMonth()->endOfDay();
+
         return TimeTable::with(['academic.standard', 'academic.section', 'academic.subject', 'academic.teacher', 'location'])
             ->where('organization_id', $organizationId)
             ->where('is_cancelled', false)
-            ->whereBetween('date', [$this->gridStartsAt, $this->gridEndsAt])
+            ->whereBetween('date', [$monthStart, $monthEnd])
             ->get()
             ->map(function ($event) {
                 return [
@@ -144,6 +153,7 @@ class TimeTableCalendar extends LivewireCalendar
                     'section' => $event->academic?->section?->name,
                     'subject' => $event->academic?->subject?->name,
                     'teacher' => $event->academic?->teacher?->name,
+                    'is_completed' => Carbon::parse($event->date)->lt(Carbon::today()),
                 ];
             });
     }
@@ -163,29 +173,47 @@ class TimeTableCalendar extends LivewireCalendar
     #[Computed]
     public function upcomingEvents()
     {
+        return $this->loadEventList(fn ($q) => $q->where('date', '>=', Carbon::today())->orderBy('date')->orderBy('start_time'));
+    }
+
+    #[Computed]
+    public function completedEvents()
+    {
+        // Past events in the currently-viewed month — newest first
+        return $this->loadEventList(fn ($q) => $q
+            ->where('date', '<', Carbon::today())
+            ->whereBetween('date', [
+                $this->startsAt->copy()->startOfMonth()->startOfDay(),
+                $this->startsAt->copy()->endOfMonth()->endOfDay(),
+            ])
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc'));
+    }
+
+    private function loadEventList(callable $scope)
+    {
         $organizationId = Auth::user()->organization_id;
 
-        return TimeTable::with(['academic.standard', 'academic.section', 'location'])
+        $query = TimeTable::with(['academic.standard', 'academic.section', 'location'])
             ->where('organization_id', $organizationId)
-            ->where('is_cancelled', false)
-            ->where('date', '>=', Carbon::today())
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->limit(5)
-            ->get()
-            ->map(function ($event) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'date' => $event->date,
-                    'description' => $event->description,
-                    'start_time' => $event->start_time?->format('h:i A'),
-                    'is_all_day' => $event->is_all_day,
-                    'color' => $event->color ?? $this->getEventColor($event->event_type),
-                    'location' => $event->location?->location_display,
-                    'class' => $event->academic?->standard?->name . ($event->academic?->section?->name ? ' - ' . $event->academic->section->name : ''),
-                ];
-            });
+            ->where('is_cancelled', false);
+
+        $scope($query);
+
+        return $query->get()->map(function ($event) {
+            return [
+                'id'          => $event->id,
+                'title'       => $event->title,
+                'date'        => $event->date,
+                'description' => $event->description,
+                'start_time'  => $event->start_time?->format('h:i A'),
+                'is_all_day'  => $event->is_all_day,
+                'color'       => $event->color ?? $this->getEventColor($event->event_type),
+                'location'    => $event->location?->location_display,
+                'class'       => $event->academic?->standard?->name . ($event->academic?->section?->name ? ' - ' . $event->academic->section->name : ''),
+                'is_completed' => Carbon::parse($event->date)->lt(Carbon::today()),
+            ];
+        });
     }
 
     #[Computed]
@@ -337,6 +365,7 @@ class TimeTableCalendar extends LivewireCalendar
             'section' => $event->academic?->section?->name,
             'subject' => $event->academic?->subject?->name,
             'teacher' => $event->academic?->teacher?->name,
+            'is_completed' => Carbon::parse($event->date)->lt(Carbon::today()),
         ];
 
         $this->sliderTitle = 'Event Details';
@@ -374,9 +403,64 @@ class TimeTableCalendar extends LivewireCalendar
             ->where('is_cancelled', false)
             ->find($eventId);
 
+        if (!$event) {
+            return;
+        }
+
+        // Completed events are read-only — refuse to edit.
+        if (Carbon::parse($event->date)->lt(Carbon::today())) {
+            $this->dispatch('notify',
+                type: 'warning',
+                title: 'Cannot edit',
+                message: 'This event is already completed and cannot be edited.'
+            );
+            return;
+        }
+
         $this->sliderTitle = 'Edit Event';
         $this->sliderData = ['event' => $event, 'mode' => 'edit'];
         $this->showSlider = true;
+    }
+
+    public function onDeleteEvent($eventId): void
+    {
+        $this->deleteEventId         = (int) $eventId;
+        $this->showDeleteEventConfirm = true;
+    }
+
+    public function cancelDeleteEvent(): void
+    {
+        $this->showDeleteEventConfirm = false;
+        $this->deleteEventId          = null;
+    }
+
+    public function confirmDeleteEvent(): void
+    {
+        if (!$this->deleteEventId) {
+            $this->cancelDeleteEvent();
+            return;
+        }
+
+        $organizationId = Auth::user()->organization_id;
+
+        $event = TimeTable::where('organization_id', $organizationId)->find($this->deleteEventId);
+        if ($event) {
+            $event->delete();
+            $this->dispatch('notify',
+                type: 'success',
+                title: 'Event deleted',
+                message: 'The event has been removed.'
+            );
+        }
+
+        $this->cancelDeleteEvent();
+        // Close the view slider since the event is gone, then refresh data
+        $this->showSlider    = false;
+        $this->selectedEvent = null;
+        $this->sliderData    = [];
+        $this->sliderTitle   = '';
+
+        unset($this->events, $this->upcomingEvents, $this->completedEvents, $this->eventsCount, $this->yearlyCalendar);
     }
 
     #[On('eventSaved')]
@@ -429,11 +513,12 @@ class TimeTableCalendar extends LivewireCalendar
             'getEventsForDay' => function ($day) {
                 return $this->getEventsForDay($day, $this->events);
             },
-            'yearlyCalendar' => $this->yearlyCalendar,
-            'view' => $this->view,
-            'startsAt' => $this->startsAt,
-            'upcomingEvents' => $this->upcomingEvents,
-            'eventsCount' => $this->eventsCount,
+            'yearlyCalendar'   => $this->yearlyCalendar,
+            'view'             => $this->view,
+            'startsAt'         => $this->startsAt,
+            'upcomingEvents'   => $this->upcomingEvents,
+            'completedEvents'  => $this->completedEvents,
+            'eventsCount'      => $this->eventsCount,
         ]);
     }
 }
