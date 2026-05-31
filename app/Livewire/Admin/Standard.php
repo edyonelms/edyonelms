@@ -26,6 +26,11 @@ class Standard extends Component
     public $openSection  = false;
     public $openSubject  = false;
     public $editId       = null;
+
+    // Inline delete-confirm state (replaces WireUi dialog so the button always works)
+    public bool $showDeleteConfirm = false;
+    public ?string $deleteTargetType = null; // 'class' | 'section' | 'subject'
+    public ?int $deleteTargetId       = null;
     public $standards, $sections, $subjects;
 
     // Standard fields (board comes from organization — no UI input)
@@ -157,11 +162,12 @@ class Standard extends Component
     {
         $subject = Subject::with('standards')->find($subjectId);
         $standardId = $subject?->standards->first()?->id ?? $this->filterSubjectStandard;
-        return redirect()->route('admin.syllabus', [
+        $url = route('admin.syllabus', array_filter([
             'filterStandard' => $standardId,
-            'filterSection'  => $this->filterSection ?: '',
             'filterSubject'  => $subjectId,
-        ]);
+            'filterSection'  => $this->filterSection ?: null,
+        ]));
+        return $this->redirect($url, navigate: false);
     }
 
     public function loadStandards(): void
@@ -214,7 +220,9 @@ class Standard extends Component
 
     public function getFilteredStandardsProperty()
     {
-        $query = StudentStandard::where('organization_id', Auth::user()->organization_id);
+        $query = StudentStandard::withCount('sections')
+            ->with(['sections' => fn($q) => $q->orderBy('id')->select('id', 'standard_id', 'name')])
+            ->where('organization_id', Auth::user()->organization_id);
 
         if ($this->search) {
             $query->where(fn($q) =>
@@ -652,38 +660,50 @@ class Standard extends Component
 
     public function onDeleteStandard(int $id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Class?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'All sections must be deleted first. Any students still assigned will be set to Inactive and need a new class.',
-            'accept'      => ['label' => 'Yes, delete it', 'method' => 'performDeleteStandard', 'params' => $id, 'color' => 'negative', 'size' => 'md'],
-            'reject'      => ['label' => 'No', 'size' => 'md'],
-        ]);
+        $this->deleteTargetType  = 'class';
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
     public function onDeleteSection(int $id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Section?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'All subjects added to this section will be deleted automatically.',
-            'accept'      => ['label' => 'Yes, delete it', 'method' => 'performDeleteSection', 'params' => $id, 'color' => 'negative', 'size' => 'md'],
-            'reject'      => ['label' => 'No', 'size' => 'md'],
-        ]);
+        $this->deleteTargetType  = 'section';
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
     }
 
     public function onDeleteSubject(int $id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Subject?',
-            'icon'        => 'exclamation-circle',
-            'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure? This action cannot be undone.',
-            'accept'      => ['label' => 'Yes, delete it', 'method' => 'performDeleteSubject', 'params' => $id, 'color' => 'negative', 'size' => 'md'],
-            'reject'      => ['label' => 'No', 'size' => 'md'],
-        ]);
+        $this->deleteTargetType  = 'subject';
+        $this->deleteTargetId    = $id;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetType  = null;
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        if (!$this->deleteTargetId || !$this->deleteTargetType) {
+            $this->cancelDelete();
+            return;
+        }
+
+        $id   = (int) $this->deleteTargetId;
+        $type = $this->deleteTargetType;
+
+        $this->cancelDelete();
+
+        match ($type) {
+            'class'   => $this->performDeleteStandard($id),
+            'section' => $this->performDeleteSection($id),
+            'subject' => $this->performDeleteSubject($id),
+            default   => null,
+        };
     }
 
     public function performDeleteStandard(int $id): void
