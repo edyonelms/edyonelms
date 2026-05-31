@@ -285,13 +285,32 @@
         @else
             @if ($syllabus['mode'] === 'detail')
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
-                        <div>
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3 flex-wrap">
+                        <div class="min-w-0">
+                            {{-- Breadcrumb summary: Exam › Class › Section › Subject --}}
+                            <div class="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 mb-1">
+                                <span class="font-semibold text-gray-700">{{ $syllabus['exam_name'] ?? '—' }}</span>
+                                <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                <span>{{ $syllabus['standard_name'] ?? '—' }}</span>
+                                @if ($syllabus['section_name'] ?? null)
+                                    <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                    <span>{{ $syllabus['section_name'] }}</span>
+                                @endif
+                                <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                <span class="font-semibold text-blue-700">{{ $syllabus['subject_name'] ?? '—' }}</span>
+                            </div>
                             <h3 class="text-base font-semibold text-gray-900">Selected Syllabus</h3>
                             <p class="text-xs text-gray-500 mt-0.5">{{ count($syllabus['chapters']) }} chapter(s) included</p>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
-                            <button wire:click="onEditSyllabus({{ $syllabus['exam_id'] }}, {{ $syllabus['standard_id'] }}, {{ $syllabus['subject_id'] }}, {{ $syllabus['section_id'] }})"
+                            <button wire:click="clearSyllabusFilters"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Back to list
+                            </button>
+                            <button wire:click="onEditSyllabus({{ $syllabus['exam_id'] }}, {{ $syllabus['standard_id'] }}, {{ $syllabus['subject_id'] }}, {{ $syllabus['section_id'] ?? 'null' }})"
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -386,6 +405,13 @@
                                         </td>
                                         <td class="px-4 py-3">
                                             <div class="flex items-center justify-center gap-1">
+                                                <button wire:click="onViewSyllabus({{ $g['exam_id'] }}, {{ $g['standard_id'] }}, {{ $g['section_id'] ?? 'null' }}, {{ $g['subject_id'] }})" title="View syllabus"
+                                                    class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </button>
                                                 <button wire:click="onEditSyllabus({{ $g['exam_id'] }}, {{ $g['standard_id'] }}, {{ $g['subject_id'] }}, {{ $g['section_id'] ?? 'null' }})" title="Edit"
                                                     class="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

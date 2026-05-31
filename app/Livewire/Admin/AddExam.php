@@ -420,6 +420,20 @@ class AddExam extends Component
     }
 
     /**
+     * Drill into the detail view of a specific syllabus row by setting all
+     * four filters at once. The next render() then takes the
+     * "mode === detail" branch and shows the selected chapters + topics.
+     */
+    public function onViewSyllabus($examId, $standardId, $sectionId, $subjectId): void
+    {
+        $this->syllabusFilterExam     = (string) $examId;
+        $this->syllabusFilterStandard = (string) $standardId;
+        $this->syllabusFilterSection  = $sectionId !== null ? (string) $sectionId : '';
+        $this->syllabusFilterSubject  = (string) $subjectId;
+        $this->activeTab              = 'syllabus';
+    }
+
+    /**
      * Open the syllabus modal pre-populated for editing the existing
      * (exam, class, section, subject) syllabus group. In edit mode chapters
      * already owned by *other* exams remain selectable — saving transfers
@@ -769,12 +783,14 @@ class AddExam extends Component
     {
         $orgId = Auth::user()->organization_id;
 
-        // Full chain → chapter detail (section optional in the DB schema, but
-        // section is now required in the filter UI for the "view detail" flow).
+        // Chapter detail — needs Exam, Class and Subject. Section is shown in
+        // the chain but optional because legacy syllabus rows may have a null
+        // section_id (chapters keyed only on exam+class+subject). The chapter
+        // query itself doesn't filter by section so dropping that requirement
+        // lets the View button on those rows still drill into the detail.
         if (
             $this->syllabusFilterExam
             && $this->syllabusFilterStandard
-            && $this->syllabusFilterSection
             && $this->syllabusFilterSubject
         ) {
             $chapterIds = ExamSyllabusChapter::where('organization_id', $orgId)
@@ -789,13 +805,26 @@ class AddExam extends Component
                 ->get(['id', 'name', 'description', 'order'])
                 ->toArray();
 
+            // Pull additional context (names + the section row, if any) so the
+            // detail header can show what's being viewed.
+            $exam     = Exam::find((int) $this->syllabusFilterExam, ['id', 'exam_name', 'academic_year']);
+            $standard = Standard::find((int) $this->syllabusFilterStandard, ['id', 'name']);
+            $subject  = Subject::find((int) $this->syllabusFilterSubject,  ['id', 'name']);
+            $section  = $this->syllabusFilterSection
+                ? Section::find((int) $this->syllabusFilterSection, ['id', 'name'])
+                : null;
+
             return [
                 'mode'        => 'detail',
                 'chapters'    => $chapters,
                 'exam_id'     => (int) $this->syllabusFilterExam,
+                'exam_name'   => $exam?->exam_name,
                 'standard_id' => (int) $this->syllabusFilterStandard,
-                'section_id'  => (int) $this->syllabusFilterSection,
+                'standard_name' => $standard?->name,
+                'section_id'  => $this->syllabusFilterSection ? (int) $this->syllabusFilterSection : null,
+                'section_name' => $section?->name,
                 'subject_id'  => (int) $this->syllabusFilterSubject,
+                'subject_name' => $subject?->name,
             ];
         }
 
