@@ -91,6 +91,12 @@ class Student extends Component
     public bool $showDeleteConfirm = false;
     public $deleteTargetId         = null;
 
+    // ─── Multi-add session counter (Save & Add Another) ─────────────────
+    // Incremented every time onSaveAndAddAnother() commits a fresh student
+    // so the admin can see progress while batching many students in one
+    // sitting. Resets when the modal is closed or switched to edit.
+    public int $batchAddCount      = 0;
+
     public string $search         = '';
     public string $filterClass    = '';
     public string $filterSection  = '';
@@ -249,13 +255,51 @@ class Student extends Component
 
     public function onAddStudent(): void
     {
-        $this->open = true;
+        $this->open          = true;
+        $this->batchAddCount = 0;
     }
 
     public function closeModal(): void
     {
-        $this->open = false;
+        $this->open          = false;
+        $this->batchAddCount = 0;
         $this->resetForm();
+    }
+
+    /**
+     * Internal flag: when true, onSave() finishes by clearing the form but
+     * leaving the slide-in panel open so the admin can immediately type the
+     * next student.
+     */
+    protected bool $keepOpenAfterSave = false;
+
+    /**
+     * "Save & Add Another" — commits this student and prepares the form for
+     * the next one. The slide-in stays open; the batchAddCount badge ticks.
+     */
+    public function onSaveAndAddAnother(): void
+    {
+        // Never makes sense in edit mode — fall through to a normal update.
+        if (!empty($this->studentData['id'])) {
+            $this->onSave();
+            return;
+        }
+
+        $before = $this->batchAddCount;
+        $this->keepOpenAfterSave = true;
+
+        // onSave() validates + persists. Validation failures rethrow Livewire's
+        // ValidationException, which our finally block catches by re-checking
+        // the error bag below.
+        $this->onSave();
+
+        $this->keepOpenAfterSave = false;
+
+        // Only bump the counter if a save actually succeeded — onSave() leaves
+        // the form intact on validation/save failure.
+        if (empty($this->getErrorBag()->messages()) && $before === $this->batchAddCount) {
+            $this->batchAddCount++;
+        }
     }
 
     public function closeViewModal(): void
@@ -439,7 +483,13 @@ class Student extends Component
                 $this->notification()->success('Student Created Successfully!');
             }
 
+            // resetForm() clears every form field AND flips $this->open to
+            // false. When the admin clicked "Save & Add Another" we want the
+            // panel to stay open so we re-open it on the next render.
             $this->resetForm();
+            if ($this->keepOpenAfterSave) {
+                $this->open = true;
+            }
             $this->loadStats();
             $this->resetPage();
         } catch (\Exception $e) {
@@ -472,6 +522,9 @@ class Student extends Component
         // Close the view panel first so the edit slide-in doesn't stack on top.
         $this->showViewModal = false;
         $this->viewData      = [];
+
+        // Edit is single-row; never show the multi-add badge here.
+        $this->batchAddCount = 0;
 
         $detail = StudentDetail::find($id);
         if (!$detail) {
