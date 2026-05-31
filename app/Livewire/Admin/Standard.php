@@ -158,18 +158,6 @@ class Standard extends Component
         }
     }
 
-    public function drillIntoSubject(int $subjectId)
-    {
-        $subject = Subject::with('standards')->find($subjectId);
-        $standardId = $subject?->standards->first()?->id ?? $this->filterSubjectStandard;
-        $url = route('admin.syllabus', array_filter([
-            'filterStandard' => $standardId,
-            'filterSubject'  => $subjectId,
-            'filterSection'  => $this->filterSection ?: null,
-        ]));
-        return $this->redirect($url, navigate: false);
-    }
-
     public function loadStandards(): void
     {
         $this->standards = StudentStandard::where('organization_id', Auth::user()->organization_id)

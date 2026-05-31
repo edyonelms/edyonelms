@@ -77,25 +77,25 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════
-         FILTERS
+         FILTERS — Exams template style
     ══════════════════════════════════════════════════ --}}
-    <div class="bg-white border-b border-gray-100 px-6 py-3">
+    <div class="border-t border-gray-200 border-b border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
         <div class="flex flex-wrap items-center gap-3">
-            <div class="relative flex-1 min-w-48">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <input wire:model.live.debounce.300ms="search" type="text"
-                    placeholder="Search {{ $activeTab === 'standard' ? 'classes' : ($activeTab === 'section' ? 'sections' : 'subjects') }}..."
-                    class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white" />
+                Filter by:
             </div>
+
+            <input wire:model.live.debounce.300ms="search" type="text"
+                placeholder="Search {{ $activeTab === 'standard' ? 'classes' : ($activeTab === 'section' ? 'sections' : 'subjects') }}..."
+                class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-48 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
 
             @if ($activeTab === 'section')
                 <select wire:model.live="filterStandard"
-                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                     <option value="">Select Class</option>
                     @foreach ($allStandards as $s)
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
@@ -105,33 +105,33 @@
 
             @if ($activeTab === 'subject')
                 <select wire:model.live="filterSubjectStandard"
-                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-400 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                     <option value="">Select Class</option>
                     @foreach ($allStandards as $s)
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
                     @endforeach
                 </select>
-                <select wire:model.live="filterSection"
-                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-400 bg-white"
-                    @disabled(!$filterSubjectStandard)>
+
+                <span class="text-gray-300">→</span>
+
+                <select wire:model.live="filterSection" @disabled(!$filterSubjectStandard)
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50">
                     <option value="">Select Section</option>
                     @foreach ($availableSections as $sec)
-                        <option value="{{ $sec->id }}">{{ $sec->name }}
-                            @if ($sec->code) ({{ $sec->code }}) @endif
-                        </option>
+                        <option value="{{ $sec->id }}">{{ $sec->name }}@if ($sec->code) ({{ $sec->code }})@endif</option>
                     @endforeach
                 </select>
             @endif
 
             <select wire:model.live="filterStatus"
-                class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-300 bg-white">
+                class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
 
             <select wire:model.live="perPage"
-                class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-300 bg-white w-20">
+                class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                 <option value="10">10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
@@ -140,42 +140,14 @@
 
             @if ($search || $filterStandard || $filterStatus || $filterSubjectStandard || $filterSection)
                 <button wire:click="resetFilters"
-                    class="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200
-                       hover:bg-red-50 px-2.5 py-2 rounded-lg transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
+                    class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                     Clear
                 </button>
             @endif
         </div>
-
-        {{-- Drill-down breadcrumb --}}
-        @if ($activeTab === 'section' && $filterStandard)
-            @php $breadStd = $allStandards->firstWhere('id', $filterStandard); @endphp
-            @if ($breadStd)
-                <div class="mt-2 flex items-center gap-1.5 text-xs text-blue-600">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                    Showing sections for <strong>{{ $breadStd->name }}</strong>
-                    <button wire:click="$set('filterStandard','')" class="ml-1 text-gray-400 hover:text-red-500">✕</button>
-                </div>
-            @endif
-        @endif
-        @if ($activeTab === 'subject' && $filterSection)
-            @php $breadSec = $availableSections->firstWhere('id', $filterSection); @endphp
-            @if ($breadSec)
-                <div class="mt-2 flex items-center gap-1.5 text-xs text-emerald-600">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                    Showing subjects for section <strong>{{ $breadSec->name }}</strong>
-                    <button wire:click="$set('filterSection','')" class="ml-1 text-gray-400 hover:text-red-500">✕</button>
-                </div>
-            @endif
-        @endif
     </div>
 
     {{-- ══════════════════════════════════════════════════
@@ -415,8 +387,7 @@
                             <div class="col-span-2 text-right">Actions</div>
                         </div>
                         @foreach ($filteredSubjects as $idx => $subject)
-                            <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50/40 transition-colors cursor-pointer"
-                                wire:click="drillIntoSubject({{ $subject->id }})">
+                            <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50/40 transition-colors">
                                 <div class="col-span-1 text-sm text-gray-500">{{ $filteredSubjects->firstItem() + $idx }}</div>
                                 <div class="col-span-3 flex items-center gap-2.5">
                                     @if ($subject->image)
@@ -463,12 +434,6 @@
                                         class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                    <button wire:click.stop="drillIntoSubject({{ $subject->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-600" title="Open syllabus">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </button>
                                 </div>
