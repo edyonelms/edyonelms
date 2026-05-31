@@ -34,11 +34,18 @@
                         <p class="text-sm text-gray-500 mt-0.5 truncate">{{ $aboutApp->sub_heading ?? 'Platform application details' }}</p>
                     </div>
                 </div>
-                @if ($aboutApp->title ?? false)
-                    <span class="flex-shrink-0 inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-100">
-                        {{ $aboutApp->title }}
-                    </span>
-                @endif
+                <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                    @if ($lastUpdated)
+                        <span class="inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-100">
+                            Last updated: {{ $lastUpdated }}
+                        </span>
+                    @endif
+                    @if ($aboutApp->title ?? false)
+                        <span class="inline-block px-4 py-1.5 bg-gray-50 text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
+                            {{ $aboutApp->title }}
+                        </span>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -217,8 +224,7 @@
                         class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50
                         flex items-center gap-3">
                         <div class="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
@@ -231,116 +237,106 @@
                     <div class="px-6 py-6">
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             @foreach ($aboutApp->core_team as $member)
-                                @php $memberUrl = $member['url'] ?? $member['link'] ?? null; @endphp
+                                @php
+                                    $memberUrl = $member['url'] ?? $member['link'] ?? null;
+                                @endphp
+                                <div class="group flex flex-col items-center text-center p-4 bg-gray-50
+                                            rounded-2xl border border-gray-200 hover:border-amber-300
+                                            hover:shadow-md hover:bg-amber-50 transition-all duration-200">
 
-                                {{-- Wrap in <a> if URL exists, otherwise <div> --}}
-                                @if ($memberUrl)
-                                    <a href="{{ $memberUrl }}" target="_blank" rel="noopener"
-                                        class="group flex flex-col items-center text-center p-4 bg-gray-50
-                                      rounded-2xl border border-gray-200 hover:border-amber-300
-                                      hover:shadow-md hover:bg-amber-50 transition-all duration-200 cursor-pointer">
+                                    {{-- Avatar --}}
+                                    @if (!empty($member['image']))
+                                        <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}"
+                                            class="w-16 h-16 rounded-full object-cover border-2 border-white
+                                                   shadow-md mb-3 group-hover:scale-105 transition-transform duration-200">
                                     @else
-                                        <div
-                                            class="group flex flex-col items-center text-center p-4 bg-gray-50
-                                        rounded-2xl border border-gray-200 hover:border-gray-300
-                                        transition-all duration-200">
-                                @endif
+                                        <div class="w-16 h-16 rounded-full bg-amber-100 border-2 border-white
+                                                    shadow-md mb-3 flex items-center justify-center
+                                                    group-hover:scale-105 transition-transform duration-200">
+                                            <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                    @endif
 
-                                {{-- Avatar --}}
-                                @if (!empty($member['image']))
-                                    <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}"
-                                        class="w-16 h-16 rounded-full object-cover border-2 border-white
-                                                shadow-md mb-3 group-hover:scale-105 transition-transform duration-200">
-                                @else
-                                    <div
-                                        class="w-16 h-16 rounded-full bg-amber-100 border-2 border-white
-                                                shadow-md mb-3 flex items-center justify-center
-                                                group-hover:scale-105 transition-transform duration-200">
-                                        <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                @endif
+                                    <p class="font-semibold text-sm text-gray-800 leading-tight">
+                                        {{ $member['name'] ?? '' }}
+                                    </p>
+                                    @if (!empty($member['position']))
+                                        <p class="text-xs text-gray-500 mt-0.5">{{ $member['position'] }}</p>
+                                    @endif
 
-                                <p class="font-semibold text-sm text-gray-800 leading-tight">
-                                    {{ $member['name'] ?? '' }}
-                                </p>
-                                @if (!empty($member['position']))
-                                    <p class="text-xs text-gray-500 mt-0.5">{{ $member['position'] }}</p>
-                                @endif
-
-                                @if ($memberUrl)
-                                    <span
-                                        class="mt-2 inline-flex items-center gap-0.5 text-xs text-amber-600
-                                                 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                        View Profile
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                    </span>
-                                @endif
-
-                                @if ($memberUrl)
-                                    </a>
-                                @else
+                                    {{-- Profile button (only when URL exists) --}}
+                                    @if ($memberUrl)
+                                        <a href="{{ $memberUrl }}" target="_blank" rel="noopener"
+                                            class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                                   text-white bg-amber-500 hover:bg-amber-600 rounded-full
+                                                   shadow-sm transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            View Profile
+                                        </a>
+                                    @endif
+                                </div>
+                            @endforeach
                         </div>
+                    </div>
+                </div>
             @endif
-    @endforeach
-</div>
-</div>
-</div>
-@endif
 
-{{-- ── Social Media ── --}}
-@if (!empty($aboutApp->social_media))
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div
-            class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
-                        flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                </svg>
-            </div>
-            <h2 class="text-base font-semibold text-gray-900">Follow Us On Social Media</h2>
-        </div>
-        <div class="px-6 py-6">
-            <div class="flex flex-wrap gap-3 justify-center">
-                @foreach ($aboutApp->social_media as $social)
-                    <a href="{{ $social['url'] ?? '#' }}" target="_blank" rel="noopener"
-                        class="">
-                        @if (!empty($social['icon']))
-                            <img src="{{ $social['icon'] }}" alt="{{ $social['name'] ?? 'Social' }}"
-                                class="w-16 h-16 object-contain rounded group-hover:scale-110 transition-transform">
-                        @else
-                            <div class="w-10 h-10 bg-blue-100 rounded-md flex items-center justify-center">
-                                <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
-                            </div>
-                        @endif
-                        @if (!empty($social['name']))
-                            <span
-                                class="text-sm font-medium text-gray-700 group-hover:text-blue-700
-                                             transition-colors">
-                                {{ $social['name'] }}
-                            </span>
-                        @endif
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    </div>
-@endif
+            {{-- ── Social Media ── --}}
+            @if (!empty($aboutApp->social_media))
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
+                                flex items-center gap-3">
+                        <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                            </svg>
+                        </div>
+                        <h2 class="text-base font-semibold text-gray-900">Follow Us On Social Media</h2>
+                    </div>
+                    <div class="px-6 py-6">
+                        <div class="flex flex-wrap gap-4 justify-center">
+                            @foreach ($aboutApp->social_media as $social)
+                                @php
+                                    $platform = $social['platform'] ?? $social['name'] ?? 'Link';
+                                    $url      = $social['url'] ?? '#';
+                                    $icon     = $social['icon'] ?? null;
+                                @endphp
+                                <a href="{{ $url }}" target="_blank" rel="noopener"
+                                    title="{{ $platform }}"
+                                    class="group flex flex-col items-center gap-2 px-4 py-3 bg-gray-50
+                                           rounded-2xl border border-gray-200 hover:border-blue-300
+                                           hover:bg-blue-50 hover:shadow-sm transition-all duration-200 w-28">
+                                    @if ($icon)
+                                        <img src="{{ $icon }}" alt="{{ $platform }}"
+                                            class="w-12 h-12 object-contain rounded-lg bg-white p-1 border border-gray-100
+                                                   group-hover:scale-110 transition-transform">
+                                    @else
+                                        <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            </svg>
+                                        </div>
+                                    @endif
+                                    <span class="text-xs font-medium text-gray-700 group-hover:text-blue-700
+                                                 transition-colors capitalize truncate w-full text-center">
+                                        {{ $platform }}
+                                    </span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
 
-</div>{{-- end max-w-5xl --}}
-@endif
+        </div>{{-- end max-w-5xl --}}
+    @endif
 
 </div>

@@ -35,6 +35,11 @@
                         <p class="text-sm text-gray-500 mt-0.5 truncate">Please read this policy carefully to understand how we handle your information.</p>
                     </div>
                 </div>
+                @if ($lastUpdated)
+                    <span class="flex-shrink-0 inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-100">
+                        Last updated: {{ $lastUpdated }}
+                    </span>
+                @endif
             </div>
         </div>
 
