@@ -946,10 +946,16 @@
                         {{-- Settings --}}
                         <div class="bg-gray-50 rounded-xl p-4">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Settings</p>
+                            @if ($this->isOrphaned)
+                                <div class="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                                    This student's previous class was deleted. Assign a class &amp; section to re-activate.
+                                </div>
+                            @endif
                             <div class="flex flex-wrap gap-6">
-                                <label class="flex items-center gap-3 cursor-pointer">
+                                <label class="flex items-center gap-3 {{ $this->isOrphaned ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}">
                                     <div class="relative">
-                                        <input type="checkbox" wire:model="studentsActive" class="sr-only peer">
+                                        <input type="checkbox" wire:model="studentsActive" class="sr-only peer"
+                                            @disabled($this->isOrphaned)>
                                         <div
                                             class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-emerald-500 transition-colors">
                                         </div>
@@ -960,6 +966,9 @@
                                     <span class="text-sm font-medium text-gray-700">Active</span>
                                 </label>
                             </div>
+                            @error('studentsActive')
+                                <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                     </div>{{-- /p-6 --}}
@@ -986,7 +995,7 @@
                                     d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h4z"></path>
                             </svg>
                         </span>
-                        {{ $editId ? 'Update Student' : 'Add Student' }}
+                        {{ $editId ? ($this->isOrphaned ? 'Update Student (Reassign Class)' : 'Update Student') : 'Add Student' }}
                     </button>
                 </div>
 

@@ -264,8 +264,21 @@ class Student extends Component
         $this->openImage = false;
     }
 
+    public function getIsOrphanedProperty(): bool
+    {
+        // Student was orphaned when their previously-assigned class got deleted.
+        // We only flag the *edit* form: a brand-new student doesn't have an id yet.
+        return !empty($this->studentData['id']) && empty($this->studentsClass);
+    }
+
     public function onSave(): void
     {
+        // Orphaned students cannot be activated until a class is re-assigned (req #6).
+        if ($this->isOrphaned && (int) $this->studentsActive === 1) {
+            $this->addError('studentsActive', 'Assign a class before activating this student.');
+            return;
+        }
+
         $rules = [
             'studentsName'      => 'required|string|max:255',
             'studentsEmail'     => 'required|email|max:50',

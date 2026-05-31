@@ -2,13 +2,17 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Organization;
 use App\Models\Student\Section;
 use App\Models\Student\SectionSubject;
 use App\Models\Student\Standard as StudentStandard;
 use App\Models\Student\StandardSubject;
+use App\Models\Student\StudentDetail;
 use App\Models\Student\Subject;
 use App\Models\Teacher\TeacherAssignment;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use WireUi\Traits\WireUiActions;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +28,7 @@ class Standard extends Component
     public $editId       = null;
     public $standards, $sections, $subjects;
 
-    // Standard fields
+    // Standard fields (board comes from organization — no UI input)
     public $standardName   = '';
     public $standardCode   = '';
     public $standardBoard  = '';
@@ -38,15 +42,15 @@ class Standard extends Component
     public $activeTab      = 'standard';
 
     // Search / filter
-    public $search               = '';
-    public $filterBoard          = '';
-    public $filterStandard       = '';
-    public $filterStatus         = '';
+    public $search                = '';
+    public $filterStandard        = '';
+    public $filterStatus          = '';
     public $filterSubjectStandard = '';
-    public $perPage              = 25;
+    public $perPage               = 25;
 
     // Section fields
     public $sectionName        = '';
+    public $sectionCode        = '';
     public $sectionDescription = '';
     public $sectionActive      = true;
     public $selectedStandard   = null;
@@ -79,10 +83,16 @@ class Standard extends Component
 
     public function mount(): void
     {
+        $this->standardBoard = $this->resolveOrgBoard();
         $this->loadStandards();
         $this->loadAllSections();
         $this->loadAllSubjects();
         $this->selectedSectionsForSubject = [];
+    }
+
+    private function resolveOrgBoard(): string
+    {
+        return (string) (Organization::find(Auth::user()->organization_id)?->education_board ?? '');
     }
 
     // Watch file uploads to generate previews
@@ -111,7 +121,7 @@ class Standard extends Component
 
     public function updating($name, $value): void
     {
-        if (in_array($name, ['search', 'filterBoard', 'filterStandard', 'filterStatus', 'filterSection', 'filterSubjectStandard', 'perPage'])) {
+        if (in_array($name, ['search', 'filterStandard', 'filterStatus', 'filterSection', 'filterSubjectStandard', 'perPage'])) {
             $this->closeModal();
         }
     }
@@ -125,10 +135,10 @@ class Standard extends Component
 
     public function drillIntoClass(int $standardId): void
     {
-        $this->activeTab     = 'section';
+        $this->activeTab      = 'section';
         $this->filterStandard = $standardId;
-        $this->search        = '';
-        $this->filterStatus  = '';
+        $this->search         = '';
+        $this->filterStatus   = '';
     }
 
     public function drillIntoSection(int $sectionId): void
@@ -143,29 +153,40 @@ class Standard extends Component
         }
     }
 
+    public function drillIntoSubject(int $subjectId)
+    {
+        $subject = Subject::with('standards')->find($subjectId);
+        $standardId = $subject?->standards->first()?->id ?? $this->filterSubjectStandard;
+        return redirect()->route('admin.syllabus', [
+            'filterStandard' => $standardId,
+            'filterSection'  => $this->filterSection ?: '',
+            'filterSubject'  => $subjectId,
+        ]);
+    }
+
     public function loadStandards(): void
     {
         $this->standards = StudentStandard::where('organization_id', Auth::user()->organization_id)
-            ->where('is_active', true)->orderBy('order')->get();
+            ->where('is_active', true)->orderBy('id')->get();
     }
 
     public function loadAllSections(): void
     {
         $this->sections = Section::with('standard')
             ->whereHas('standard', fn($q) => $q->where('organization_id', Auth::user()->organization_id))
-            ->where('is_active', true)->orderBy('name')->get();
+            ->where('is_active', true)->orderBy('id')->get();
     }
 
     public function loadAllSubjects(): void
     {
         $this->subjects = Subject::where('organization_id', Auth::user()->organization_id)
-            ->where('is_active', true)->get();
+            ->where('is_active', true)->orderBy('id')->get();
     }
 
     public function loadSectionsForSelectedStandard(): void
     {
         $this->sections = Section::where('standard_id', $this->selectedStandardForSubject)
-            ->where('is_active', true)->orderBy('name')->get();
+            ->where('is_active', true)->orderBy('id')->get();
     }
 
     public function loadExistingSubjectsForStandard(): void
@@ -199,37 +220,46 @@ class Standard extends Component
             $query->where(fn($q) =>
                 $q->where('name', 'like', "%{$this->search}%")
                   ->orWhere('code', 'like', "%{$this->search}%")
-                  ->orWhere('board', 'like', "%{$this->search}%")
             );
         }
-        if ($this->filterBoard)    $query->where('board', $this->filterBoard);
         if ($this->filterStatus !== '') $query->where('is_active', $this->filterStatus === 'active');
 
-        return $query->orderBy('order')->paginate($this->perPage);
+        return $query->orderBy('id')->paginate($this->perPage);
     }
 
     public function getFilteredSectionsProperty()
     {
+        // Require a class filter — if none, return empty paginator
+        if (!$this->filterStandard) {
+            return Section::whereRaw('1 = 0')->paginate($this->perPage);
+        }
+
         $query = Section::with('standard')
-            ->whereHas('standard', fn($q) => $q->where('organization_id', Auth::user()->organization_id));
+            ->whereHas('standard', fn($q) => $q->where('organization_id', Auth::user()->organization_id))
+            ->where('standard_id', $this->filterStandard);
 
         if ($this->search) {
             $query->where(fn($q) =>
                 $q->where('name', 'like', "%{$this->search}%")
+                  ->orWhere('code', 'like', "%{$this->search}%")
                   ->orWhere('description', 'like', "%{$this->search}%")
-                  ->orWhereHas('standard', fn($sq) => $sq->where('name', 'like', "%{$this->search}%"))
             );
         }
-        if ($this->filterStandard)  $query->where('standard_id', $this->filterStandard);
         if ($this->filterStatus !== '') $query->where('is_active', $this->filterStatus === 'active');
 
-        return $query->orderBy('name')->paginate($this->perPage);
+        return $query->orderBy('id')->paginate($this->perPage);
     }
 
     public function getFilteredSubjectsProperty()
     {
+        // Require a section filter — if none, return empty paginator
+        if (!$this->filterSection) {
+            return Subject::whereRaw('1 = 0')->paginate($this->perPage);
+        }
+
         $query = Subject::with(['standards', 'sections'])
-            ->where('organization_id', Auth::user()->organization_id);
+            ->where('organization_id', Auth::user()->organization_id)
+            ->whereHas('sections', fn($q) => $q->where('section_id', $this->filterSection));
 
         if ($this->search) {
             $query->where(fn($q) =>
@@ -241,12 +271,9 @@ class Standard extends Component
         if ($this->filterSubjectStandard) {
             $query->whereHas('standards', fn($q) => $q->where('standard_id', $this->filterSubjectStandard));
         }
-        if ($this->filterSection) {
-            $query->whereHas('sections', fn($q) => $q->where('section_id', $this->filterSection));
-        }
         if ($this->filterStatus !== '') $query->where('is_active', $this->filterStatus === 'active');
 
-        return $query->orderBy('name')->paginate($this->perPage);
+        return $query->orderBy('id')->paginate($this->perPage);
     }
 
     public function getAvailableSectionsProperty()
@@ -258,18 +285,12 @@ class Standard extends Component
         if ($this->filterSubjectStandard) {
             $query->where('standard_id', $this->filterSubjectStandard);
         }
-        return $query->orderBy('name')->get();
-    }
-
-    public function getBoardsProperty()
-    {
-        return StudentStandard::where('organization_id', Auth::user()->organization_id)
-            ->distinct()->pluck('board')->filter()->values();
+        return $query->orderBy('id')->get();
     }
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'filterBoard', 'filterStandard', 'filterStatus',
+        $this->reset(['search', 'filterStandard', 'filterStatus',
                       'filterSubjectStandard', 'filterSection']);
         $this->closeModal();
     }
@@ -280,8 +301,8 @@ class Standard extends Component
         $this->openSection  = false;
         $this->openSubject  = false;
         $this->reset([
-            'editId', 'standardName', 'standardCode', 'standardBoard', 'standardOrder',
-            'sectionName', 'sectionDescription', 'selectedStandard',
+            'editId', 'standardName', 'standardCode', 'standardOrder',
+            'sectionName', 'sectionCode', 'sectionDescription', 'selectedStandard',
             'subjectName', 'subjectCode', 'subjectDescription', 'subjectActive',
             'selectedStandardForSubject', 'selectedSectionsForSubject', 'isMandatory',
             'subjectImage', 'subjectDetailImage', 'subjectImageUrl', 'subjectDetailImageUrl',
@@ -289,18 +310,20 @@ class Standard extends Component
         ]);
         $this->standardActive = true;
         $this->sectionActive = true;
+        $this->standardBoard = $this->resolveOrgBoard();
         $this->dispatch('onStandardAddUpdate');
     }
 
     private function resetStandardFields(): void
     {
-        $this->reset(['standardName', 'standardCode', 'standardBoard', 'standardOrder']);
+        $this->reset(['standardName', 'standardCode', 'standardOrder']);
         $this->standardActive = true;
+        $this->standardBoard  = $this->resolveOrgBoard();
     }
 
     private function resetSectionFields(): void
     {
-        $this->reset(['sectionName', 'sectionDescription', 'selectedStandard']);
+        $this->reset(['sectionName', 'sectionCode', 'sectionDescription', 'selectedStandard']);
         $this->sectionActive = true;
     }
 
@@ -328,6 +351,10 @@ class Standard extends Component
     {
         $this->editId = null;
         $this->resetSectionFields();
+        // Prefill class from drill-down filter if present
+        if ($this->filterStandard) {
+            $this->selectedStandard = $this->filterStandard;
+        }
         $this->openSection = true;
     }
 
@@ -335,6 +362,15 @@ class Standard extends Component
     {
         $this->editId = null;
         $this->resetSubjectFields();
+        // Prefill class/section from drill-down filters if present
+        if ($this->filterSubjectStandard) {
+            $this->selectedStandardForSubject = $this->filterSubjectStandard;
+            $this->loadSectionsForSelectedStandard();
+            $this->loadExistingSubjectsForStandard();
+            if ($this->filterSection) {
+                $this->selectedSectionsForSubject = [(int) $this->filterSection];
+            }
+        }
         $this->openSubject = true;
     }
 
@@ -345,15 +381,33 @@ class Standard extends Component
         $orgId = Auth::user()->organization_id;
 
         $this->validate([
-            'standardName'  => 'required|string|max:255|unique:standards,name,' . $this->editId . ',id,organization_id,' . $orgId,
-            'standardCode'  => 'required|string|max:50|unique:standards,code,' . $this->editId . ',id,organization_id,' . $orgId,
-            'standardBoard' => 'required|string',
+            'standardName' => 'required|string|max:255',
+            'standardCode' => 'required|string|max:50',
         ]);
+
+        // Same-name OR same-code within org cannot exist
+        $dupName = StudentStandard::where('organization_id', $orgId)
+            ->where('name', $this->standardName)
+            ->when($this->editId, fn($q) => $q->where('id', '!=', $this->editId))
+            ->exists();
+        if ($dupName) {
+            $this->addError('standardName', 'A class with this name already exists.');
+            return;
+        }
+
+        $dupCode = StudentStandard::where('organization_id', $orgId)
+            ->where('code', $this->standardCode)
+            ->when($this->editId, fn($q) => $q->where('id', '!=', $this->editId))
+            ->exists();
+        if ($dupCode) {
+            $this->addError('standardCode', 'A class with this code already exists.');
+            return;
+        }
 
         $data = [
             'name'            => $this->standardName,
             'code'            => $this->standardCode,
-            'board'           => $this->standardBoard,
+            'board'           => $this->standardBoard ?: $this->resolveOrgBoard(),
             'order'           => $this->standardOrder ? (int) $this->standardOrder : 0,
             'is_active'       => $this->standardActive,
             'organization_id' => $orgId,
@@ -376,12 +430,26 @@ class Standard extends Component
     public function saveSection(): void
     {
         $this->validate([
-            'sectionName'     => 'required|string|max:255|unique:sections,name,' . $this->editId . ',id,standard_id,' . $this->selectedStandard,
+            'sectionName'      => 'required|string|max:255',
+            'sectionCode'      => 'required|string|max:50',
             'selectedStandard' => 'required|exists:standards,id',
         ]);
 
+        // Same name+code combo cannot duplicate within a class
+        $dup = Section::where('standard_id', $this->selectedStandard)
+            ->where('name', $this->sectionName)
+            ->where('code', $this->sectionCode)
+            ->when($this->editId, fn($q) => $q->where('id', '!=', $this->editId))
+            ->exists();
+        if ($dup) {
+            $this->addError('sectionName', 'A section with this name and code already exists in the selected class.');
+            return;
+        }
+
         $data = [
             'name'            => $this->sectionName,
+            'code'            => $this->sectionCode,
+            'description'     => $this->sectionDescription,
             'standard_id'     => $this->selectedStandard,
             'is_active'       => $this->sectionActive,
             'organization_id' => Auth::user()->organization_id,
@@ -417,7 +485,7 @@ class Standard extends Component
             'selectedSectionsForSubject.min'      => 'Please select at least one section.',
         ]);
 
-        // Duplicate name check within standard
+        // Duplicate name OR code within the class
         $dupName = StandardSubject::where('standard_id', $this->selectedStandardForSubject)
             ->whereHas('subject', fn($q) => $q->where('name', $this->subjectName)
                 ->when($this->editId, fn($q) => $q->where('id', '!=', $this->editId)))
@@ -428,7 +496,6 @@ class Standard extends Component
             return;
         }
 
-        // Duplicate code check within standard
         $dupCode = StandardSubject::where('standard_id', $this->selectedStandardForSubject)
             ->whereHas('subject', fn($q) => $q->where('code', $this->subjectCode)
                 ->when($this->editId, fn($q) => $q->where('id', '!=', $this->editId)))
@@ -528,10 +595,10 @@ class Standard extends Component
     {
         $s = StudentStandard::find($id);
         if ($s) {
-            $this->editId = $id;
+            $this->editId         = $id;
             $this->standardName   = $s->name;
             $this->standardCode   = $s->code;
-            $this->standardBoard  = $s->board;
+            $this->standardBoard  = $s->board ?: $this->resolveOrgBoard();
             $this->standardOrder  = $s->order;
             $this->standardActive = $s->is_active;
             $this->openStandard   = true;
@@ -542,8 +609,9 @@ class Standard extends Component
     {
         $s = Section::find($id);
         if ($s) {
-            $this->editId           = $id;
+            $this->editId             = $id;
             $this->sectionName        = $s->name;
+            $this->sectionCode        = $s->code;
             $this->sectionDescription = $s->description;
             $this->selectedStandard   = $s->standard_id;
             $this->sectionActive      = $s->is_active;
@@ -588,7 +656,7 @@ class Standard extends Component
             'title'       => 'Delete Class?',
             'icon'        => 'exclamation-circle',
             'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure? This action cannot be undone.',
+            'description' => 'All sections must be deleted first. Any students still assigned will be set to Inactive and need a new class.',
             'accept'      => ['label' => 'Yes, delete it', 'method' => 'performDeleteStandard', 'params' => $id, 'color' => 'negative', 'size' => 'md'],
             'reject'      => ['label' => 'No', 'size' => 'md'],
         ]);
@@ -600,7 +668,7 @@ class Standard extends Component
             'title'       => 'Delete Section?',
             'icon'        => 'exclamation-circle',
             'iconColor'   => 'text-red-500',
-            'description' => 'Are you sure? This action cannot be undone.',
+            'description' => 'All subjects added to this section will be deleted automatically.',
             'accept'      => ['label' => 'Yes, delete it', 'method' => 'performDeleteSection', 'params' => $id, 'color' => 'negative', 'size' => 'md'],
             'reject'      => ['label' => 'No', 'size' => 'md'],
         ]);
@@ -623,14 +691,30 @@ class Standard extends Component
         $standard = StudentStandard::find($id);
         if (!$standard) return;
 
-        if (Section::where('standard_id', $id)->exists()
-            || StandardSubject::where('standard_id', $id)->exists()
-            || \App\Models\Admin\TeacherTimeTable::where('standard_id', $id)->exists()) {
-            $this->notification()->warning('Cannot Delete!', 'This class has sections, subjects, or timetable entries. Remove them first.');
+        // Block if any sections still exist (req #4)
+        if (Section::where('standard_id', $id)->exists()) {
+            $this->notification()->warning('Cannot Delete!', 'Please delete all sections of this class first.');
             return;
         }
 
-        $standard->delete();
+        DB::transaction(function () use ($id, $standard) {
+            // Orphan students → inactive, null their class/section (req #6)
+            $studentDetails = StudentDetail::where('standard_id', $id)->get();
+            $userIds = $studentDetails->pluck('user_id')->filter()->all();
+            if ($userIds) {
+                User::whereIn('id', $userIds)->update(['is_active' => false]);
+            }
+            StudentDetail::where('standard_id', $id)->update([
+                'standard_id' => null,
+                'section_id'  => null,
+            ]);
+
+            // Tidy up any standard-subject pivots (shouldn't have section-subject left at this point)
+            StandardSubject::where('standard_id', $id)->delete();
+
+            $standard->delete();
+        });
+
         $this->notification()->success('Class deleted successfully!');
         $this->mount();
         $this->dispatch('onStandardAddUpdate');
@@ -641,17 +725,32 @@ class Standard extends Component
         $section = Section::find($id);
         if (!$section) return;
 
-        if (\App\Models\Student\StudentDetail::where('section_id', $id)->exists()
-            || \App\Models\Admin\TeacherTimeTable::where('section_id', $id)->exists()) {
-            $this->notification()->warning('Cannot Delete!', 'This section has students or timetable entries. Remove them first.');
-            return;
-        }
+        DB::transaction(function () use ($id, $section) {
+            // Cascade subjects mapped to this section (req #5)
+            $subjectIds = SectionSubject::where('section_id', $id)->pluck('subject_id')->unique();
 
-        // Delete subject assignments for this section only
-        SectionSubject::where('section_id', $id)->delete();
+            SectionSubject::where('section_id', $id)->delete();
 
-        $section->delete();
-        $this->notification()->success('Section deleted successfully!');
+            foreach ($subjectIds as $subjectId) {
+                $stillUsed = SectionSubject::where('subject_id', $subjectId)->exists();
+                if (!$stillUsed) {
+                    StandardSubject::where('subject_id', $subjectId)->delete();
+                    $subject = Subject::find($subjectId);
+                    if ($subject) {
+                        if ($subject->image) Storage::disk('s3')->delete(parse_url($subject->image, PHP_URL_PATH));
+                        if ($subject->detail_image) Storage::disk('s3')->delete(parse_url($subject->detail_image, PHP_URL_PATH));
+                        $subject->delete();
+                    }
+                }
+            }
+
+            // Detach students from this section (so the class can later be deleted)
+            StudentDetail::where('section_id', $id)->update(['section_id' => null]);
+
+            $section->delete();
+        });
+
+        $this->notification()->success('Section and its subjects deleted successfully!');
         $this->mount();
         $this->dispatch('onStandardAddUpdate');
     }
@@ -709,6 +808,7 @@ class Standard extends Component
         $this->viewModalTitle = 'Section Details';
         $this->viewData = [
             'name'           => $s->name,
+            'code'           => $s->code,
             'description'    => $s->description,
             'class'          => $s->standard->name,
             'is_active'      => $s->is_active ? 'Active' : 'Inactive',
@@ -753,7 +853,6 @@ class Standard extends Component
             'filteredStandards' => $this->filteredStandards,
             'filteredSections'  => $this->filteredSections,
             'filteredSubjects'  => $this->filteredSubjects,
-            'boards'            => $this->boards,
             'allStandards'      => $this->standards,
             'availableSections' => $this->availableSections,
         ]);

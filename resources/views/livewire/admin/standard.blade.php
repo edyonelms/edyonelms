@@ -46,19 +46,19 @@
             @php
                 $tabs = [
                     [
-                        'key' => 'standard',
+                        'key'   => 'standard',
                         'label' => 'Classes',
                         'color' => 'purple',
                         'count' => $filteredStandards->total(),
                     ],
                     [
-                        'key' => 'section',
+                        'key'   => 'section',
                         'label' => 'Sections',
                         'color' => 'blue',
                         'count' => $filteredSections->total(),
                     ],
                     [
-                        'key' => 'subject',
+                        'key'   => 'subject',
                         'label' => 'Subjects',
                         'color' => 'emerald',
                         'count' => $filteredSubjects->total(),
@@ -112,20 +112,10 @@
                            focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white" />
             </div>
 
-            @if ($activeTab === 'standard')
-                <select wire:model.live="filterBoard"
-                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-400 bg-white">
-                    <option value="">All Boards</option>
-                    @foreach ($boards as $board)
-                        <option value="{{ $board }}">{{ $board }}</option>
-                    @endforeach
-                </select>
-            @endif
-
             @if ($activeTab === 'section')
                 <select wire:model.live="filterStandard"
                     class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 bg-white">
-                    <option value="">All Classes</option>
+                    <option value="">Select Class</option>
                     @foreach ($allStandards as $s)
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
                     @endforeach
@@ -135,24 +125,21 @@
             @if ($activeTab === 'subject')
                 <select wire:model.live="filterSubjectStandard"
                     class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-400 bg-white">
-                    <option value="">All Classes</option>
+                    <option value="">Select Class</option>
                     @foreach ($allStandards as $s)
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
                     @endforeach
                 </select>
-                @if ($availableSections->count())
-                    <select wire:model.live="filterSection"
-                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-400 bg-white">
-                        <option value="">All Sections</option>
-                        @foreach ($availableSections as $sec)
-                            <option value="{{ $sec->id }}">{{ $sec->name }}
-                                @if ($sec->standard)
-                                    ({{ $sec->standard->name }})
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                @endif
+                <select wire:model.live="filterSection"
+                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-400 bg-white"
+                    @disabled(!$filterSubjectStandard)>
+                    <option value="">Select Section</option>
+                    @foreach ($availableSections as $sec)
+                        <option value="{{ $sec->id }}">{{ $sec->name }}
+                            @if ($sec->code) ({{ $sec->code }}) @endif
+                        </option>
+                    @endforeach
+                </select>
             @endif
 
             <select wire:model.live="filterStatus"
@@ -170,7 +157,7 @@
                 <option value="100">100</option>
             </select>
 
-            @if ($search || $filterBoard || $filterStandard || $filterStatus || $filterSubjectStandard || $filterSection)
+            @if ($search || $filterStandard || $filterStatus || $filterSubjectStandard || $filterSection)
                 <button wire:click="resetFilters"
                     class="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200
                        hover:bg-red-50 px-2.5 py-2 rounded-lg transition-colors">
@@ -229,91 +216,64 @@
 
         <div wire:loading.remove>
 
-            {{-- ════════════════ CLASSES ════════════════ --}}
+            {{-- ════════════════ CLASSES (List) ════════════════ --}}
             @if ($activeTab === 'standard')
                 @if ($filteredStandards->count())
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                        @foreach ($filteredStandards as $std)
-                            <div
-                                class="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md
-                                transition-all duration-200 hover:border-purple-300 flex flex-col overflow-hidden">
-
-                                {{-- Top colored band --}}
-                                <div class="h-2 bg-gradient-to-r from-purple-500 to-pink-500 w-full"></div>
-
-                                {{-- Body --}}
-                                <div class="flex flex-col items-center text-center p-4 flex-1 cursor-pointer"
-                                    wire:click="drillIntoClass({{ $std->id }})">
-                                    <div
-                                        class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3">
-                                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 14l9-5-9-5-9 5 9 5z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="grid grid-cols-12 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            <div class="col-span-1">#</div>
+                            <div class="col-span-3">Class</div>
+                            <div class="col-span-2">Code</div>
+                            <div class="col-span-2">Board</div>
+                            <div class="col-span-1 text-center">Sections</div>
+                            <div class="col-span-1 text-center">Status</div>
+                            <div class="col-span-2 text-right">Actions</div>
+                        </div>
+                        @foreach ($filteredStandards as $idx => $std)
+                            <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-purple-50/40 transition-colors cursor-pointer"
+                                wire:click="drillIntoClass({{ $std->id }})">
+                                <div class="col-span-1 text-sm text-gray-500">{{ $filteredStandards->firstItem() + $idx }}</div>
+                                <div class="col-span-3 flex items-center gap-2.5">
+                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                                         </svg>
                                     </div>
-                                    <h3 class="font-bold text-gray-900 text-sm leading-tight">{{ $std->name }}</h3>
-                                    <p class="text-xs text-gray-400 mt-0.5">{{ $std->code }}</p>
-                                    <p class="text-xs text-purple-600 font-medium mt-1">{{ $std->board }}</p>
-
-                                    <div class="flex items-center justify-center gap-3 mt-3 text-xs text-gray-500">
-                                        <span class="flex flex-col items-center">
-                                            <strong
-                                                class="text-gray-800 text-sm">{{ $std->sections_count ?? ($std->sections->count() ?? 0) }}</strong>
-                                            Sections
-                                        </span>
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 text-sm truncate">{{ $std->name }}</p>
+                                        <p class="text-xs text-purple-500 mt-0.5">View Sections →</p>
                                     </div>
-
-                                    <div class="mt-2">
-                                        <span
-                                            class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
-                                    {{ $std->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
-                                            {{ $std->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </div>
-
-                                    <p class="text-xs text-purple-500 mt-2 font-medium flex items-center gap-0.5">
-                                        View Sections
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </p>
                                 </div>
-
-                                {{-- Actions --}}
-                                <div
-                                    class="flex items-center justify-center gap-1 px-3 pb-3 pt-1 border-t border-gray-50">
+                                <div class="col-span-2 text-sm text-gray-700">{{ $std->code }}</div>
+                                <div class="col-span-2 text-sm text-gray-600">{{ $std->board }}</div>
+                                <div class="col-span-1 text-center text-sm font-semibold text-gray-800">
+                                    {{ $std->sections_count ?? ($std->sections->count() ?? 0) }}
+                                </div>
+                                <div class="col-span-1 text-center">
+                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
+                                        {{ $std->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                                        {{ $std->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-end gap-1" wire:click.stop>
                                     <button wire:click.stop="onViewStandardAdmin({{ $std->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
-                                        title="View">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="View">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
                                     <button wire:click.stop="editStandard({{ $std->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
-                                        title="Edit">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
                                     <button wire:click.stop="onDeleteStandard({{ $std->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-                                        title="Delete">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                     </button>
                                 </div>
@@ -322,31 +282,29 @@
                     </div>
                 @else
                     <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div
-                            class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                             </svg>
                         </div>
                         <h3 class="text-lg font-semibold text-gray-800 mb-1">No classes found</h3>
                         <p class="text-sm text-gray-400 mb-5">
-                            @if ($search || $filterBoard || $filterStatus)
+                            @if ($search || $filterStatus)
                                 No classes match your filters. Try clearing them.
                             @else
                                 You haven't added any classes yet.
                             @endif
                         </p>
                         <div class="flex justify-center gap-2">
-                            @if ($search || $filterBoard || $filterStatus)
+                            @if ($search || $filterStatus)
                                 <button wire:click="resetFilters"
-                                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
+                                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600">
                                     Clear Filters
                                 </button>
                             @endif
                             <button wire:click="onStandard"
-                                class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors">
+                                class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium">
                                 Add First Class
                             </button>
                         </div>
@@ -354,77 +312,71 @@
                 @endif
             @endif
 
-            {{-- ════════════════ SECTIONS ════════════════ --}}
+            {{-- ════════════════ SECTIONS (List) ════════════════ --}}
             @if ($activeTab === 'section')
-                @if ($filteredSections->count())
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                        @foreach ($filteredSections as $section)
-                            <div
-                                class="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md
-                                transition-all duration-200 hover:border-blue-300 flex flex-col overflow-hidden">
-
-                                <div class="h-2 bg-gradient-to-r from-blue-500 to-cyan-400 w-full"></div>
-
-                                <div class="flex flex-col items-center text-center p-4 flex-1 cursor-pointer"
-                                    wire:click="drillIntoSection({{ $section->id }})">
-                                    <div
-                                        class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3">
-                                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                @if (!$filterStandard)
+                    <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-blue-200">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7M5 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">Select a class to view sections</h3>
+                        <p class="text-sm text-gray-400">Use the <strong>Class</strong> filter above, or click a class from the Classes tab.</p>
+                    </div>
+                @elseif ($filteredSections->count())
+                    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="grid grid-cols-12 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            <div class="col-span-1">#</div>
+                            <div class="col-span-3">Section</div>
+                            <div class="col-span-2">Code</div>
+                            <div class="col-span-3">Class</div>
+                            <div class="col-span-1 text-center">Status</div>
+                            <div class="col-span-2 text-right">Actions</div>
+                        </div>
+                        @foreach ($filteredSections as $idx => $section)
+                            <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-blue-50/40 transition-colors cursor-pointer"
+                                wire:click="drillIntoSection({{ $section->id }})">
+                                <div class="col-span-1 text-sm text-gray-500">{{ $filteredSections->firstItem() + $idx }}</div>
+                                <div class="col-span-3 flex items-center gap-2.5">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                     </div>
-
-                                    <h3 class="font-bold text-gray-900 text-sm">{{ $section->name }}</h3>
-                                    <p class="text-xs font-medium text-blue-600 mt-1">{{ $section->standard->name }}
-                                    </p>
-
-                                    @if ($section->description)
-                                        <p class="text-xs text-gray-400 mt-1.5 line-clamp-2">
-                                            {{ $section->description }}</p>
-                                    @endif
-
-                                    <div class="mt-2">
-                                        <span
-                                            class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
-                                    {{ $section->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
-                                            {{ $section->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 text-sm truncate">{{ $section->name }}</p>
+                                        <p class="text-xs text-blue-500 mt-0.5">View Subjects →</p>
                                     </div>
-
-                                    <p class="text-xs text-blue-500 mt-2 font-medium flex items-center gap-0.5">
-                                        View Subjects
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </p>
                                 </div>
-
-                                <div
-                                    class="flex items-center justify-center gap-1 px-3 pb-3 pt-1 border-t border-gray-50">
+                                <div class="col-span-2 text-sm text-gray-700">{{ $section->code }}</div>
+                                <div class="col-span-3 text-sm text-gray-600">{{ $section->standard->name ?? '—' }}</div>
+                                <div class="col-span-1 text-center">
+                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
+                                        {{ $section->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                                        {{ $section->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-end gap-1" wire:click.stop>
                                     <button wire:click.stop="onViewSectionAdmin({{ $section->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="View">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
                                     <button wire:click.stop="editSection({{ $section->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
                                     <button wire:click.stop="onDeleteSection({{ $section->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -436,125 +388,96 @@
                 @else
                     <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
                         <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-800 mb-1">No sections found</h3>
-                        <p class="text-sm text-gray-400 mb-5">
-                            @if ($search || $filterStandard || $filterStatus)
-                                No sections match your filters. Try clearing them.
-                            @else
-                                You haven't added any sections yet.
-                            @endif
-                        </p>
-                        <div class="flex justify-center gap-2">
-                            @if ($search || $filterStandard || $filterStatus)
-                                <button wire:click="resetFilters"
-                                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
-                                    Clear Filters
-                                </button>
-                            @endif
-                            <button wire:click="onSection"
-                                class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-                                Add First Section
-                            </button>
-                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">No sections in this class</h3>
+                        <p class="text-sm text-gray-400 mb-5">Add a section to get started.</p>
+                        <button wire:click="onSection"
+                            class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                            Add Section
+                        </button>
                     </div>
                 @endif
             @endif
 
-            {{-- ════════════════ SUBJECTS ════════════════ --}}
+            {{-- ════════════════ SUBJECTS (List) ════════════════ --}}
             @if ($activeTab === 'subject')
-                @if ($filteredSubjects->count())
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                        @foreach ($filteredSubjects as $subject)
-                            <div
-                                class="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md
-                                transition-all duration-200 hover:border-emerald-300 flex flex-col overflow-hidden">
-
-                                <div class="h-2 bg-gradient-to-r from-emerald-500 to-teal-400 w-full"></div>
-
-                                <div class="flex flex-col items-center text-center p-4 flex-1">
-                                    {{-- Image or icon --}}
+                @if (!$filterSection)
+                    <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-emerald-200">
+                        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7M5 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">Select a section to view subjects</h3>
+                        <p class="text-sm text-gray-400">Pick a <strong>class</strong> then a <strong>section</strong> from the filters above, or drill in from the Sections tab.</p>
+                    </div>
+                @elseif ($filteredSubjects->count())
+                    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="grid grid-cols-12 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            <div class="col-span-1">#</div>
+                            <div class="col-span-3">Subject</div>
+                            <div class="col-span-2">Code</div>
+                            <div class="col-span-3">Class · Sections</div>
+                            <div class="col-span-1 text-center">Status</div>
+                            <div class="col-span-2 text-right">Actions</div>
+                        </div>
+                        @foreach ($filteredSubjects as $idx => $subject)
+                            <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50/40 transition-colors cursor-pointer"
+                                wire:click="drillIntoSubject({{ $subject->id }})">
+                                <div class="col-span-1 text-sm text-gray-500">{{ $filteredSubjects->firstItem() + $idx }}</div>
+                                <div class="col-span-3 flex items-center gap-2.5">
                                     @if ($subject->image)
                                         <img src="{{ $subject->image }}" alt="{{ $subject->name }}"
-                                            class="w-14 h-14 rounded-xl object-cover border-2 border-gray-100 mb-3 shadow-sm">
+                                            class="w-8 h-8 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                     @else
-                                        <div
-                                            class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3">
-                                            <svg class="w-6 h-6 text-emerald-600" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                             </svg>
                                         </div>
                                     @endif
-
-                                    <h3 class="font-bold text-gray-900 text-sm leading-tight">{{ $subject->name }}
-                                    </h3>
-                                    <p class="text-xs text-gray-400 mt-0.5">{{ $subject->code }}</p>
-
-                                    {{-- Assigned classes --}}
-                                    @if ($subject->standards->isNotEmpty())
-                                        <div class="flex flex-wrap justify-center gap-1 mt-2">
-                                            @foreach ($subject->standards->take(2) as $std)
-                                                <span
-                                                    class="px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700 rounded font-medium">
-                                                    {{ $std->name }}
-                                                </span>
-                                            @endforeach
-                                            @if ($subject->standards->count() > 2)
-                                                <span
-                                                    class="text-xs text-gray-400">+{{ $subject->standards->count() - 2 }}</span>
-                                            @endif
-                                        </div>
-                                    @endif
-
-                                    <div class="flex items-center gap-1.5 mt-2 flex-wrap justify-center">
-                                        <span
-                                            class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
-                                    {{ $subject->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
-                                            {{ $subject->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                        @if ($subject->standards->first()?->pivot?->is_mandatory)
-                                            <span
-                                                class="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-medium">
-                                                Mandatory
-                                            </span>
-                                        @endif
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 text-sm truncate">{{ $subject->name }}</p>
+                                        <p class="text-xs text-emerald-500 mt-0.5">Open Syllabus →</p>
                                     </div>
-
-                                    @if ($subject->description)
-                                        <p class="text-xs text-gray-400 mt-1.5 line-clamp-2">
-                                            {{ $subject->description }}</p>
+                                </div>
+                                <div class="col-span-2 text-sm text-gray-700">{{ $subject->code }}</div>
+                                <div class="col-span-3 text-sm text-gray-600 truncate">
+                                    {{ $subject->standards->pluck('name')->implode(', ') ?: '—' }}
+                                    @if ($subject->sections->count())
+                                        <span class="text-gray-400">· {{ $subject->sections->pluck('name')->implode(', ') }}</span>
                                     @endif
                                 </div>
-
-                                <div
-                                    class="flex items-center justify-center gap-1 px-3 pb-3 pt-1 border-t border-gray-50">
-                                    <button wire:click="onViewSubjectAdmin({{ $subject->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                <div class="col-span-1 text-center">
+                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full font-medium
+                                        {{ $subject->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                                        {{ $subject->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-end gap-1" wire:click.stop>
+                                    <button wire:click.stop="onViewSubjectAdmin({{ $subject->id }})"
+                                        class="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="View">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
-                                    <button wire:click="editSubject({{ $subject->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                    <button wire:click.stop="editSubject({{ $subject->id }})"
+                                        class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </button>
-                                    <button wire:click="onDeleteSubject({{ $subject->id }})"
-                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                    <button wire:click.stop="onDeleteSubject({{ $subject->id }})"
+                                        class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -565,34 +488,18 @@
                     </div>
                 @else
                     <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div
-                            class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-800 mb-1">No subjects found</h3>
-                        <p class="text-sm text-gray-400 mb-5">
-                            @if ($search || $filterSubjectStandard || $filterSection || $filterStatus)
-                                No subjects match your filters. Try clearing them.
-                            @else
-                                You haven't added any subjects yet.
-                            @endif
-                        </p>
-                        <div class="flex justify-center gap-2">
-                            @if ($search || $filterSubjectStandard || $filterSection || $filterStatus)
-                                <button wire:click="resetFilters"
-                                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
-                                    Clear Filters
-                                </button>
-                            @endif
-                            <button wire:click="onSubject"
-                                class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors">
-                                Add First Subject
-                            </button>
-                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">No subjects in this section</h3>
+                        <p class="text-sm text-gray-400 mb-5">Add a subject to get started.</p>
+                        <button wire:click="onSubject"
+                            class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium">
+                            Add Subject
+                        </button>
                     </div>
                 @endif
             @endif
@@ -631,12 +538,12 @@
                 <p class="text-xs text-red-500 -mt-2">{{ $message }}</p>
             @enderror
 
-            <x-native-select label="Board *" wire:model.defer="standardBoard">
-                <option value="">Select Board</option>
-                @foreach (App\Helpers\Constants::BOARD as $board)
-                    <option value="{{ $board }}">{{ $board }}</option>
-                @endforeach
-            </x-native-select>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Board</label>
+                <input type="text" value="{{ $standardBoard ?: 'Not set for organization' }}" readonly
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed" />
+                <p class="text-xs text-gray-400 mt-1">Inherited from your organization's board.</p>
+            </div>
 
             <x-input wire:model.defer="standardOrder" label="Display Order" type="number" placeholder="0" />
             <x-toggle label="Active" wire:model.defer="standardActive" />
@@ -649,7 +556,20 @@
     <x-modal-form show="{{ $openSection }}" title="{{ $editId ? 'Edit Section' : 'Add Section' }}"
         submitAction="saveSection" submitButton="{{ $editId ? 'Update' : 'Create' }}" closeAction="closeModal">
         <div class="space-y-4">
-            <x-input wire:model.defer="sectionName" label="Section Name *" placeholder="e.g. A" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input wire:model.defer="sectionName" label="Section Name *" placeholder="e.g. A" />
+                    @error('sectionName')
+                        <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <x-input wire:model.defer="sectionCode" label="Code *" placeholder="e.g. SEC-A" />
+                    @error('sectionCode')
+                        <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
             <x-native-select label="Class *" wire:model.defer="selectedStandard">
                 <option value="">Select Class</option>
                 @foreach ($standards as $s)
@@ -706,7 +626,6 @@
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Subject Image</label>
 
-                {{-- Preview --}}
                 @if ($subjectImagePreview)
                     <div class="mb-3 flex items-center gap-3">
                         <img src="{{ $subjectImagePreview }}"
