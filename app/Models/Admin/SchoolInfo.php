@@ -21,6 +21,11 @@ class SchoolInfo extends Model
         'usm_mission',
         'usm_values',
         'usm_goals',
+        'custom_sections',
+    ];
+
+    protected $casts = [
+        'custom_sections' => 'array',
     ];
 
 public function organization()

@@ -60,6 +60,10 @@ class Profile extends Component
     public $usmValues;
     public $usmGoals;
 
+    // Extra custom sections (admin can add/remove). Each item is ['title' => '', 'description' => ''].
+    public array $customSections = [];
+    public $pendingDeleteSectionIndex = null;
+
     // ─── Slide-in panel state ────────────────────────────────────────────────
     public bool  $showMemberPanel = false;
     public array $newMember       = [];
@@ -101,9 +105,41 @@ class Profile extends Component
             $this->usmMission = $this->schoolInfo->usm_mission;
             $this->usmValues = $this->schoolInfo->usm_values;
             $this->usmGoals = $this->schoolInfo->usm_goals;
+            $this->customSections = array_values(array_filter(
+                (array) ($this->schoolInfo->custom_sections ?? []),
+                fn ($s) => is_array($s)
+            ));
         } else {
             $this->schoolManagement = [];
+            $this->customSections = [];
         }
+    }
+
+    // ─── Custom Sections (extra paragraph cards) ─────────────────────────────
+
+    public function addCustomSection(): void
+    {
+        $this->customSections[] = ['title' => '', 'description' => ''];
+    }
+
+    public function confirmDeleteSection($index): void
+    {
+        $this->pendingDeleteSectionIndex = (int) $index;
+    }
+
+    public function cancelDeleteSection(): void
+    {
+        $this->pendingDeleteSectionIndex = null;
+    }
+
+    public function executeDeleteSection(): void
+    {
+        if ($this->pendingDeleteSectionIndex !== null && isset($this->customSections[$this->pendingDeleteSectionIndex])) {
+            unset($this->customSections[$this->pendingDeleteSectionIndex]);
+            $this->customSections = array_values($this->customSections);
+            $this->notification()->success('Section removed. Click "Save All Changes" to persist.');
+        }
+        $this->pendingDeleteSectionIndex = null;
     }
 
     // ─── Management Member Panel ─────────────────────────────────────────────
@@ -452,6 +488,9 @@ class Profile extends Component
                 'usmMission' => 'nullable|string',
                 'usmValues' => 'nullable|string',
                 'usmGoals' => 'nullable|string',
+                'customSections' => 'nullable|array',
+                'customSections.*.title' => 'nullable|string|max:255',
+                'customSections.*.description' => 'nullable|string',
             ], [
                 'pendingDocuments.*.file.mimes' => 'Document must be a PDF file.',
                 'pendingDocuments.*.file.max' => 'Document must not exceed 2 MB.',
@@ -467,6 +506,12 @@ class Profile extends Component
                 'schoolEmail.email' => 'School email must be a valid email address.',
             ]);
 
+            // Drop fully-empty custom sections so blank rows don't persist
+            $cleanedSections = array_values(array_filter(
+                $this->customSections,
+                fn ($s) => !empty(trim($s['title'] ?? '')) || !empty(trim($s['description'] ?? ''))
+            ));
+
             $schoolInfo = AdminSchoolInfo::updateOrCreate(
                 ['organization_id' => $this->organization->id],
                 [
@@ -481,6 +526,7 @@ class Profile extends Component
                     'usm_mission' => $this->usmMission,
                     'usm_values' => $this->usmValues,
                     'usm_goals' => $this->usmGoals,
+                    'custom_sections' => $cleanedSections,
                 ]
             );
 

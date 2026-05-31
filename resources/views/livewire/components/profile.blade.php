@@ -174,8 +174,12 @@
         @php
             $hasAnySchoolInfo = $aboutSchool
                 || $usmVision || $usmMission || $usmValues || $usmGoals
+                || count($customSections) > 0
                 || count($schoolManagement) > 0
                 || count($uploadedDocuments) > 0;
+            $lastUpdated = $schoolInfo && $schoolInfo->updated_at
+                ? $schoolInfo->updated_at->format('d M Y, h:i A')
+                : null;
         @endphp
 
         {{-- Empty state — about-app-style "no information" panel with an Add button. --}}
@@ -220,66 +224,71 @@
                             <p class="text-sm text-gray-500 mt-0.5 truncate">About, vision, management &amp; documents</p>
                         </div>
                     </div>
-                    <button wire:click="setInfoMode('edit')"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                        @if ($lastUpdated)
+                            <span class="inline-block px-4 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-100">
+                                Last updated: {{ $lastUpdated }}
+                            </span>
+                        @endif
+                        <button wire:click="setInfoMode('edit')"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
 
-                {{-- ── About Our School ── --}}
-                @if ($aboutSchool)
+                {{-- ── Numbered paragraph sections (super-admin about-app style) ──
+                     About School + Vision + Mission + Values + Goals + any extra
+                     custom sections, each rendered as a full-width paragraph card. --}}
+                @php
+                    $paragraphSections = array_values(array_filter([
+                        ['title' => 'About Our School', 'description' => $aboutSchool],
+                        ['title' => 'Vision',           'description' => $usmVision],
+                        ['title' => 'Mission',          'description' => $usmMission],
+                        ['title' => 'Values',           'description' => $usmValues],
+                        ['title' => 'Goals',            'description' => $usmGoals],
+                    ], fn ($s) => !empty($s['description'])));
+
+                    foreach ($customSections as $cs) {
+                        if (!empty($cs['title']) || !empty($cs['description'])) {
+                            $paragraphSections[] = [
+                                'title'       => $cs['title'] ?? '',
+                                'description' => $cs['description'] ?? '',
+                            ];
+                        }
+                    }
+                @endphp
+
+                @foreach ($paragraphSections as $i => $section)
                     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
                                 hover:border-indigo-200 hover:shadow-md transition-all duration-200">
-                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
-                                    bg-gradient-to-r from-indigo-50 to-blue-50">
-                            <span class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-sm font-bold rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                                1
-                            </span>
-                            <h2 class="text-base font-semibold text-gray-900">About Our School</h2>
-                        </div>
-                        <div class="px-4 sm:px-6 py-5">
-                            <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $aboutSchool }}</p>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- ── Vision / Mission / Values / Goals ── --}}
-                @php
-                    $usmCards = array_values(array_filter([
-                        ['label' => 'Vision',  'value' => $usmVision,  'color' => 'blue'],
-                        ['label' => 'Mission', 'value' => $usmMission, 'color' => 'green'],
-                        ['label' => 'Values',  'value' => $usmValues,  'color' => 'purple'],
-                        ['label' => 'Goals',   'value' => $usmGoals,   'color' => 'orange'],
-                    ], fn ($i) => !empty($i['value'])));
-                @endphp
-                @if (count($usmCards) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                        @foreach ($usmCards as $card)
-                            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
-                                        hover:border-{{ $card['color'] }}-200 hover:shadow-md transition-all duration-200">
-                                <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
-                                            bg-gradient-to-r from-{{ $card['color'] }}-50 to-white">
-                                    <div class="w-8 h-8 bg-{{ $card['color'] }}-500 rounded-xl flex items-center justify-center shadow-sm">
-                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <h2 class="text-base font-semibold text-gray-900">{{ $card['label'] }}</h2>
-                                </div>
-                                <div class="px-4 sm:px-6 py-5">
-                                    <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $card['value'] }}</p>
-                                </div>
+                        @if (!empty($section['title']))
+                            <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
+                                        bg-gradient-to-r from-indigo-50 to-blue-50">
+                                <span class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600
+                                             text-white text-sm font-bold rounded-xl flex items-center
+                                             justify-center flex-shrink-0 shadow-sm">
+                                    {{ $i + 1 }}
+                                </span>
+                                <h2 class="text-base font-semibold text-gray-900">{{ $section['title'] }}</h2>
                             </div>
-                        @endforeach
+                        @endif
+                        @if (!empty($section['description']))
+                            <div class="px-4 sm:px-6 py-5">
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    {!! nl2br(e($section['description'])) !!}
+                                </p>
+                            </div>
+                        @endif
                     </div>
-                @endif
+                @endforeach
 
                 {{-- ── Management Team ── --}}
                 @if (count($schoolManagement) > 0)
@@ -467,48 +476,87 @@
                 <span class="text-xs text-gray-400">Editing School Info</span>
             </div>
 
-            {{-- About School --}}
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50 flex items-center gap-3">
-                    <div class="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+            {{-- ── Paragraph sections — About / Vision / Mission / Values / Goals
+                  rendered identically as separate full-width paragraph cards. ── --}}
+            @foreach ([
+                ['label' => 'About School', 'model' => 'aboutSchool', 'placeholder' => 'Describe your school…'],
+                ['label' => 'Vision',       'model' => 'usmVision',   'placeholder' => 'Long-term vision for your school…'],
+                ['label' => 'Mission',      'model' => 'usmMission',  'placeholder' => 'Mission statement…'],
+                ['label' => 'Values',       'model' => 'usmValues',   'placeholder' => 'Core values your school upholds…'],
+                ['label' => 'Goals',        'model' => 'usmGoals',    'placeholder' => 'Key goals and objectives…'],
+            ] as $i => $item)
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3
+                                bg-gradient-to-r from-indigo-50 to-blue-50">
+                        <span class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600
+                                     text-white text-sm font-bold rounded-xl flex items-center
+                                     justify-center flex-shrink-0 shadow-sm">
+                            {{ $i + 1 }}
+                        </span>
+                        <h2 class="text-base font-semibold text-gray-900">{{ $item['label'] }}</h2>
                     </div>
-                    <h2 class="text-base font-semibold text-gray-900">About School</h2>
+                    <div class="p-6">
+                        <textarea wire:model="{{ $item['model'] }}" rows="4"
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+                            placeholder="{{ $item['placeholder'] }}"></textarea>
+                    </div>
                 </div>
-                <div class="p-6">
-                    <textarea wire:model="aboutSchool" rows="4"
-                        class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
-                        placeholder="Describe your school…"></textarea>
-                </div>
-            </div>
+            @endforeach
 
-            {{-- Vision, Mission, Values & Goals --}}
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50 flex items-center gap-3">
-                    <div class="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center shadow-sm">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                        </svg>
-                    </div>
-                    <h2 class="text-base font-semibold text-gray-900">Vision, Mission, Values & Goals</h2>
-                </div>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach ([
-                        ['label' => 'Vision', 'model' => 'usmVision', 'placeholder' => 'Long-term vision for your school…'],
-                        ['label' => 'Mission', 'model' => 'usmMission', 'placeholder' => 'Mission statement…'],
-                        ['label' => 'Core Values', 'model' => 'usmValues', 'placeholder' => 'Core values your school upholds…'],
-                        ['label' => 'Goals & Objectives', 'model' => 'usmGoals', 'placeholder' => 'Key goals and objectives…'],
-                    ] as $item)
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ $item['label'] }}</label>
-                            <textarea wire:model="{{ $item['model'] }}" rows="3"
-                                class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition"
-                                placeholder="{{ $item['placeholder'] }}"></textarea>
+            {{-- ── Custom Sections — admin can add additional paragraph cards. ── --}}
+            @foreach ($customSections as $index => $section)
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3
+                                bg-gradient-to-r from-indigo-50 to-blue-50">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600
+                                         text-white text-sm font-bold rounded-xl flex items-center
+                                         justify-center flex-shrink-0 shadow-sm">
+                                {{ $index + 6 }}
+                            </span>
+                            <h2 class="text-base font-semibold text-gray-900 truncate">
+                                {{ trim($section['title'] ?? '') !== '' ? $section['title'] : 'Custom Section' }}
+                            </h2>
                         </div>
-                    @endforeach
+                        <button type="button" wire:click="confirmDeleteSection({{ $index }})"
+                                title="Delete section"
+                                class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Section Title</label>
+                            <input type="text" wire:model.defer="customSections.{{ $index }}.title"
+                                class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+                                placeholder="e.g. Our History">
+                            @error('customSections.'.$index.'.title')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                            <textarea wire:model.defer="customSections.{{ $index }}.description" rows="4"
+                                class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+                                placeholder="Write the paragraph content for this section…"></textarea>
+                            @error('customSections.'.$index.'.description')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                 </div>
+            @endforeach
+
+            {{-- Add Section button --}}
+            <div>
+                <button type="button" wire:click="addCustomSection"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3
+                               border-2 border-dashed border-indigo-200 hover:border-indigo-400
+                               text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50
+                               text-sm font-semibold rounded-2xl transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Section
+                </button>
             </div>
 
             {{-- Contact Information --}}
@@ -913,6 +961,39 @@
                 <div class="flex items-center justify-end gap-2 mt-5">
                     <button wire:click="cancelDeleteDocument" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="executeDeleteDocument" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════
+         DELETE CONFIRM — custom section
+    ══════════════════════════════════════════════════ --}}
+    @if ($pendingDeleteSectionIndex !== null)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteSection"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Remove section?</h3>
+                        <p class="text-sm text-gray-500">
+                            @php $sec = $customSections[$pendingDeleteSectionIndex] ?? null; @endphp
+                            @if ($sec && !empty(trim($sec['title'] ?? '')))
+                                Remove <strong>{{ $sec['title'] }}</strong>? Click "Save All Changes" afterwards to make it permanent.
+                            @else
+                                This section will be removed from the form. Save changes to make it permanent.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-5">
+                    <button wire:click="cancelDeleteSection" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="executeDeleteSection" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Remove</button>
                 </div>
             </div>
         </div>

@@ -51,6 +51,13 @@ class LmsMigrate extends Command
             }
         });
 
+        Schema::table('school_infos', function (Blueprint $table) {
+            if (!Schema::hasColumn('school_infos', 'custom_sections')) {
+                $table->json('custom_sections')->nullable();
+                $this->info('adding [custom_sections] field in [school_infos] table');
+            }
+        });
+
         Schema::table('student_details', function (Blueprint $table) {
             if (!Schema::hasColumn('student_details', 'transportation_required')) {
                 $table->boolean('transportation_required')->default(false);
