@@ -173,7 +173,15 @@ class TimeTableCalendar extends LivewireCalendar
     #[Computed]
     public function upcomingEvents()
     {
-        return $this->loadEventList(fn ($q) => $q->where('date', '>=', Carbon::today())->orderBy('date')->orderBy('start_time'));
+        // Events in the currently-viewed month only — never leak future months.
+        return $this->loadEventList(fn ($q) => $q
+            ->where('date', '>=', Carbon::today())
+            ->whereBetween('date', [
+                $this->startsAt->copy()->startOfMonth()->startOfDay(),
+                $this->startsAt->copy()->endOfMonth()->endOfDay(),
+            ])
+            ->orderBy('date')
+            ->orderBy('start_time'));
     }
 
     #[Computed]
@@ -267,42 +275,58 @@ class TimeTableCalendar extends LivewireCalendar
     #[Computed]
     public function yearlyCalendar(): array
     {
-        $year = $this->startsAt->year;
+        $year     = $this->startsAt->year;
         $calendar = [];
 
+        // Load the whole year's events in one query — the monthly `events`
+        // collection only covers the active month, so we can't reuse it here.
+        $organizationId = Auth::user()->organization_id;
+        $yearStart      = Carbon::create($year, 1, 1)->startOfDay();
+        $yearEnd        = Carbon::create($year, 12, 31)->endOfDay();
+
+        // Group by Y-m-d for O(1) lookup per day.
+        $eventsByDay = TimeTable::where('organization_id', $organizationId)
+            ->where('is_cancelled', false)
+            ->whereBetween('date', [$yearStart, $yearEnd])
+            ->get(['id', 'date'])
+            ->groupBy(fn ($e) => Carbon::parse($e->date)->format('Y-m-d'));
+
         for ($month = 1; $month <= 12; $month++) {
-            $date = Carbon::create($year, $month, 1);
+            $date        = Carbon::create($year, $month, 1);
             $daysInMonth = $date->daysInMonth;
-            $days = [];
+            $days        = [];
+            $monthTotal  = 0;
 
             $firstDayOfMonth = $date->dayOfWeek;
-
             for ($i = 0; $i < $firstDayOfMonth; $i++) {
                 $days[] = [
-                    'day' => '',
+                    'day'            => '',
                     'isCurrentMonth' => false,
-                    'isToday' => false,
-                    'events' => [],
+                    'isToday'        => false,
+                    'eventsCount'    => 0,
                 ];
             }
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $currentDate = Carbon::create($year, $month, $day);
+                $key         = $currentDate->format('Y-m-d');
+                $count       = isset($eventsByDay[$key]) ? $eventsByDay[$key]->count() : 0;
+                $monthTotal += $count;
+
                 $days[] = [
-                    'day' => $day,
+                    'day'            => $day,
                     'isCurrentMonth' => true,
-                    'isToday' => $currentDate->isToday(),
-                    'events' => $this->events->filter(function ($event) use ($currentDate) {
-                        return Carbon::parse($event['date'])->isSameDay($currentDate);
-                    })->values()->toArray(),
+                    'isToday'        => $currentDate->isToday(),
+                    'eventsCount'    => $count,
                 ];
             }
 
             $calendar[] = [
-                'name' => $date->format('F'),
-                'month' => $month,
-                'year' => $year,
-                'days' => $days,
+                'name'        => $date->format('F'),
+                'month'       => $month,
+                'year'        => $year,
+                'days'        => $days,
+                'totalEvents' => $monthTotal,
             ];
         }
 

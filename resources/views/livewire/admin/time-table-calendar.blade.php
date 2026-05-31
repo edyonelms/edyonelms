@@ -197,7 +197,7 @@
                     </div>
                 @endif
 
-                {{-- Yearly View — overview only, no event markers --}}
+                {{-- Yearly View — month thumbnails with event indicators + total count --}}
                 @if ($view === 'year')
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach ($yearlyCalendar as $month)
@@ -208,20 +208,32 @@
                                     <h3 class="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
                                         {{ $month['name'] }}
                                     </h3>
-                                    <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors"
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
+                                    <div class="flex items-center gap-2">
+                                        @if ($month['totalEvents'] > 0)
+                                            <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+                                                {{ $month['totalEvents'] }} {{ $month['totalEvents'] === 1 ? 'event' : 'events' }}
+                                            </span>
+                                        @else
+                                            <span class="text-xs px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full">0 events</span>
+                                        @endif
+                                        <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-7 gap-0.5 text-center text-xs">
                                     @foreach (['S', 'M', 'T', 'W', 'T', 'F', 'S'] as $day)
                                         <div class="font-medium text-gray-400 py-1">{{ $day }}</div>
                                     @endforeach
                                     @foreach ($month['days'] as $day)
-                                        <div class="py-1.5 rounded-lg transition-colors
+                                        <div class="py-1.5 rounded-lg relative transition-colors
                                             {{ $day['isCurrentMonth'] ? 'text-gray-700 hover:bg-blue-50' : 'text-gray-300' }}
                                             {{ $day['isToday'] ? 'bg-blue-100 text-blue-700 font-bold' : '' }}">
                                             {{ $day['day'] }}
+                                            @if (($day['eventsCount'] ?? 0) > 0)
+                                                <div class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
@@ -233,13 +245,17 @@
         </div>
 
         {{-- ══════════════════════════════════════════════════
-             EVENTS — Upcoming + Completed (divider in between)
+             EVENTS — Upcoming + Completed (monthly view only)
         ══════════════════════════════════════════════════ --}}
+        @if ($view === 'month')
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
             {{-- UPCOMING --}}
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">Upcoming Events</h3>
+                <h3 class="text-base font-semibold text-gray-900">
+                    Upcoming Events
+                    <span class="ml-1 text-xs text-gray-400 font-normal">— {{ $startsAt->format('F Y') }}</span>
+                </h3>
                 <span class="text-xs text-gray-400">{{ count($upcomingEvents) }} {{ count($upcomingEvents) === 1 ? 'event' : 'events' }}</span>
             </div>
 
@@ -292,6 +308,7 @@
                 </div>
             @endif
         </div>
+        @endif {{-- end view === 'month' --}}
 
     </div>
 
