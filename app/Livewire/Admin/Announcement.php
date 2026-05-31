@@ -21,6 +21,8 @@ class Announcement extends Component
     public $editId = null;
     public $selectedAnnouncement = null;
     public $dateFilter = 'all';
+    /** all | user (Student) | teacher */
+    public $typeFilter = 'all';
 
     public bool $showDeleteConfirm = false;
     public $deleteTargetId         = null;
@@ -40,14 +42,28 @@ class Announcement extends Component
     #[Rule('nullable|mimes:pdf|max:5120')] // 5MB max
     public $announcementPdf;
 
+    /** Unified uploader — accepts an image (≤2 MB) or PDF (≤5 MB).
+     *  On save we route the file into the correct legacy column. */
+    #[Rule('nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:5120')]
+    public $announcementFile;
+
     public function render()
     {
+        // Best-effort opportunistic purge — every render trims rows older than 60d.
+        // The console schedule does the same daily; this catches dev/preview
+        // environments where the scheduler may not be running.
+        $this->purgeOldAnnouncements(false);
+
         $query = AnnouncementModel::where('organization_id', Auth::user()->organization_id)->latest();
 
         if ($this->dateFilter !== 'all') {
             $days = (int) $this->dateFilter;
             $startDate = Carbon::now()->subDays($days);
             $query->where('created_at', '>=', $startDate);
+        }
+
+        if (in_array($this->typeFilter, ['all', 'user', 'teacher'], true) && $this->typeFilter !== 'all') {
+            $query->where('type', $this->typeFilter);
         }
 
         $announcements = $query->paginate(10);
@@ -63,6 +79,16 @@ class Announcement extends Component
         ];
 
         return view('livewire.admin.announcement', compact('announcements', 'stats'));
+    }
+
+    public function updatedDateFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTypeFilter(): void
+    {
+        $this->resetPage();
     }
 
     public function openModal()
@@ -101,35 +127,61 @@ class Announcement extends Component
             'type' => $this->type,
         ];
 
-        // Handle image upload
+        $existing = $this->editId ? AnnouncementModel::find($this->editId) : null;
+
+        // ── Unified uploader: detect image vs PDF and route into the right column ──
+        if ($this->announcementFile) {
+            $ext  = strtolower($this->announcementFile->getClientOriginalExtension());
+            $mime = (string) $this->announcementFile->getMimeType();
+            $isPdf = $ext === 'pdf' || $mime === 'application/pdf';
+
+            if ($isPdf) {
+                $pdfPath = $this->announcementFile->store('admin/announcements/pdfs', 's3');
+                Storage::disk('s3')->setVisibility($pdfPath, 'public');
+                $data['announcement_pdf'] = Storage::disk('s3')->url($pdfPath);
+
+                // Replacing an existing PDF: drop the old S3 object
+                if ($existing && $existing->announcement_pdf) {
+                    $old = parse_url($existing->announcement_pdf, PHP_URL_PATH);
+                    Storage::disk('s3')->delete(ltrim($old, '/'));
+                }
+            } else {
+                $imagePath = $this->announcementFile->store('admin/announcements/images', 's3');
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+                $data['announcement_image'] = Storage::disk('s3')->url($imagePath);
+
+                if ($existing && $existing->announcement_image) {
+                    $old = parse_url($existing->announcement_image, PHP_URL_PATH);
+                    Storage::disk('s3')->delete(ltrim($old, '/'));
+                }
+            }
+        }
+
+        // ── Legacy split fields (keep working if anything else still uses them) ──
         if ($this->announcementImage) {
             $imagePath = $this->announcementImage->store('admin/announcements/images', 's3');
             Storage::disk('s3')->setVisibility($imagePath, 'public');
             $data['announcement_image'] = Storage::disk('s3')->url($imagePath);
+
+            if ($existing && $existing->announcement_image) {
+                $old = parse_url($existing->announcement_image, PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($old, '/'));
+            }
         }
 
-        // Handle PDF upload
         if ($this->announcementPdf) {
             $pdfPath = $this->announcementPdf->store('admin/announcements/pdfs', 's3');
             Storage::disk('s3')->setVisibility($pdfPath, 'public');
             $data['announcement_pdf'] = Storage::disk('s3')->url($pdfPath);
+
+            if ($existing && $existing->announcement_pdf) {
+                $old = parse_url($existing->announcement_pdf, PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($old, '/'));
+            }
         }
 
-        if ($this->editId) {
-            $announcement = AnnouncementModel::find($this->editId);
-
-            // Delete old files if new ones are uploaded
-            if ($this->announcementImage && $announcement->announcement_image) {
-                $oldImagePath = parse_url($announcement->announcement_image, PHP_URL_PATH);
-                Storage::disk('s3')->delete($oldImagePath);
-            }
-
-            if ($this->announcementPdf && $announcement->announcement_pdf) {
-                $oldPdfPath = parse_url($announcement->announcement_pdf, PHP_URL_PATH);
-                Storage::disk('s3')->delete($oldPdfPath);
-            }
-
-            $announcement->update($data);
+        if ($existing) {
+            $existing->update($data);
             $message = 'Announcement updated successfully!';
         } else {
             AnnouncementModel::create($data);
@@ -138,6 +190,40 @@ class Announcement extends Component
 
         $this->closeModal();
         $this->dispatch('notify', type: 'success', message: $message);
+    }
+
+    /**
+     * Hard-delete announcements older than 60 days for THIS organization,
+     * cleaning up associated S3 files. Called opportunistically from render()
+     * and on a daily schedule for guaranteed coverage.
+     */
+    protected function purgeOldAnnouncements(bool $notify = false): void
+    {
+        $cutoff = Carbon::now()->subDays(60);
+
+        $stale = AnnouncementModel::where('organization_id', Auth::user()->organization_id)
+            ->where('created_at', '<', $cutoff)
+            ->get();
+
+        if ($stale->isEmpty()) {
+            return;
+        }
+
+        foreach ($stale as $row) {
+            if ($row->announcement_image) {
+                $p = parse_url($row->announcement_image, PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($p, '/'));
+            }
+            if ($row->announcement_pdf) {
+                $p = parse_url($row->announcement_pdf, PHP_URL_PATH);
+                Storage::disk('s3')->delete(ltrim($p, '/'));
+            }
+            $row->delete();
+        }
+
+        if ($notify) {
+            $this->dispatch('notify', type: 'success', message: "Removed {$stale->count()} announcement(s) older than 60 days.");
+        }
     }
 
     public function edit($id)
@@ -230,7 +316,8 @@ class Announcement extends Component
             'announcementContent',
             'type',
             'announcementImage',
-            'announcementPdf'
+            'announcementPdf',
+            'announcementFile',
         ]);
         $this->resetErrorBag();
     }
