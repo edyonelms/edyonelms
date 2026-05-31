@@ -32,6 +32,9 @@ class Student extends Component
     public $studentsEmail = '';
     public $studentsMobile = '';
     public $studentsGender = '';
+    // Board is no longer entered on the form — it's auto-derived from the
+    // selected class (Standard::board). Kept here so old listeners/views
+    // referencing it don't 500; cleared on form reset.
     public $studentsBoard  = '';
     public $studentsClass  = '';
     public $studentsSection = '';
@@ -93,6 +96,8 @@ class Student extends Component
     public string $filterSection  = '';
     public string $filterGender   = '';
     public string $filterStatus   = '';
+    /** Sort key — name_asc (A→Z), admission_no (asc), roll_no (asc). */
+    public string $sortBy         = 'name_asc';
     public int    $perPage        = 50;
 
     protected $queryString = [
@@ -101,6 +106,7 @@ class Student extends Component
         'filterSection' => ['except' => ''],
         'filterGender'  => ['except' => ''],
         'filterStatus'  => ['except' => ''],
+        'sortBy'        => ['except' => 'name_asc'],
     ];
 
     protected $listeners = [
@@ -210,9 +216,15 @@ class Student extends Component
             : [];
     }
 
+    public function updatedSortBy(): void
+    {
+        $this->resetPage();
+    }
+
     public function clearFilters(): void
     {
         $this->reset(['search', 'filterClass', 'filterSection', 'filterGender', 'filterStatus']);
+        $this->sortBy         = 'name_asc';
         $this->filterSections = [];
         $this->resetPage();
     }
@@ -285,12 +297,12 @@ class Student extends Component
             'studentsMobile'    => 'required|string|digits:10',
             'dob'               => 'required|date|before:today',
             'studentsGender'    => 'required|string|in:male,female,other',
-            'studentsBoard'     => 'required|string',
+            // Board is auto-fetched from the selected class — not a form field.
             'studentsClass'     => 'required|integer|exists:standards,id',
             'studentsSection'   => 'required|integer|exists:sections,id',
             'fatherName'        => 'required|string|max:255',
-            'motherName'        => 'required|string|max:255',
-            'dateOfAdmission'   => 'required|date|before_or_equal:today',
+            'motherName'        => 'nullable|string|max:255',
+            'dateOfAdmission'   => 'nullable|date|before_or_equal:today',
             'aadharNo'          => 'nullable|digits:12',
             'pincode'           => 'nullable|digits:6',
             'studentImage'      => 'nullable|image|max:2048',
@@ -356,6 +368,11 @@ class Student extends Component
                 $rollNo      = $existingDetail->roll_no ?? $this->generateRollNumber();
             }
 
+            // Board is auto-fetched from the chosen class (no form field).
+            $standardBoard = Standard::where('id', (int) $this->studentsClass)->value('board')
+                ?? Auth::user()->organization->education_board
+                ?? null;
+
             $detailData = [
                 'user_id'                => $student->id,
                 'standard_id'            => (int) $this->studentsClass,
@@ -373,9 +390,9 @@ class Student extends Component
                 'state'                  => $this->selectedState ?? null,
                 'pincode'                => $this->pincode ?? null,
                 'admission_no'           => $admissionNo,
-                'date_of_admission'      => $this->dateOfAdmission,
+                'date_of_admission'      => $this->dateOfAdmission ?: now()->toDateString(),
                 'roll_no'                => $rollNo,
-                'board'                  => $this->studentsBoard,
+                'board'                  => $standardBoard,
                 'aadhar_no'              => $this->aadharNo ?? null,
                 'phone'                  => $this->studentsMobile,
                 'transportation_required' => (bool) $this->transportationRequired,
@@ -433,7 +450,7 @@ class Student extends Component
 
     public function onViewStudentAdmin($id): void
     {
-        $detail = StudentDetail::with(['user', 'standard', 'section', 'transportations'])->find($id);
+        $detail = StudentDetail::with(['user', 'standard', 'section', 'transportations', 'organization'])->find($id);
 
         if (!$detail || !$detail->user) {
             $this->notification()->error('Student not found!');
@@ -442,12 +459,20 @@ class Student extends Component
 
         $this->studentImageUrl = $detail->user->image;
         $this->viewModalTitle  = 'Student Details';
-        $this->viewData        = ['user' => $detail->user, 'detail' => $detail];
+        $this->viewData        = [
+            'user'         => $detail->user,
+            'detail'       => $detail,
+            'organization' => $detail->organization,
+        ];
         $this->showViewModal   = true;
     }
 
     public function onEditStudent($id): void
     {
+        // Close the view panel first so the edit slide-in doesn't stack on top.
+        $this->showViewModal = false;
+        $this->viewData      = [];
+
         $detail = StudentDetail::find($id);
         if (!$detail) {
             abort(404);
@@ -540,66 +565,75 @@ class Student extends Component
     public function exportStudents(): StreamedResponse
     {
         $org      = Auth::user()->organization_id;
-        $students = StudentDetail::with(['user', 'standard', 'section'])
+        $students = StudentDetail::with(['user', 'standard', 'section', 'organization', 'transportations'])
             ->whereHas('user', fn($q) => $q->where('organization_id', $org))
+            ->orderBy('full_name')
             ->get();
 
         return response()->stream(function () use ($students) {
             $handle = fopen('php://output', 'w');
+
+            // Headers — mirror every field on the Add Student form, with
+            // admission_no + roll_no front-and-centre and the organization name.
             fputcsv($handle, [
                 'S.No',
+                'Admission No',
+                'Roll No',
+                'Organization',
                 'Full Name',
                 'Email',
                 'Mobile',
                 'Gender',
                 'Date of Birth',
-                'Religion',
-                'Board',
-                'Class',
-                'Section',
-                'Roll No',
-                'Admission No',
                 'Date of Admission',
+                'Religion',
+                'Aadhar No',
                 'Father Name',
                 'Mother Name',
-                'Aadhar No',
-                'Appar ID',
+                'Board (auto)',
+                'Class',
+                'Section',
+                'Apaar ID',
                 'Registration Number',
+                'State',
+                'City',
+                'Pincode',
                 'Local Address',
                 'Permanent Address',
-                'City',
-                'State',
-                'Pincode',
                 'Transportation Required',
+                'Transport Route',
                 'Status',
             ]);
 
             foreach ($students as $index => $s) {
+                $route = $s->transportations->first();
                 fputcsv($handle, [
                     $index + 1,
+                    $s->admission_no ?? '',
+                    $s->roll_no ?? '',
+                    $s->organization->name ?? '',
                     $s->full_name ?? '',
                     $s->user->email ?? '',
                     $s->phone ?? '',
                     ucfirst($s->gender ?? ''),
                     $s->dob?->format('d-m-Y') ?? '',
-                    $s->religion ?? '',
-                    $s->board ?? '',
-                    $s->standard->name ?? '',
-                    $s->section->name ?? '',
-                    $s->roll_no ?? '',
-                    $s->admission_no ?? '',
                     $s->date_of_admission?->format('d-m-Y') ?? '',
+                    $s->religion ?? '',
+                    $s->aadhar_no ?? '',
                     $s->father_name ?? '',
                     $s->mother_name ?? '',
-                    $s->aadhar_no ?? '',
+                    $s->board ?? ($s->standard->board ?? ''),
+                    $s->standard->name ?? '',
+                    $s->section->name ?? '',
                     $s->appar_id ?? '',
                     $s->registration_number ?? '',
+                    $s->state ?? '',
+                    $s->city ?? '',
+                    $s->pincode ?? '',
                     $s->local_address ?? '',
                     $s->permanent_address ?? '',
-                    $s->city ?? '',
-                    $s->state ?? '',
-                    $s->pincode ?? '',
                     $s->transportation_required ? 'Yes' : 'No',
+                    $route->route_name ?? '',
                     ($s->user->is_active ?? false) ? 'Active' : 'Inactive',
                 ]);
             }
@@ -610,36 +644,65 @@ class Student extends Component
         ]);
     }
 
+    /**
+     * Admission number = YY + SCHOOL_CODE + lastDigit(class.code) + lastDigit(section.code) + 0000
+     *   YY = last 2 digits of academic session (Apr→Mar). Before April it rolls back a year.
+     *   SCHOOL_CODE = organization.school_code (e.g. "TDS")
+     *   class.code / section.code: the model's "code" column. Missing codes fall back to a
+     *     digit derived from the id so we never produce a malformed number.
+     *   serial = 4 digits, per organization, starting at 0001.
+     * Example: 26TDS010001
+     */
     protected function generateAdmissionNumber(): string
     {
-        $year       = date('Y');
-        $schoolCode = Auth::user()->organization->school_code;
-        $class      = $this->studentsClass;
-        $section    = $this->studentsSection;
+        $sessionYear = (int) (now()->month >= 4 ? now()->year : now()->subYear()->year);
+        $yy          = substr((string) $sessionYear, -2);
+        $schoolCode  = (string) (Auth::user()->organization->school_code ?? '');
 
-        $last = StudentDetail::where('standard_id', $class)
-            ->where('section_id', $section)
-            ->where('admission_no', 'like', "$year$schoolCode$class$section%")
-            ->orderBy('admission_no', 'desc')->first();
+        $classRow   = Standard::find((int) $this->studentsClass);
+        $sectionRow = Section::find((int) $this->studentsSection);
 
-        $serial = $last ? (int) substr($last->admission_no, -4) + 1 : 1;
-        return $year . $schoolCode . $class . $section . str_pad($serial, 4, '0', STR_PAD_LEFT);
+        $classDigit   = $this->lastDigit($classRow?->code   ?? $classRow?->id);
+        $sectionDigit = $this->lastDigit($sectionRow?->code ?? $sectionRow?->id);
+
+        $prefix = $yy . $schoolCode . $classDigit . $sectionDigit;
+
+        // Per-org serial: count rows whose admission_no starts with the same prefix.
+        $last = StudentDetail::where('organization_id', Auth::user()->organization_id)
+            ->where('admission_no', 'like', $prefix . '%')
+            ->orderByDesc('admission_no')
+            ->value('admission_no');
+
+        $serial = $last ? ((int) substr($last, -4)) + 1 : 1;
+
+        return $prefix . str_pad((string) $serial, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Roll number = 3-digit serial scoped to class + section. First student = "001".
+     * Each class+section combination keeps its own sequence.
+     */
     protected function generateRollNumber(): string
     {
-        $shortYear    = substr(date('Y'), -2);
-        $schoolSerial = '01';
-        $classFmt     = str_pad($this->studentsClass, 2, '0', STR_PAD_LEFT);
-        $sectionCode  = substr($this->studentsSection, 0, 1);
+        $last = StudentDetail::where('standard_id', (int) $this->studentsClass)
+            ->where('section_id',  (int) $this->studentsSection)
+            ->whereNotNull('roll_no')
+            ->orderByRaw('CAST(roll_no AS UNSIGNED) DESC')
+            ->value('roll_no');
 
-        $last = StudentDetail::where('standard_id', $this->studentsClass)
-            ->where('section_id', $this->studentsSection)
-            ->where('roll_no', 'like', "$shortYear$schoolSerial$classFmt$sectionCode%")
-            ->orderBy('roll_no', 'desc')->first();
+        $serial = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
 
-        $serial = $last ? (int) substr($last->roll_no, -3) + 1 : 1;
-        return $shortYear . $schoolSerial . $classFmt . $sectionCode . str_pad($serial, 3, '0', STR_PAD_LEFT);
+        return str_pad((string) $serial, 3, '0', STR_PAD_LEFT);
+    }
+
+    /** Pick the last numeric digit of a code-like value, fallback to "0". */
+    protected function lastDigit($value): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $value);
+        if ($digits === '' || $digits === null) {
+            return '0';
+        }
+        return substr($digits, -1);
     }
 
     protected function resetForm(): void
@@ -679,7 +742,7 @@ class Student extends Component
 
     public function render()
     {
-        $students = StudentDetail::with(['user', 'standard', 'section'])
+        $query = StudentDetail::with(['user', 'standard', 'section'])
             ->whereHas('user', fn($q) => $q->where('organization_id', Auth::user()->organization_id))
             ->when($this->search, fn($q) => $q->where(
                 fn($q) => $q
@@ -695,9 +758,26 @@ class Student extends Component
             ->when($this->filterStatus !== '', fn($q) => $q->whereHas(
                 'user',
                 fn($q) => $q->where('is_active', $this->filterStatus)
-            ))
-            ->latest()
-            ->paginate($this->perPage);
+            ));
+
+        // Sorting — default is name A→Z. admission_no / roll_no use natural-ish
+        // numeric ordering by casting to UNSIGNED so "9" sorts before "10".
+        switch ($this->sortBy) {
+            case 'admission_no':
+                $query->orderByRaw('CAST(admission_no AS UNSIGNED) ASC')
+                      ->orderBy('admission_no', 'asc');
+                break;
+            case 'roll_no':
+                $query->orderByRaw('CAST(roll_no AS UNSIGNED) ASC')
+                      ->orderBy('roll_no', 'asc');
+                break;
+            case 'name_asc':
+            default:
+                $query->orderBy('full_name', 'asc');
+                break;
+        }
+
+        $students = $query->paginate($this->perPage);
 
         return view('livewire.admin.student', compact('students'));
     }

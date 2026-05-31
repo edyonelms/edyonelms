@@ -45,83 +45,86 @@
             <span>Last Year: <strong class="text-gray-800">{{ $lastYearStudents }}</strong></span>
             <span>This Year: <strong class="text-blue-600">{{ $thisYearStudents }}</strong></span>
         </div>
-    </div>
-
-    <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
 
         {{-- ══════════════════════════════════════════════════
-             FILTERS
+             FILTER BAR — exam-style sub-header (attached, gray)
         ══════════════════════════════════════════════════ --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-
-                {{-- Search --}}
-                <div class="sm:col-span-2 relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
+        <div class="border-t border-gray-200 bg-gray-50 -mx-4 sm:-mx-6 mt-3 sm:mt-4 px-4 sm:px-6 py-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Search name, email, admission no, roll no, phone..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    Filter by:
                 </div>
 
-                {{-- Class --}}
+                <input wire:model.live.debounce.300ms="search" type="text"
+                    placeholder="Search name, admission, roll, phone, email…"
+                    class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-64
+                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+
                 <select wire:model.live="filterClass"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                     <option value="">All Classes</option>
                     @foreach ($standards as $standard)
                         <option value="{{ $standard->id }}">{{ $standard->name }}</option>
                     @endforeach
                 </select>
 
-                {{-- Section --}}
-                <select wire:model.live="filterSection"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-                    @disabled(!$filterClass)>
+                <select wire:model.live="filterSection" @disabled(!$filterClass)
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                     <option value="">All Sections</option>
                     @foreach ($filterSections as $section)
                         <option value="{{ $section->id }}">{{ $section->name }}</option>
                     @endforeach
                 </select>
 
-                {{-- Gender --}}
                 <select wire:model.live="filterGender"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
                     <option value="">All Genders</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
 
-                {{-- Status + Clear --}}
-                <div class="flex gap-2">
-                    <select wire:model.live="filterStatus"
-                        class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="">All Status</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                    @if ($search || $filterClass || $filterSection || $filterGender || $filterStatus !== '')
-                        <button wire:click="clearFilters" title="Clear all filters"
-                            class="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg
-                                   hover:bg-gray-50 transition-colors flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    @endif
+                <select wire:model.live="filterStatus"
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                    <option value="">All Status</option>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+
+                <span class="text-gray-300">·</span>
+
+                {{-- Sort control --}}
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                    </svg>
+                    Sort:
                 </div>
+                <select wire:model.live="sortBy"
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                    <option value="name_asc">Name (A → Z)</option>
+                    <option value="admission_no">Admission No (asc)</option>
+                    <option value="roll_no">Roll No (asc)</option>
+                </select>
+
+                @if ($search || $filterClass || $filterSection || $filterGender || $filterStatus !== '' || $sortBy !== 'name_asc')
+                    <button wire:click="clearFilters"
+                        class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Clear
+                    </button>
+                @endif
             </div>
         </div>
+    </div>
+
+    <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
 
         {{-- ══════════════════════════════════════════════════
              DESKTOP TABLE (hidden on mobile)
@@ -505,32 +508,27 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════
-         ADD / EDIT MODAL
+         ADD / EDIT — exam-style slide-in panel
     ══════════════════════════════════════════════════ --}}
     @if ($open)
-        <div class="fixed inset-0 z-[9999] flex items-start justify-end bg-black/30 backdrop-blur-sm pt-0">
-            <div class="relative w-full max-w-3xl h-screen bg-white shadow-2xl flex flex-col">
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-semibold text-gray-900">
-                                {{ $editId ? 'Edit Student' : 'Add New Student' }}</h2>
-                            <p class="text-xs text-gray-500">Fill in the student details below</p>
-                        </div>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            {{ $editId ? 'Edit Student' : 'New Student' }}
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            {{ $editId ? 'Update the student details below' : 'Fill in the student details below' }}
+                        </p>
                     </div>
                     <button wire:click="closeModal" type="button"
-                        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -660,10 +658,10 @@
                                     @enderror
                                 </div>
 
-                                {{-- Date of Admission --}}
+                                {{-- Date of Admission (optional — defaults to today on save) --}}
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Date of Admission <span class="text-red-500">*</span>
+                                        Date of Admission <span class="text-gray-400 font-normal text-xs">(optional)</span>
                                     </label>
                                     <input wire:model="dateOfAdmission" type="date"
                                         max="{{ now()->format('Y-m-d') }}"
@@ -719,7 +717,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Mother's Name <span class="text-red-500">*</span>
+                                        Mother's Name <span class="text-gray-400 font-normal text-xs">(optional)</span>
                                     </label>
                                     <input wire:model="motherName" type="text" placeholder="Mother's full name"
                                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
@@ -738,26 +736,10 @@
                                 <span class="w-5 h-0.5 bg-emerald-500 rounded"></span>
                                 Academic Information
                             </p>
+                            <p class="text-xs text-gray-400 mb-3">
+                                Board is auto-fetched from the selected class — no need to pick it here.
+                            </p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                                {{-- Board --}}
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Board <span class="text-red-500">*</span>
-                                    </label>
-                                    <select wire:model="studentsBoard"
-                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors
-                                               @error('studentsBoard') border-red-400 @enderror">
-                                        <option value="">Select Board</option>
-                                        @foreach (App\Helpers\Constants::BOARD as $board)
-                                            <option value="{{ $board }}">{{ $board }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('studentsBoard')
-                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
 
                                 {{-- Class --}}
                                 <div>
@@ -768,7 +750,7 @@
                                                @error('studentsClass') border-red-400 @enderror">
                                         <option value="">Select Class</option>
                                         @foreach ($standards as $standard)
-                                            <option value="{{ $standard->id }}">{{ $standard->name }}</option>
+                                            <option value="{{ $standard->id }}">{{ $standard->name }}{{ $standard->board ? ' · ' . $standard->board : '' }}</option>
                                         @endforeach
                                     </select>
                                     @error('studentsClass')
@@ -974,28 +956,19 @@
                     </div>{{-- /p-6 --}}
                 </form>
 
-                {{-- Footer --}}
-                <div
-                    class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                {{-- Footer (exam-style: gray-900 primary button, plain border) --}}
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button type="button" wire:click="closeModal"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300
-                               rounded-lg hover:bg-gray-50 transition-colors">
+                        class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
                         Cancel
                     </button>
-                    <button type="submit" form="student-form"
-                        wire:loading.attr="disabled"
-                        class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700
-                               rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                               flex items-center gap-2">
-                        <span wire:loading wire:target="onSave">
-                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                    stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h4z"></path>
-                            </svg>
+                    <button type="submit" form="student-form" wire:loading.attr="disabled"
+                        class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md
+                               flex items-center gap-1.5 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="onSave">
+                            {{ $editId ? ($this->isOrphaned ? 'Update (Reassign Class)' : 'Update Student') : 'Create Student' }}
                         </span>
-                        {{ $editId ? ($this->isOrphaned ? 'Update Student (Reassign Class)' : 'Update Student') : 'Add Student' }}
+                        <span wire:loading wire:target="onSave">Saving...</span>
                     </button>
                 </div>
 
@@ -1004,184 +977,163 @@
     @endif
 
     {{-- ══════════════════════════════════════════════════
-         VIEW MODAL (Simple)
+         VIEW — exam-style slide-in panel
     ══════════════════════════════════════════════════ --}}
-    <x-view-modal :show="$showViewModal" :title="$viewModalTitle" closeAction="closeViewModal" :image="$studentImageUrl ?? null">
-        @if (!empty($viewData))
-            <div class="space-y-5 text-left text-sm text-gray-700">
+    @if ($showViewModal && !empty($viewData))
+        @php
+            $stuUser  = $viewData['user']    ?? null;
+            $stuDet   = $viewData['detail']  ?? null;
+            $stuOrg   = $viewData['organization'] ?? null;
+            $boardLbl = $stuDet->board ?? optional($stuDet?->standard)->board ?? '—';
+            $route    = $stuDet?->transportations?->first();
+        @endphp
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeViewModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col">
 
-                {{-- Profile Header --}}
-                <div class="flex items-center gap-4 pb-4 border-b border-gray-200">
-                    @if ($studentImageUrl)
-                        <img src="{{ $studentImageUrl }}"
-                            class="w-16 h-16 rounded-full object-cover border border-gray-200">
-                    @else
-                        <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <span class="text-xl font-bold text-indigo-600">
-                                {{ strtoupper(substr($viewData['user']->name ?? 'S', 0, 1)) }}
-                            </span>
-                        </div>
-                    @endif
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900">{{ $viewData['user']->name ?? '—' }}</h3>
-                        <p class="text-sm text-gray-500">{{ $viewData['detail']->admission_no ?? '—' }}</p>
-                        @if ($viewData['user']->is_active ?? false)
-                            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 mt-1 bg-green-50 text-green-700 rounded-full font-medium border border-green-100">
-                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                                Active
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 mt-1 bg-red-50 text-red-600 rounded-full font-medium border border-red-100">
-                                <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                                Inactive
-                            </span>
-                        @endif
+                        <h2 class="text-lg font-semibold text-gray-900">Student Details</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ $stuDet->admission_no ?? 'Profile, academic & contact info' }}</p>
                     </div>
+                    <button wire:click="closeViewModal"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
-                {{-- Personal Information --}}
-                <div>
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Personal Information</h4>
-                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <dt class="text-xs text-gray-400">Email</dt>
-                            <dd class="font-medium">{{ $viewData['user']->email ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Mobile</dt>
-                            <dd class="font-medium">{{ $viewData['user']->mobile_number ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Gender</dt>
-                            <dd class="font-medium capitalize">{{ $viewData['detail']->gender ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Date of Birth</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->dob?->format('d M Y') ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Father's Name</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->father_name ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Mother's Name</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->mother_name ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Religion</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->religion ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Aadhar No</dt>
-                            <dd class="font-medium font-mono">{{ $viewData['detail']->aadhar_no ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Board</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->board ?? '—' }}</dd>
-                        </div>
-                    </dl>
-                </div>
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5 text-sm text-gray-700">
 
-                {{-- Academic Information --}}
-                <div>
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Academic Information</h4>
-                    <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div>
-                            <dt class="text-xs text-gray-400">Class</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->standard->name ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Section</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->section->name ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Roll No</dt>
-                            <dd class="font-medium font-mono">{{ $viewData['detail']->roll_no ?? '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-gray-400">Admission Date</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->date_of_admission?->format('d M Y') ?? '—' }}</dd>
-                        </div>
-                    </dl>
-                </div>
-
-                {{-- Address --}}
-                <div>
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Address</h4>
-                    <dl class="grid grid-cols-1 gap-3">
-                        <div>
-                            <dt class="text-xs text-gray-400">Local Address</dt>
-                            <dd class="font-medium">{{ $viewData['detail']->local_address ?? '—' }}</dd>
-                        </div>
-                        @if ($viewData['detail']->permanent_address)
-                            <div>
-                                <dt class="text-xs text-gray-400">Permanent Address</dt>
-                                <dd class="font-medium">{{ $viewData['detail']->permanent_address }}</dd>
+                    {{-- Profile strip --}}
+                    <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
+                        @if ($studentImageUrl)
+                            <img src="{{ $studentImageUrl }}" class="w-16 h-16 rounded-full object-cover border border-gray-200">
+                        @else
+                            <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <span class="text-xl font-bold text-indigo-600">{{ strtoupper(substr($stuUser->name ?? 'S', 0, 1)) }}</span>
                             </div>
                         @endif
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <dt class="text-xs text-gray-400">City</dt>
-                                <dd class="font-medium">{{ $viewData['detail']->city ?? '—' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs text-gray-400">State</dt>
-                                <dd class="font-medium">{{ $viewData['detail']->state ?? '—' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs text-gray-400">Pincode</dt>
-                                <dd class="font-medium">{{ $viewData['detail']->pincode ?? '—' }}</dd>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-semibold text-gray-900 truncate">{{ $stuUser->name ?? '—' }}</h3>
+                            @if ($stuOrg)
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    <svg class="w-3 h-3 inline-block text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-3m-1-9V7m0 5l-3-3m3 3l3-3" />
+                                    </svg>
+                                    {{ $stuOrg->name }}
+                                </p>
+                            @endif
+                            <div class="flex items-center gap-2 mt-1">
+                                @if ($stuUser->is_active ?? false)
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-medium border border-green-100">
+                                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Active
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-medium border border-red-100">
+                                        <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Inactive
+                                    </span>
+                                @endif
+                                <span class="text-xs text-gray-400 font-mono">Adm: {{ $stuDet->admission_no ?? '—' }}</span>
+                                <span class="text-xs text-gray-400 font-mono">Roll: {{ $stuDet->roll_no ?? '—' }}</span>
                             </div>
                         </div>
-                    </dl>
-                </div>
+                    </div>
 
-                {{-- Additional Information --}}
-                @if (
-                    $viewData['detail']->appar_id ||
-                        $viewData['detail']->registration_number ||
-                        $viewData['detail']->transportation_required)
+                    {{-- Personal Information --}}
                     <div>
-                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Additional Information</h4>
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Personal Information</h4>
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div><dt class="text-xs text-gray-400">Email</dt><dd class="font-medium">{{ $stuUser->email ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Mobile</dt><dd class="font-medium">{{ $stuUser->mobile_number ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Gender</dt><dd class="font-medium capitalize">{{ $stuDet->gender ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Date of Birth</dt><dd class="font-medium">{{ $stuDet->dob?->format('d M Y') ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Father's Name</dt><dd class="font-medium">{{ $stuDet->father_name ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Mother's Name</dt><dd class="font-medium">{{ $stuDet->mother_name ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Religion</dt><dd class="font-medium">{{ $stuDet->religion ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Aadhar No</dt><dd class="font-medium font-mono">{{ $stuDet->aadhar_no ?? '—' }}</dd></div>
+                        </dl>
+                    </div>
+
+                    {{-- Academic Information --}}
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Academic Information</h4>
+                        <dl class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div><dt class="text-xs text-gray-400">Class</dt><dd class="font-medium">{{ $stuDet->standard->name ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Section</dt><dd class="font-medium">{{ $stuDet->section->name ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Board <span class="text-[10px] text-gray-300">(auto)</span></dt><dd class="font-medium">{{ $boardLbl }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Roll No</dt><dd class="font-medium font-mono">{{ $stuDet->roll_no ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Admission No</dt><dd class="font-medium font-mono">{{ $stuDet->admission_no ?? '—' }}</dd></div>
+                            <div><dt class="text-xs text-gray-400">Admission Date</dt><dd class="font-medium">{{ $stuDet->date_of_admission?->format('d M Y') ?? '—' }}</dd></div>
+                            @if ($stuDet->appar_id)
+                                <div><dt class="text-xs text-gray-400">Apaar ID</dt><dd class="font-medium">{{ $stuDet->appar_id }}</dd></div>
+                            @endif
+                            @if ($stuDet->registration_number)
+                                <div><dt class="text-xs text-gray-400">Registration No</dt><dd class="font-medium">{{ $stuDet->registration_number }}</dd></div>
+                            @endif
+                        </dl>
+                    </div>
+
+                    {{-- Address --}}
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Address</h4>
+                        <dl class="space-y-3">
+                            <div><dt class="text-xs text-gray-400">Local Address</dt><dd class="font-medium">{{ $stuDet->local_address ?? '—' }}</dd></div>
+                            @if ($stuDet->permanent_address)
+                                <div><dt class="text-xs text-gray-400">Permanent Address</dt><dd class="font-medium">{{ $stuDet->permanent_address }}</dd></div>
+                            @endif
+                            <div class="grid grid-cols-3 gap-3">
+                                <div><dt class="text-xs text-gray-400">City</dt><dd class="font-medium">{{ $stuDet->city ?? '—' }}</dd></div>
+                                <div><dt class="text-xs text-gray-400">State</dt><dd class="font-medium">{{ $stuDet->state ?? '—' }}</dd></div>
+                                <div><dt class="text-xs text-gray-400">Pincode</dt><dd class="font-medium">{{ $stuDet->pincode ?? '—' }}</dd></div>
+                            </div>
+                        </dl>
+                    </div>
+
+                    {{-- Transport --}}
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Transport</h4>
                         <dl class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            @if ($viewData['detail']->appar_id)
-                                <div>
-                                    <dt class="text-xs text-gray-400">Appar ID</dt>
-                                    <dd class="font-medium">{{ $viewData['detail']->appar_id }}</dd>
-                                </div>
-                            @endif
-                            @if ($viewData['detail']->registration_number)
-                                <div>
-                                    <dt class="text-xs text-gray-400">Registration No</dt>
-                                    <dd class="font-medium">{{ $viewData['detail']->registration_number }}</dd>
-                                </div>
-                            @endif
                             <div>
-                                <dt class="text-xs text-gray-400">Transportation</dt>
-                                <dd class="font-medium {{ $viewData['detail']->transportation_required ? 'text-green-700' : 'text-gray-500' }}">
-                                    {{ $viewData['detail']->transportation_required ? 'Required' : 'Not Required' }}
+                                <dt class="text-xs text-gray-400">Required</dt>
+                                <dd class="font-medium {{ $stuDet->transportation_required ? 'text-green-700' : 'text-gray-500' }}">
+                                    {{ $stuDet->transportation_required ? 'Yes' : 'No' }}
                                 </dd>
                             </div>
-                            @php $assignedRoute = $viewData['detail']->transportations->first() ?? null; @endphp
-                            @if ($assignedRoute)
-                                <div>
-                                    <dt class="text-xs text-gray-400">Transport Route</dt>
-                                    <dd class="font-medium">{{ $assignedRoute->route_name }}</dd>
-                                </div>
-                                <div>
-                                    <dt class="text-xs text-gray-400">Transport Fee</dt>
+                            @if ($route)
+                                <div><dt class="text-xs text-gray-400">Route</dt><dd class="font-medium">{{ $route->route_name }}</dd></div>
+                                <div><dt class="text-xs text-gray-400">Fee</dt>
                                     <dd class="font-medium text-blue-700">
-                                        ₹{{ number_format($assignedRoute->monthly_fee, 0) }}/mo
-                                        · ₹{{ number_format($assignedRoute->monthly_fee * 11, 0) }}/yr
+                                        ₹{{ number_format($route->monthly_fee, 0) }}/mo
+                                        · ₹{{ number_format($route->monthly_fee * 11, 0) }}/yr
                                     </dd>
                                 </div>
                             @endif
                         </dl>
                     </div>
-                @endif
+                </div>
+
+                {{-- Footer --}}
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <button type="button" wire:click="onEditStudent({{ $stuDet->id ?? 0 }})"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                    </button>
+                    <button type="button" wire:click="closeViewModal"
+                        class="px-5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md">
+                        Close
+                    </button>
+                </div>
             </div>
-        @endif
-    </x-view-modal>
+        </div>
+    @endif
 
     {{-- ══════════════════════════════════════════════════
          DELETE CONFIRM OVERLAY
