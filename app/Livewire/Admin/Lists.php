@@ -4,6 +4,10 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 
+/**
+ * Admin → More → Lists landing page.
+ * Placeholder ("Coming Soon") scaffold — fleshed out in a future update.
+ */
 class Lists extends Component
 {
     public $organization = null;
