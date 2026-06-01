@@ -74,6 +74,11 @@ class Syllabus extends Component
     public array $expandedSubjects = [];
     public array $expandedChapters = [];
 
+    // ─── Delete confirm overlay (replaces broken WireUI dialog) ───────────
+    public bool   $showDeleteConfirm = false;
+    public string $deleteTargetType  = ''; // 'chapter' | 'topic'
+    public ?int   $deleteTargetId    = null;
+
     protected $queryString = [
         'search'         => ['except' => ''],
         'filterStandard' => ['except' => ''],
@@ -502,51 +507,51 @@ class Syllabus extends Component
 
     public function deleteChapter($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Chapter?',
-            'description' => 'This will also delete all topics under this chapter.',
-            'icon'        => 'error',
-            'accept'      => ['label' => 'Yes, Delete', 'method' => 'confirmDeleteChapter', 'params' => $id],
-            'reject'      => ['label' => 'Cancel'],
-        ]);
-    }
-
-    public function confirmDeleteChapter($id): void
-    {
-        try {
-            DB::beginTransaction();
-            $chapter = Chapter::with('topics')->findOrFail($id);
-            $chapter->topics()->delete();
-            $chapter->delete();
-            DB::commit();
-            $this->notification()->success('Chapter deleted!');
-            $this->loadStats();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->notification()->error('Error: ' . $e->getMessage());
-        }
+        $this->deleteTargetType  = 'chapter';
+        $this->deleteTargetId    = (int) $id;
+        $this->showDeleteConfirm = true;
     }
 
     public function deleteTopic($id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Delete Topic?',
-            'description' => 'This action cannot be undone.',
-            'icon'        => 'error',
-            'accept'      => ['label' => 'Yes, Delete', 'method' => 'confirmDeleteTopic', 'params' => $id],
-            'reject'      => ['label' => 'Cancel'],
-        ]);
+        $this->deleteTargetType  = 'topic';
+        $this->deleteTargetId    = (int) $id;
+        $this->showDeleteConfirm = true;
     }
 
-    public function confirmDeleteTopic($id): void
+    public function cancelDelete(): void
     {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetType  = '';
+        $this->deleteTargetId    = null;
+    }
+
+    public function confirmDelete(): void
+    {
+        if (!$this->deleteTargetId || !$this->deleteTargetType) {
+            $this->cancelDelete();
+            return;
+        }
+
         try {
-            Topic::findOrFail($id)->delete();
-            $this->notification()->success('Topic deleted!');
+            if ($this->deleteTargetType === 'chapter') {
+                DB::beginTransaction();
+                $chapter = Chapter::with('topics')->findOrFail($this->deleteTargetId);
+                $chapter->topics()->delete();
+                $chapter->delete();
+                DB::commit();
+                $this->notification()->success('Chapter deleted!');
+            } else {
+                Topic::findOrFail($this->deleteTargetId)->delete();
+                $this->notification()->success('Topic deleted!');
+            }
             $this->loadStats();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            DB::rollBack();
             $this->notification()->error('Error: ' . $e->getMessage());
         }
+
+        $this->cancelDelete();
     }
 
     // ─── Toggle expand ───────────────────────────────────────────────────
@@ -567,6 +572,15 @@ class Syllabus extends Component
     // ─── Render ──────────────────────────────────────────────────────────
     public function render()
     {
+        // Syllabus view is gated: require class + subject (section optional).
+        if (!$this->filterStandard || !$this->filterSubject) {
+            $empty = new \Illuminate\Pagination\LengthAwarePaginator(
+                collect(), 0, $this->perPage, 1,
+                ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            );
+            return view('livewire.admin.syllabus', ['subjects' => $empty]);
+        }
+
         $org = Auth::user()->organization_id;
 
         $subjects = Subject::with([
@@ -588,9 +602,9 @@ class Syllabus extends Component
                         )
                 );
             })
-            ->when($this->filterStandard, fn($q) => $q->whereHas('standards', fn($sq) => $sq->where('standards.id', $this->filterStandard)))
+            ->whereHas('standards', fn($sq) => $sq->where('standards.id', $this->filterStandard))
             ->when($this->filterSection, fn($q) => $q->whereHas('sections', fn($sq) => $sq->where('sections.id', $this->filterSection)))
-            ->when($this->filterSubject, fn($q) => $q->where('id', $this->filterSubject))
+            ->where('id', $this->filterSubject)
             ->orderBy('name')
             ->paginate($this->perPage);
 
