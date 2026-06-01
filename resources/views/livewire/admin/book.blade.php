@@ -81,20 +81,30 @@
          BOOK GRID — clean cards
     ══════════════════════════════════════════════════ --}}
     <div class="p-4 sm:p-6">
-        @if ($books->isEmpty())
-            <div class="bg-white rounded-xl border border-gray-200 text-center py-20 px-4">
+        @if (!$filterStandard)
+            <div class="bg-white border border-gray-200 text-center py-20 px-4">
+                <div class="w-12 h-12 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <p class="text-base font-semibold text-gray-800">Select a class</p>
+                <p class="text-sm text-gray-500 mt-1">Pick a class from the filter above to view its books.</p>
+            </div>
+        @elseif ($books->isEmpty())
+            <div class="bg-white border border-gray-200 text-center py-20 px-4">
                 <div class="w-12 h-12 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                 </div>
                 <p class="text-base font-semibold text-gray-800">No books found</p>
-                <p class="text-sm text-gray-400 mt-1">Click "Add Book" to add the first book.</p>
+                <p class="text-sm text-gray-400 mt-1">Click "Add Book" to add the first book for this class.</p>
             </div>
         @else
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @foreach ($books as $book)
-                    <div class="group bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col">
+                    <div class="group bg-white rounded-none border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col">
 
                         {{-- Cover (book-shaped 3:4 aspect, full bleed top) --}}
                         <div class="relative aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">

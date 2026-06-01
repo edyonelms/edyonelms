@@ -6,6 +6,7 @@ use App\Models\Admin\Book as ModalBook;
 use App\Models\Student\Standard;
 use App\Models\Student\Section;
 use App\Models\Student\Subject;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -267,14 +268,27 @@ class Book extends Component
 
     public function onSave()
     {
+        $orgId = Auth::user()->organization_id;
+
         $this->validate([
-            'title' => 'required|string|max:255',
+            'title' => [
+                'required', 'string', 'max:255',
+                Rule::unique('books', 'title')
+                    ->where(fn($q) => $q
+                        ->where('organization_id', $orgId)
+                        ->where('standard_id', $this->standard_id)
+                        ->where('section_id', $this->section_id ?: null)
+                    )
+                    ->ignore($this->editId),
+            ],
             'standard_id' => 'required|exists:standards,id',
-            'section_id' => 'nullable|exists:sections,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'book_logo' => 'nullable|image|max:2048',
-            'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
-            'is_active' => 'boolean',
+            'section_id'  => 'nullable|exists:sections,id',
+            'subject_id'  => 'required|exists:subjects,id',
+            'book_logo'   => 'nullable|image|max:2048',
+            'pdf_file'    => 'nullable|file|mimes:pdf|max:10240',
+            'is_active'   => 'boolean',
+        ], [
+            'title.unique' => 'A book with this name already exists for this class and section.',
         ]);
 
         try {
@@ -471,6 +485,11 @@ class Book extends Component
 
     private function getBooks()
     {
+        // Books list is gated on class selection — show nothing until a class is picked.
+        if (!$this->filterStandard) {
+            return ModalBook::query()->whereRaw('0 = 1')->paginate($this->perPage);
+        }
+
         $query = ModalBook::with(['standard', 'section', 'subject'])
             ->where('organization_id', Auth::user()->organization_id);
 
