@@ -1514,6 +1514,49 @@
           }
         }
       ]
+    },
+    {
+      "name": "21. Instructors",
+      "item": [
+        {
+          "name": "List Instructors (role-scoped)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/instructors?per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "instructors"],
+              "query": [
+                { "key": "per_page",    "value": "20" },
+                { "key": "subject_id",  "value": "", "disabled": true },
+                { "key": "standard_id", "value": "", "disabled": true },
+                { "key": "search",      "value": "", "disabled": true }
+              ]
+            },
+            "description": "Lists instructors auto-scoped by user role:\n- **Student** (`role=user`) -> only instructors who teach the student's `(standard, section)` via the **timetable** (`teacher_time_tables`). Each instructor's `subjects[]` is scoped to the subjects they teach that student's class.\n- **Teacher / Admin** -> all active instructors in the organization, with `subjects`, `classes`, and `assigned_classes` collections.\n\n**Optional filters:** `subject_id`, `search`, `per_page`. `standard_id` is ignored for students (they're already auto-scoped).\n\n**Student response item:** `{ id, name, email, avatar, employee_id, subjects: [{ id, name, code, image }] }`"
+          }
+        },
+        {
+          "name": "Get Instructor Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/instructors/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "instructors", "1"]
+            },
+            "description": "Single instructor (role-scoped) including profile fields: `qualification`, `date_of_joining`, `phone`, `city`, `state`, `address`.\n\nReturns **404** if the instructor is outside the caller's scope - e.g. a student requesting an instructor who does not teach their class via the timetable."
+          }
+        }
+      ]
     }
   ],
   "variable": [
