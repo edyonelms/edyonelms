@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\SchoolInfo;
 use App\Models\Admin\TeacherTimeTable;
+use App\Models\Organization;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -21,6 +23,8 @@ class TimetablePdfController extends Controller
         $orgId = Auth::user()?->organization_id;
         abort_if(!$orgId || $orgId !== $organization, 403);
 
+        $org           = Organization::find($orgId);
+        $schoolInfo    = SchoolInfo::where('organization_id', $orgId)->first();
         $standardModel = Standard::where('organization_id', $orgId)->findOrFail($standard);
         $sectionModel  = Section::where('organization_id', $orgId)->findOrFail($section);
 
@@ -32,8 +36,7 @@ class TimetablePdfController extends Controller
             ->orderBy('day_of_week')
             ->get();
 
-        // Group by (subject, start, end) and aggregate per-teacher day lists
-        $daysFull = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday'];
+        $daysFull  = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday'];
         $daysShort = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
 
         $rows = $entries
@@ -72,14 +75,15 @@ class TimetablePdfController extends Controller
             ->all();
 
         $pdf = Pdf::loadView('pdf.admin.timetable', [
-            'standard' => $standardModel,
-            'section'  => $sectionModel,
-            'rows'     => $rows,
-            'orgName'  => Auth::user()->organization?->name ?? 'School',
-            'daysShort' => $daysShort,
-            'daysFull'  => $daysFull,
+            'organization' => $org,
+            'schoolInfo'   => $schoolInfo,
+            'standard'     => $standardModel,
+            'section'      => $sectionModel,
+            'rows'         => $rows,
+            'daysShort'    => $daysShort,
+            'daysFull'     => $daysFull,
         ])
-            ->setPaper('a4', 'landscape')
+            ->setPaper('a4', 'portrait')
             ->setOption('dpi', 150)
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', true)

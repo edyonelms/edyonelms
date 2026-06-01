@@ -3,110 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Timetable — {{ $standard->name }} · {{ $section->name }}</title>
+    <title>Timetable — {{ $standard->name }} — {{ $section->name }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        @page { size: A4 landscape; margin: 12mm 10mm; }
-        body { font-family: "DejaVu Sans", sans-serif; color: #1f2937; font-size: 10pt; }
+        @page { size: A4 portrait; margin: 16mm 14mm 18mm 14mm; }
+        body { font-family: "DejaVu Sans", sans-serif; color: #000; font-size: 10.5pt; line-height: 1.4; }
 
-        .header { border-bottom: 2px solid #1d4ed8; padding-bottom: 6mm; margin-bottom: 6mm; }
-        .school { font-size: 14pt; font-weight: bold; color: #1f2937; }
-        .title  { font-size: 18pt; font-weight: bold; color: #1d4ed8; margin-top: 1.5mm; }
-        .meta   { font-size: 9pt; color: #6b7280; margin-top: 2mm; }
-        .meta strong { color: #1f2937; font-weight: 600; }
+        .center { text-align: center; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #d1d5db; padding: 6px 8px; vertical-align: top; }
+        /* Header */
+        .logo {
+            display: block; margin: 0 auto 4mm auto;
+            max-height: 22mm; max-width: 38mm;
+        }
+        .org-name {
+            font-size: 17pt; font-weight: 700; letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+        .org-contact {
+            font-size: 9.5pt; color: #333; margin-top: 1.5mm;
+        }
+        .org-contact span + span { margin-left: 6mm; }
+
+        .divider {
+            border-top: 1px solid #000;
+            margin: 5mm 0 4mm 0;
+        }
+
+        .doc-title {
+            font-size: 13pt; font-weight: 700; letter-spacing: 0.3px;
+            text-transform: uppercase; margin-bottom: 5mm;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1mm;
+        }
         thead th {
-            background: #1d4ed8; color: #fff; font-size: 9pt; text-transform: uppercase;
-            letter-spacing: 0.6px; font-weight: 700; text-align: left;
+            background: #f2f2f2;
+            font-size: 9.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            text-align: left;
+            padding: 5px 7px;
+            border: 1px solid #000;
+            color: #000;
         }
-        tbody tr:nth-child(even) td { background: #f9fafb; }
-
-        .sno  { width: 6%;  text-align: center; color: #6b7280; }
-        .csec { width: 14%; }
-        .subj { width: 18%; font-weight: 600; }
-        .tch  { width: 28%; }
-        .time { width: 16%; white-space: nowrap; }
-        .days { width: 18%; }
-
-        .badge {
-            display: inline-block; padding: 1.5px 6px; border-radius: 9px;
-            font-size: 8pt; font-weight: 600; border: 1px solid;
-            margin-right: 2px; margin-bottom: 2px;
+        tbody td {
+            padding: 5px 7px;
+            border: 1px solid #555;
+            vertical-align: top;
+            font-size: 10pt;
         }
-        .badge-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-        .badge-indigo { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
-        .badge-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+        tbody tr td:first-child { text-align: center; color: #333; width: 8%; }
+        td.subject { font-weight: 700; }
+        td.time { white-space: nowrap; width: 18%; }
+        td.days { width: 18%; }
 
-        .teacher-line { font-size: 9pt; margin-bottom: 2px; }
-        .teacher-line .name { font-weight: 600; color: #1f2937; }
-        .teacher-line .days { color: #6b7280; font-size: 8pt; }
-        .teacher-line + .teacher-line { padding-top: 3px; border-top: 1px dashed #e5e7eb; margin-top: 3px; }
+        .teacher-block + .teacher-block {
+            margin-top: 3px; padding-top: 3px; border-top: 1px dashed #aaa;
+        }
+        .teacher-name { font-weight: 700; }
+        .teacher-days { color: #555; font-size: 9pt; }
 
-        .empty { text-align: center; padding: 18mm 6mm; color: #9ca3af; }
+        .empty { text-align: center; padding: 14mm 6mm; color: #555; font-style: italic; }
 
         .footer {
-            position: fixed; bottom: 4mm; left: 10mm; right: 10mm;
-            text-align: right; font-size: 7.5pt; color: #9ca3af;
-            border-top: 1px solid #e5e7eb; padding-top: 2mm;
+            position: fixed;
+            bottom: 6mm; left: 14mm; right: 14mm;
+            border-top: 1px solid #999;
+            padding-top: 2mm;
+            font-size: 8pt; color: #666;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="school">{{ $orgName }}</div>
-        <div class="title">Class Timetable</div>
-        <div class="meta">
-            <strong>Class:</strong> {{ $standard->name }}
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            <strong>Section:</strong> {{ $section->name }}
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            <strong>Generated:</strong> {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }}
-        </div>
+    {{-- ============ HEADER ============ --}}
+    @php
+        $logoSrc = null;
+        if (!empty($organization?->logo)) {
+            if (\Illuminate\Support\Str::startsWith($organization->logo, ['http://', 'https://'])) {
+                $logoSrc = $organization->logo;
+            } elseif (file_exists(public_path('storage/' . $organization->logo))) {
+                $logoSrc = public_path('storage/' . $organization->logo);
+            }
+        }
+
+        // Prefer SchoolInfo's email/mobile (set by superadmin during school create flow);
+        // fall back to the Organization's email/mobile_number.
+        $schoolEmail = $schoolInfo->school_email
+            ?? $organization?->email
+            ?? null;
+        $schoolMobile = $schoolInfo->school_mobile
+            ?? $organization?->mobile_number
+            ?? null;
+    @endphp
+
+    <div class="center">
+        @if ($logoSrc)
+            <img class="logo" src="{{ $logoSrc }}" alt="Logo">
+        @endif
+
+        <div class="org-name">{{ $organization?->name ?? 'School' }}</div>
+
+        @if ($schoolEmail || $schoolMobile)
+            <div class="org-contact">
+                @if ($schoolEmail)<span>Email: {{ $schoolEmail }}</span>@endif
+                @if ($schoolMobile)<span>Phone: {{ $schoolMobile }}</span>@endif
+            </div>
+        @endif
     </div>
 
+    <div class="divider"></div>
+
+    <div class="center doc-title">
+        Timetable — {{ $standard->name }} — {{ $section->name }}
+    </div>
+
+    {{-- ============ TABLE ============ --}}
     @if (empty($rows))
         <div class="empty">No timetable entries scheduled for this section.</div>
     @else
         <table>
             <thead>
                 <tr>
-                    <th class="sno">#</th>
-                    <th class="csec">Class · Section</th>
-                    <th class="subj">Subject</th>
-                    <th class="tch">Teacher(s) &amp; Day Coverage</th>
+                    <th style="width:8%;">S. No.</th>
+                    <th>Subject</th>
+                    <th>Teacher &amp; Days</th>
                     <th class="time">Time</th>
-                    <th class="days">All Days</th>
+                    <th class="days">Days</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($rows as $i => $r)
                     <tr>
-                        <td class="sno">{{ $i + 1 }}</td>
-                        <td class="csec">
-                            <span class="badge badge-blue">{{ $standard->name }} · {{ $section->name }}</span>
-                        </td>
-                        <td class="subj">{{ $r['subject'] }}</td>
-                        <td class="tch">
+                        <td>{{ $i + 1 }}</td>
+                        <td class="subject">{{ $r['subject'] }}</td>
+                        <td>
                             @foreach ($r['teachers'] as $t)
-                                <div class="teacher-line">
-                                    <span class="name">{{ $t['name'] }}</span>
-                                    <div class="days">{{ implode(', ', $t['days']) }}</div>
+                                <div class="teacher-block">
+                                    <span class="teacher-name">{{ $t['name'] }}</span>
+                                    <div class="teacher-days">{{ implode(', ', $t['days']) }}</div>
                                 </div>
                             @endforeach
                         </td>
                         <td class="time">
                             {{ \Carbon\Carbon::parse($r['start_time'])->format('h:i A') }}
-                            <br>
-                            <span style="color:#6b7280;font-size:8pt;">to {{ \Carbon\Carbon::parse($r['end_time'])->format('h:i A') }}</span>
+                            – {{ \Carbon\Carbon::parse($r['end_time'])->format('h:i A') }}
                         </td>
-                        <td class="days">
-                            @foreach ($r['days'] as $d)
-                                <span class="badge badge-indigo">{{ $d }}</span>
-                            @endforeach
-                        </td>
+                        <td class="days">{{ implode(', ', $r['days']) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -114,7 +164,7 @@
     @endif
 
     <div class="footer">
-        {{ $orgName }} — Class Timetable — Page 1
+        {{ $organization?->name ?? 'School' }} &nbsp;·&nbsp; Class Timetable &nbsp;·&nbsp; Generated {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }}
     </div>
 
 </body>

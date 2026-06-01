@@ -372,28 +372,43 @@
                                                 </div>
                                             </div>
 
-                                            {{-- Inline fallback row --}}
+                                            {{-- Inline cover area: leftover days can be covered by another teacher
+                                                 (same subject) OR a different subject + its own teacher. --}}
                                             @if (!empty($fallbackDays) && $row['primary_teacher_id'])
-                                                <div class="bg-amber-50 border border-amber-200 rounded-md p-2 grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-                                                    <div class="md:col-span-5 flex items-start gap-1.5 text-[11px] text-amber-800">
+                                                @php $otherSubjects = $this->getSectionSubjectsForRow($i); @endphp
+                                                <div class="bg-amber-50 border border-amber-200 rounded-md p-2 space-y-2">
+                                                    <div class="flex items-start gap-1.5 text-[11px] text-amber-800">
                                                         <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
-                                                        <span>Fallback teacher needed for
+                                                        <span>For
                                                             <strong>{{ collect($fallbackDays)->map(fn($d) => $daysOfWeekFull[$d] ?? $d)->implode(', ') }}</strong>
-                                                            (same time)
+                                                            (same time {{ $row['start_time'] }}–{{ $row['end_time'] }}) — schedule a different subject or use a fallback teacher (optional):
                                                         </span>
                                                     </div>
-                                                    <div class="md:col-span-7">
-                                                        <select wire:model.live="scheduleRows.{{ $i }}.fallback_teacher_id"
-                                                            class="w-full px-2 py-1.5 text-xs border border-amber-300 rounded-md bg-white focus:ring-1 focus:ring-amber-500">
-                                                            <option value="">Select Fallback Teacher</option>
-                                                            @foreach ($allTeachers as $t)
-                                                                @if ((int) $t->id !== (int) ($row['primary_teacher_id'] ?? 0))
-                                                                    <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
-                                                                @endif
-                                                            @endforeach
-                                                        </select>
+                                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
+                                                        <div class="md:col-span-5">
+                                                            <select wire:model.live="scheduleRows.{{ $i }}.cover_subject_id"
+                                                                class="w-full px-2 py-1.5 text-xs border border-amber-300 rounded-md bg-white focus:ring-1 focus:ring-amber-500">
+                                                                <option value="">Same subject ({{ $row['subject_name'] }})</option>
+                                                                @foreach ($otherSubjects as $os)
+                                                                    <option value="{{ $os['id'] }}">{{ $os['name'] }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="md:col-span-7">
+                                                            <select wire:model.live="scheduleRows.{{ $i }}.cover_teacher_id"
+                                                                class="w-full px-2 py-1.5 text-xs border border-amber-300 rounded-md bg-white focus:ring-1 focus:ring-amber-500">
+                                                                <option value="">Select Teacher for those days</option>
+                                                                @foreach ($allTeachers as $t)
+                                                                    @if (empty($row['cover_subject_id']) && (int) $t->id === (int) ($row['primary_teacher_id'] ?? 0))
+                                                                        {{-- skip primary teacher when cover subject = same as primary --}}
+                                                                    @else
+                                                                        <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
+                                                                    @endif
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @endif
