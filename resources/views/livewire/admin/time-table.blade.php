@@ -72,22 +72,22 @@
 
                 @if ($viewMode === 'class')
                     <select wire:model.live="filterClass"
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Classes</option>
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]">
+                        <option value="">Select Class</option>
                         @foreach ($standards as $std)
                             <option value="{{ $std->id }}">{{ $std->name }}</option>
                         @endforeach
                     </select>
                     <select wire:model.live="filterSection" @disabled(!$filterClass)
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <option value="">All Sections</option>
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]">
+                        <option value="">Select Section</option>
                         @foreach ($filterSections as $sec)
                             <option value="{{ $sec['id'] }}">{{ $sec['name'] }}</option>
                         @endforeach
                     </select>
                 @else
                     <select wire:model.live="filterTeacher"
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[180px]">
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]">
                         <option value="">Select a Teacher</option>
                         @foreach ($allTeachers as $t)
                             <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
@@ -95,7 +95,6 @@
                     </select>
                 @endif
 
-                {{-- Day chips --}}
                 <div class="flex items-center gap-1.5 ml-1">
                     @foreach ($daysOfWeek as $dayNum => $dayName)
                         <button wire:click="toggleFilterDay({{ $dayNum }})"
@@ -121,9 +120,18 @@
     <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
 
         {{-- ══════════════════════════════════════════════════
-             EMPTY STATE FOR TEACHER MODE WITHOUT TEACHER
+             EMPTY STATES (no selection yet)
         ══════════════════════════════════════════════════ --}}
-        @if ($viewMode === 'teacher' && !$filterTeacher)
+        @if ($viewMode === 'class' && (!$filterClass || !$filterSection))
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+                <div class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-600 font-medium">Select a class and section to view its timetable.</p>
+            </div>
+        @elseif ($viewMode === 'teacher' && !$filterTeacher)
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
                 <div class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
                     <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -132,186 +140,132 @@
                 </div>
                 <p class="text-sm text-gray-600 font-medium">Select a teacher to view their schedule.</p>
             </div>
+        @elseif ($sectionCards->isEmpty())
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+                <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-600 font-medium">No timetable entries yet.</p>
+                <button wire:click="onCreateTimetable" class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">Create one →</button>
+            </div>
         @else
 
             {{-- ══════════════════════════════════════════════════
-                 DESKTOP TABLE (grouped)
+                 CARDS — one per (class, section)
             ══════════════════════════════════════════════════ --}}
-            <div class="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">S.No</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Teacher(s)</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Time</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Days</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @forelse ($groups as $i => $g)
-                                <tr class="hover:bg-gray-50/70 transition-colors">
-                                    <td class="px-4 py-3 text-sm text-gray-500 font-medium">{{ $groups->firstItem() + $i }}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">
-                                            {{ $g['standard'] ?? '—' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if ($g['section'])
-                                            <span class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium border border-purple-100">{{ $g['section'] }}</span>
-                                        @else
-                                            <span class="text-xs text-gray-400">—</span>
+            @foreach ($sectionCards as $card)
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    {{-- Card header: combined Class · Section + Edit + Download --}}
+                    <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50/40 to-transparent">
+                        <div class="min-w-0">
+                            <h3 class="text-base sm:text-lg font-bold text-gray-900 truncate">
+                                {{ $card['standard'] }} <span class="text-gray-400 font-normal mx-1">·</span> {{ $card['section'] }}
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-0.5">{{ $card['subject_groups']->count() }} subject{{ $card['subject_groups']->count() === 1 ? '' : 's' }} scheduled</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button wire:click="onEditSection({{ $card['standard_id'] }}, {{ $card['section_id'] }})"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                            </button>
+                            <a href="{{ route('admin.timetable.pdf', ['organization' => auth()->user()->organization_id, 'standard' => $card['standard_id'], 'section' => $card['section_id']]) }}"
+                                target="_blank"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                                </svg>
+                                Download
+                            </a>
+                            <button wire:click="onDeleteSection({{ $card['standard_id'] }}, {{ $card['section_id'] }})"
+                                class="p-1.5 text-red-600 hover:bg-red-50 rounded-md" title="Delete entire section timetable">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Card body table --}}
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-10">#</th>
+                                    @if ($viewMode === 'teacher')
+                                        <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Class · Section</th>
+                                    @endif
+                                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
+                                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Teacher(s)</th>
+                                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Time</th>
+                                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Days</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($card['subject_groups'] as $i => $g)
+                                    <tr class="hover:bg-gray-50/70 transition-colors align-top">
+                                        <td class="px-3 py-2.5 text-sm text-gray-500">{{ $i + 1 }}</td>
+                                        @if ($viewMode === 'teacher')
+                                            <td class="px-3 py-2.5 text-sm text-gray-700 whitespace-nowrap">
+                                                <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">
+                                                    {{ $card['standard'] }} · {{ $card['section'] }}
+                                                </span>
+                                            </td>
                                         @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ $g['subject'] ?? '—' }}</td>
-                                    <td class="px-4 py-3">
-                                        <div class="space-y-1">
-                                            @foreach ($g['teachers'] as $t)
-                                                <div class="flex items-start gap-2 text-sm">
-                                                    <div class="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                        <span class="text-[10px] font-semibold text-teal-600">{{ strtoupper(substr($t['teacher_name'], 0, 1)) }}</span>
-                                                    </div>
-                                                    <div>
-                                                        <div class="text-gray-800 font-medium leading-tight">{{ $t['teacher_name'] }}</div>
-                                                        <div class="text-[11px] text-gray-500 leading-tight">
-                                                            {{ collect($t['days'])->map(fn($d) => $daysOfWeek[$d] ?? $d)->implode(', ') }}
+                                        <td class="px-3 py-2.5 text-sm font-medium text-gray-800">{{ $g['subject'] }}</td>
+                                        <td class="px-3 py-2.5">
+                                            <div class="space-y-1">
+                                                @foreach ($g['teachers'] as $t)
+                                                    <div class="flex items-start gap-2 text-sm">
+                                                        <div class="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                            <span class="text-[10px] font-semibold text-teal-600">{{ strtoupper(substr($t['teacher_name'], 0, 1)) }}</span>
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <div class="text-gray-800 font-medium leading-tight">{{ $t['teacher_name'] }}</div>
+                                                            <div class="text-[11px] text-gray-500 leading-tight">
+                                                                {{ collect($t['days'])->map(fn($d) => $daysOfWeek[$d] ?? $d)->implode(', ') }}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                                        {{ \Carbon\Carbon::parse($g['start_time'])->format('h:i A') }} – {{ \Carbon\Carbon::parse($g['end_time'])->format('h:i A') }}
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex flex-wrap gap-1">
-                                            @foreach ($g['days'] as $d)
-                                                <span class="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium border border-indigo-100">{{ $daysOfWeek[$d] ?? $d }}</span>
-                                            @endforeach
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button wire:click="onViewGroup('{{ $g['key'] }}')" title="View"
-                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                            </button>
-                                            <button wire:click="onEditGroup('{{ $g['key'] }}')" title="Edit"
-                                                class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                            <button wire:click="onDeleteGroup('{{ $g['key'] }}')" title="Delete"
-                                                class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="px-6 py-16 text-center">
-                                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-gray-500 text-sm">No timetable entries found</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @if ($groups->hasPages())
-                    <div class="px-6 py-4 border-t border-gray-100">
-                        {{ $groups->links() }}
-                    </div>
-                @endif
-            </div>
-
-            {{-- ══════════════════════════════════════════════════
-                 MOBILE CARDS
-            ══════════════════════════════════════════════════ --}}
-            <div class="md:hidden space-y-3">
-                @forelse ($groups as $i => $g)
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div class="flex items-center justify-between p-4 border-b border-gray-100">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs font-bold text-gray-400">{{ $groups->firstItem() + $i }}</span>
-                                <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">{{ $g['standard'] }}</span>
-                                @if ($g['section'])
-                                    <span class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium border border-purple-100">{{ $g['section'] }}</span>
-                                @endif
-                            </div>
-                            <span class="text-xs text-gray-500 whitespace-nowrap">
-                                {{ \Carbon\Carbon::parse($g['start_time'])->format('h:i A') }} – {{ \Carbon\Carbon::parse($g['end_time'])->format('h:i A') }}
-                            </span>
-                        </div>
-                        <div class="px-4 py-3 space-y-2">
-                            <div>
-                                <p class="text-xs text-gray-400">Subject</p>
-                                <p class="text-sm font-semibold text-gray-800">{{ $g['subject'] }}</p>
-                            </div>
-                            <div class="space-y-1.5">
-                                @foreach ($g['teachers'] as $t)
-                                    <div class="flex items-start gap-2 text-sm">
-                                        <div class="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <span class="text-[10px] font-semibold text-teal-600">{{ strtoupper(substr($t['teacher_name'], 0, 1)) }}</span>
-                                        </div>
-                                        <div>
-                                            <div class="text-gray-800 font-medium leading-tight">{{ $t['teacher_name'] }}</div>
-                                            <div class="text-[11px] text-gray-500 leading-tight">
-                                                {{ collect($t['days'])->map(fn($d) => $daysOfWeek[$d] ?? $d)->implode(', ') }}
+                                                @endforeach
                                             </div>
-                                        </div>
-                                    </div>
+                                        </td>
+                                        <td class="px-3 py-2.5 text-sm text-gray-700 whitespace-nowrap">
+                                            {{ \Carbon\Carbon::parse($g['start_time'])->format('h:i A') }} – {{ \Carbon\Carbon::parse($g['end_time'])->format('h:i A') }}
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach ($g['days'] as $d)
+                                                    <span class="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium border border-indigo-100">{{ $daysOfWeek[$d] ?? $d }}</span>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                    </tr>
                                 @endforeach
-                            </div>
-                        </div>
-                        <div class="flex items-center border-t border-gray-100">
-                            <button wire:click="onViewGroup('{{ $g['key'] }}')" class="flex-1 py-2.5 text-xs font-medium text-blue-600 hover:bg-blue-50">View</button>
-                            <button wire:click="onEditGroup('{{ $g['key'] }}')" class="flex-1 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 border-l border-gray-100">Edit</button>
-                            <button wire:click="onDeleteGroup('{{ $g['key'] }}')" class="flex-1 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 border-l border-gray-100">Delete</button>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
-                @empty
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-                        <p class="text-gray-500 text-sm">No timetable entries found</p>
-                    </div>
-                @endforelse
-
-                @if ($groups->hasPages())
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3">{{ $groups->links() }}</div>
-                @endif
-            </div>
+                </div>
+            @endforeach
         @endif
     </div>
 
     {{-- ══════════════════════════════════════════════════
-         ADD / EDIT SLIDE-IN PANEL (exams-style)
+         ADD / EDIT SLIDE-IN PANEL
     ══════════════════════════════════════════════════ --}}
     @if ($open)
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePanel"></div>
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-3xl bg-white shadow-2xl flex flex-col">
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-4xl bg-white shadow-2xl flex flex-col">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">{{ $isEdit ? 'Edit Timetable' : 'New Timetable' }}</h2>
                         <p class="text-xs text-gray-500 mt-0.5">
-                            {{ $isEdit ? 'Update class schedule and teachers' : 'Pick class & section, then add subject schedules' }}
+                            {{ $isEdit ? 'Update teacher, time and days for each subject' : 'Pick class & section, then assign teacher & time per subject' }}
                         </p>
                     </div>
                     <button wire:click="closePanel" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
@@ -322,7 +276,7 @@
                 </div>
 
                 <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-                    {{-- Step 1: Class & Section --}}
+                    {{-- Class & Section --}}
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Class <span class="text-red-500">*</span></label>
@@ -346,157 +300,129 @@
                         </div>
                     </div>
 
-                    {{-- Step 2: Subject schedules --}}
+                    {{-- Subject Schedules --}}
                     @if ($createStandardId && $createSectionId)
-                        <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-semibold text-gray-700">Subject Schedules</h3>
-                                @if (count($availableSubjects) > count($usedSubjectIds))
-                                    <button wire:click="addScheduleRow" type="button"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Add Subject
-                                    </button>
-                                @endif
+                        @if (empty($scheduleRows))
+                            <div class="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
+                                <p class="text-sm text-gray-500">No subjects mapped to this section.</p>
+                                <p class="text-xs text-gray-400 mt-1">Add subjects to the section first to schedule them here.</p>
                             </div>
-
-                            @if (empty($scheduleRows))
-                                <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <p class="text-sm text-gray-400 mb-3">No subjects added yet</p>
-                                    <button wire:click="addScheduleRow" type="button"
-                                        class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Add First Subject
-                                    </button>
+                        @else
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-sm font-semibold text-gray-700">Subject Schedules</h3>
+                                    <span class="text-xs text-gray-500">{{ count($scheduleRows) }} subject{{ count($scheduleRows) === 1 ? '' : 's' }} from this section</span>
                                 </div>
-                            @endif
 
-                            <div class="space-y-4">
-                                @foreach ($scheduleRows as $i => $row)
-                                    @php
-                                        $rowSubjects = $this->getAvailableSubjectsForRow($i);
-                                        $fallbackDays = $this->getRowFallbackDays($i);
-                                        $teacherConflict = $this->checkTeacherConflict($i);
-                                        $slotConflict    = $this->checkSlotConflict($i);
-                                    @endphp
-                                    <div class="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-3">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs font-bold text-gray-400 uppercase">Subject {{ $i + 1 }}</span>
-                                            @if (!$isEdit)
-                                                <button wire:click="removeScheduleRow({{ $i }})" type="button"
-                                                    class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remove">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            @endif
-                                        </div>
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                                    {{-- Header row --}}
+                                    <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                                        <div class="col-span-2">Subject</div>
+                                        <div class="col-span-3">Teacher *</div>
+                                        <div class="col-span-2">Start *</div>
+                                        <div class="col-span-2">End *</div>
+                                        <div class="col-span-3">Days (Mon–Sat default)</div>
+                                    </div>
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 mb-1">Subject *</label>
-                                                <select wire:model.live="scheduleRows.{{ $i }}.subject_id"
-                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
-                                                    <option value="">Select Subject</option>
-                                                    @foreach ($rowSubjects as $subj)
-                                                        <option value="{{ $subj['id'] }}">{{ $subj['name'] }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 mb-1">Primary Teacher *</label>
-                                                <select wire:model.live="scheduleRows.{{ $i }}.primary_teacher_id"
-                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
-                                                    <option value="">Select Teacher</option>
-                                                    @foreach ($allTeachers as $t)
-                                                        <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 mb-1">Start Time *</label>
-                                                <input type="time" wire:model.live="scheduleRows.{{ $i }}.start_time"
-                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 mb-1">End Time *</label>
-                                                <input type="time" wire:model.live="scheduleRows.{{ $i }}.end_time"
-                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
-                                            </div>
-                                        </div>
-
-                                        {{-- Days --}}
-                                        <div>
-                                            <div class="flex items-center justify-between mb-1.5">
-                                                <label class="text-xs font-medium text-gray-500">Days * <span class="text-gray-400 font-normal">(Mon–Sat by default)</span></label>
-                                                <button wire:click="selectAllRowDays({{ $i }})" type="button"
-                                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium">Reset to Mon–Sat</button>
-                                            </div>
-                                            <div class="flex flex-wrap gap-1.5">
-                                                @foreach ($daysOfWeek as $dayNum => $dayName)
-                                                    <button wire:click="toggleRowDay({{ $i }}, {{ $dayNum }})" type="button"
-                                                        class="px-2.5 py-1 text-xs font-medium rounded-md border transition-colors {{ in_array($dayNum, $row['selected_days'] ?? []) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}">
-                                                        {{ $dayName }}
-                                                    </button>
-                                                @endforeach
-                                            </div>
-                                        </div>
-
-                                        {{-- Fallback teacher (appears when default days are unchecked) --}}
-                                        @if (!empty($fallbackDays))
-                                            <div class="p-3 bg-amber-50 border border-amber-200 rounded-md space-y-2">
-                                                <div class="flex items-start gap-2">
-                                                    <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <div class="text-xs text-amber-800">
-                                                        Primary teacher is not teaching on:
-                                                        <strong>{{ collect($fallbackDays)->map(fn($d) => $daysOfWeekFull[$d])->implode(', ') }}</strong>.
-                                                        Choose a fallback teacher for those days (same time).
+                                    @foreach ($scheduleRows as $i => $row)
+                                        @php
+                                            $fallbackDays    = $this->getRowFallbackDays($i);
+                                            $teacherConflict = $row['primary_teacher_id'] ? $this->checkTeacherConflict($i) : null;
+                                            $slotConflict    = $row['primary_teacher_id'] ? $this->checkSlotConflict($i)   : null;
+                                        @endphp
+                                        <div class="border-b border-gray-200 last:border-b-0 px-3 py-3 bg-white space-y-2">
+                                            {{-- Main row --}}
+                                            <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                                                <div class="md:col-span-2">
+                                                    <div class="md:hidden text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Subject</div>
+                                                    <div class="text-sm font-semibold text-gray-800 truncate" title="{{ $row['subject_name'] }}">
+                                                        {{ $row['subject_name'] }}
                                                     </div>
                                                 </div>
-                                                <select wire:model.live="scheduleRows.{{ $i }}.fallback_teacher_id"
-                                                    class="w-full px-3 py-2 text-sm border border-amber-300 rounded-md bg-white focus:ring-1 focus:ring-amber-500">
-                                                    <option value="">Select Fallback Teacher</option>
-                                                    @foreach ($allTeachers as $t)
-                                                        @if ((int) $t->id !== (int) ($row['primary_teacher_id'] ?? 0))
+                                                <div class="md:col-span-3">
+                                                    <div class="md:hidden text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Teacher</div>
+                                                    <select wire:model.live="scheduleRows.{{ $i }}.primary_teacher_id"
+                                                        class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
+                                                        <option value="">Select Teacher</option>
+                                                        @foreach ($allTeachers as $t)
                                                             <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
-                                                        @endif
-                                                    @endforeach
-                                                </select>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <div class="md:hidden text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Start</div>
+                                                    <input type="time" wire:model.live="scheduleRows.{{ $i }}.start_time"
+                                                        class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <div class="md:hidden text-[10px] font-semibold text-gray-400 uppercase mb-0.5">End</div>
+                                                    <input type="time" wire:model.live="scheduleRows.{{ $i }}.end_time"
+                                                        class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
+                                                </div>
+                                                <div class="md:col-span-3">
+                                                    <div class="md:hidden text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Days</div>
+                                                    <div class="flex flex-wrap gap-1">
+                                                        @foreach ($daysOfWeek as $dayNum => $dayName)
+                                                            <button wire:click="toggleRowDay({{ $i }}, {{ $dayNum }})" type="button"
+                                                                class="px-1.5 py-0.5 text-[10px] font-semibold rounded border transition-colors {{ in_array($dayNum, $row['selected_days'] ?? []) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}">
+                                                                {{ $dayName }}
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
                                             </div>
-                                        @endif
 
-                                        {{-- Conflict warnings --}}
-                                        @if ($slotConflict)
-                                            <div class="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-                                                <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                </svg>
-                                                <p class="text-xs text-red-700 font-medium">{{ $slotConflict }}</p>
-                                            </div>
-                                        @endif
-                                        @if ($teacherConflict)
-                                            <div class="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md">
-                                                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                </svg>
-                                                <p class="text-xs text-amber-700 font-medium">{{ $teacherConflict }}</p>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
+                                            {{-- Inline fallback row --}}
+                                            @if (!empty($fallbackDays) && $row['primary_teacher_id'])
+                                                <div class="bg-amber-50 border border-amber-200 rounded-md p-2 grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                                                    <div class="md:col-span-5 flex items-start gap-1.5 text-[11px] text-amber-800">
+                                                        <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <span>Fallback teacher needed for
+                                                            <strong>{{ collect($fallbackDays)->map(fn($d) => $daysOfWeekFull[$d] ?? $d)->implode(', ') }}</strong>
+                                                            (same time)
+                                                        </span>
+                                                    </div>
+                                                    <div class="md:col-span-7">
+                                                        <select wire:model.live="scheduleRows.{{ $i }}.fallback_teacher_id"
+                                                            class="w-full px-2 py-1.5 text-xs border border-amber-300 rounded-md bg-white focus:ring-1 focus:ring-amber-500">
+                                                            <option value="">Select Fallback Teacher</option>
+                                                            @foreach ($allTeachers as $t)
+                                                                @if ((int) $t->id !== (int) ($row['primary_teacher_id'] ?? 0))
+                                                                    <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
+                                                                @endif
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            {{-- Conflict messages --}}
+                                            @if ($slotConflict)
+                                                <div class="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 border border-red-200 rounded-md">
+                                                    <svg class="w-3.5 h-3.5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    <p class="text-[11px] text-red-700 font-medium">{{ $slotConflict }}</p>
+                                                </div>
+                                            @endif
+                                            @if ($teacherConflict)
+                                                <div class="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
+                                                    <svg class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    <p class="text-[11px] text-amber-700 font-medium">{{ $teacherConflict }}</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-2">Leave a subject's teacher unselected to skip scheduling it.</p>
                             </div>
-                        </div>
+                        @endif
                     @else
-                        <div class="text-center py-10 text-sm text-gray-400">Please select a class and section to start adding subjects.</div>
+                        <div class="text-center py-10 text-sm text-gray-400">Please select a class and section to load subjects.</div>
                     @endif
                 </div>
 
@@ -507,80 +433,6 @@
                         <span wire:loading.remove wire:target="onSaveTimetable">{{ $isEdit ? 'Update Timetable' : 'Create Timetable' }}</span>
                         <span wire:loading wire:target="onSaveTimetable">Saving...</span>
                     </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- ══════════════════════════════════════════════════
-         VIEW SLIDE-IN PANEL
-    ══════════════════════════════════════════════════ --}}
-    @if ($showView && !empty($viewData))
-        <div class="fixed inset-0 z-50 overflow-hidden">
-            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeView"></div>
-            <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <div class="min-w-0">
-                        <h2 class="text-lg font-semibold text-gray-900 truncate">{{ $viewData['subject'] }}</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">
-                            {{ $viewData['standard'] }}@if($viewData['section']) · {{ $viewData['section'] }} @endif
-                            · {{ $viewData['start_time'] }} – {{ $viewData['end_time'] }}
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <button wire:click="onEditFromView"
-                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                        </button>
-                        <button wire:click="closeView" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-                    <div class="grid grid-cols-3 gap-3 text-sm">
-                        <span class="text-xs text-gray-400 uppercase tracking-wider">Class</span>
-                        <span class="col-span-2 text-gray-800 font-medium">{{ $viewData['standard'] }}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 text-sm">
-                        <span class="text-xs text-gray-400 uppercase tracking-wider">Section</span>
-                        <span class="col-span-2 text-gray-800 font-medium">{{ $viewData['section'] ?? '—' }}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 text-sm">
-                        <span class="text-xs text-gray-400 uppercase tracking-wider">Subject</span>
-                        <span class="col-span-2 text-gray-800 font-medium">{{ $viewData['subject'] }}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 text-sm">
-                        <span class="text-xs text-gray-400 uppercase tracking-wider">Time</span>
-                        <span class="col-span-2 text-gray-800 font-medium">{{ $viewData['start_time'] }} – {{ $viewData['end_time'] }}</span>
-                    </div>
-
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Teachers</p>
-                        <div class="space-y-2">
-                            @foreach ($viewData['teachers'] as $t)
-                                <div class="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                                    <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                                        <span class="text-xs font-semibold text-teal-600">{{ strtoupper(substr($t['teacher_name'], 0, 1)) }}</span>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm font-semibold text-gray-800">{{ $t['teacher_name'] }}</div>
-                                        <div class="text-xs text-gray-500">{{ implode(', ', $t['days']) }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
-                    <button wire:click="closeView" class="px-5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md">Close</button>
                 </div>
             </div>
         </div>
@@ -600,8 +452,8 @@
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete schedule?</h3>
-                        <p class="text-sm text-gray-500">This will remove all timetable entries for this class–subject–time group across all days.</p>
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete entire section timetable?</h3>
+                        <p class="text-sm text-gray-500">All scheduled entries for this class &amp; section will be removed.</p>
                     </div>
                 </div>
                 <div class="flex items-center justify-end gap-2 mt-5">

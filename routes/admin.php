@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CertificatePdfController;
 use App\Http\Controllers\Admin\FeeReceiptController;
 use App\Http\Controllers\Admin\ReportCardController;
+use App\Http\Controllers\Admin\TimetablePdfController;
 use App\Livewire\Admin\Home;
 use App\Livewire\Admin\Standard;
 use App\Livewire\Admin\Student;
@@ -69,6 +70,9 @@ Route::middleware(['auth:web', 'admin', 'module'])->group(function () {
         Route::get('/teacher', Teacher::class)->name('admin.teacher');
         Route::get('/announcement', Announcement::class)->name('admin.announcement');
         Route::get('/timetable', TimeTable::class)->name('admin.timetable');
+        Route::get('/timetable/{standard}/{section}/pdf', [TimetablePdfController::class, 'download'])
+            ->whereNumber(['standard', 'section'])
+            ->name('admin.timetable.pdf');
         Route::get('/arrangement', Arrangement::class)->name('admin.arrangement');
         Route::get('/fee', Fee::class)->name('admin.fee');
         Route::get('/fee-structure', FeeStructure::class)->name('admin.fee-structure');
