@@ -105,50 +105,34 @@
         @else
             <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">Pick:</div>
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        Filter by:
+                    </div>
 
-                    <select wire:model.live="byStudentExam" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                    <select wire:model.live="byStudentExam"
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 min-w-[140px]">
                         <option value="">Select Exam</option>
-                        @foreach ($exams as $exam)
-                            <option value="{{ $exam->id }}">{{ $exam->exam_name }}</option>
-                        @endforeach
+                        @foreach ($exams as $exam)<option value="{{ $exam->id }}">{{ $exam->exam_name }}</option>@endforeach
                     </select>
-
-                    <span class="text-gray-300">→</span>
 
                     <select wire:model.live="byStudentStandard" @disabled(!$byStudentExam)
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50">
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]">
                         <option value="">Select Class</option>
-                        @foreach ($standards as $std)
-                            <option value="{{ $std->id }}">{{ $std->name }}</option>
-                        @endforeach
+                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
                     </select>
-
-                    <span class="text-gray-300">→</span>
 
                     <select wire:model.live="byStudentSection" @disabled(!$byStudentStandard)
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50">
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]">
                         <option value="">Select Section</option>
-                        @foreach ($sections as $sec)
-                            <option value="{{ $sec->id }}">{{ $sec->name }}</option>
-                        @endforeach
+                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
                     </select>
-
-                    <span class="text-gray-300">→</span>
 
                     <select wire:model.live="byStudentStudent" @disabled(!$byStudentSection)
-                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 min-w-[160px]">
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]">
                         <option value="">Select Student</option>
-                        @foreach ($students as $st)
-                            <option value="{{ $st->id }}">{{ $st->user->name ?? '—' }} ({{ $st->admission_no }})</option>
-                        @endforeach
+                        @foreach ($students as $st)<option value="{{ $st->id }}">{{ $st->user->name ?? $st->full_name ?? '—' }}</option>@endforeach
                     </select>
-
-                    <button wire:click="searchPerformance"
-                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        Search
-                    </button>
 
                     @if ($byStudentExam || $byStudentStandard || $byStudentSection || $byStudentStudent)
                         <button wire:click="clearStudentFilters"
@@ -188,7 +172,21 @@
                             @forelse ($examCopies as $i => $copy)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-4 py-3 text-sm text-gray-500">{{ $examCopies->firstItem() + $i }}</td>
-                                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $copy->studentDetail->user->name ?? '—' }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2.5">
+                                            @if ($copy->studentDetail?->image)
+                                                <img src="{{ $copy->studentDetail->image }}" class="w-8 h-8 rounded-full object-cover border border-gray-100">
+                                            @else
+                                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                    <span class="text-xs font-semibold text-indigo-600">{{ strtoupper(substr($copy->studentDetail?->user?->name ?? $copy->studentDetail?->full_name ?? 'S', 0, 1)) }}</span>
+                                                </div>
+                                            @endif
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">{{ $copy->studentDetail?->user?->name ?? $copy->studentDetail?->full_name ?? '—' }}</p>
+                                                <p class="text-xs text-gray-400">Roll: {{ $copy->studentDetail?->roll_no ?? '—' }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $copy->studentDetail->admission_no ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $copy->standard->name ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">{{ $copy->section->name ?? '—' }}</td>
@@ -266,7 +264,21 @@
                                 @foreach ($studentResults as $i => $r)
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3 text-sm text-gray-500">{{ $i + 1 }}</td>
-                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $r['student_detail']['user']['name'] ?? '—' }}</td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-2.5">
+                                                @if (!empty($r['student_detail']['image']))
+                                                    <img src="{{ $r['student_detail']['image'] }}" class="w-8 h-8 rounded-full object-cover border border-gray-100">
+                                                @else
+                                                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                        <span class="text-xs font-semibold text-indigo-600">{{ strtoupper(substr($r['student_detail']['user']['name'] ?? $r['student_detail']['full_name'] ?? 'S', 0, 1)) }}</span>
+                                                    </div>
+                                                @endif
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-900">{{ $r['student_detail']['user']['name'] ?? $r['student_detail']['full_name'] ?? '—' }}</p>
+                                                    <p class="text-xs text-gray-400">Roll: {{ $r['student_detail']['roll_no'] ?? '—' }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $r['student_detail']['admission_no'] ?? '—' }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $r['standard']['name'] ?? '—' }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $r['section']['name'] ?? '—' }}</td>
@@ -360,12 +372,15 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Subject <span class="text-red-500">*</span></label>
-                            <select wire:model.live="uploadSubject" @disabled(!$uploadSection) class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50">
+                            <select wire:model.live="uploadSubject" @disabled(!$uploadSection || $subjects->isEmpty()) class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50">
                                 <option value="">Select Subject</option>
                                 @foreach ($subjects as $sub)
                                     <option value="{{ $sub->id }}">{{ $sub->name }}</option>
                                 @endforeach
                             </select>
+                            @if ($uploadExam && $uploadStandard && $uploadSection && $subjects->isEmpty())
+                                <p class="text-[11px] text-amber-600 mt-1">Marks not uploaded yet for this exam &amp; class+section. Upload marks via Performance first to enable subject selection.</p>
+                            @endif
                             @error('uploadSubject')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                         </div>
                     </div>
@@ -391,7 +406,18 @@
                                         @foreach ($studentPdfs as $sid => $sp)
                                             <tr class="hover:bg-gray-50">
                                                 <td class="px-3 py-2 text-xs text-gray-500">{{ $loop->iteration }}</td>
-                                                <td class="px-3 py-2 text-xs font-medium text-gray-900">{{ $sp['student_name'] }}</td>
+                                                <td class="px-3 py-2">
+                                                    <div class="flex items-center gap-2">
+                                                        @if (!empty($sp['student_image']))
+                                                            <img src="{{ $sp['student_image'] }}" class="w-7 h-7 rounded-full object-cover border border-gray-100">
+                                                        @else
+                                                            <div class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                                <span class="text-[10px] font-semibold text-indigo-600">{{ strtoupper(substr($sp['student_name'], 0, 1)) }}</span>
+                                                            </div>
+                                                        @endif
+                                                        <span class="text-xs font-medium text-gray-900">{{ $sp['student_name'] }}</span>
+                                                    </div>
+                                                </td>
                                                 <td class="px-3 py-2 text-xs text-gray-700">{{ $sp['admission_no'] }}</td>
                                                 <td class="px-3 py-2 text-xs text-gray-700">{{ $sp['standard_name'] }}</td>
                                                 <td class="px-3 py-2 text-xs text-gray-700">{{ $sp['section_name'] }}</td>

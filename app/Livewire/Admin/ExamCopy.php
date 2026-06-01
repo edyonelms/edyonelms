@@ -9,6 +9,7 @@ use App\Models\Student\Section;
 use App\Models\Student\StudentDetail;
 use App\Models\Student\Subject;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -87,10 +88,12 @@ class ExamCopy extends Component
     {
         $orgId = Auth::user()->organization_id;
 
+        // Match the Exam admin page order: by start_date ASC (nulls last), then id ASC.
         $this->exams = Exam::where('organization_id', $orgId)
             ->where('is_published', true)
-            ->orderBy('created_at', 'desc')
-            ->get(['id', 'exam_name', 'academic_year']);
+            ->orderByRaw('start_date IS NULL, start_date ASC')
+            ->orderBy('id', 'asc')
+            ->get(['id', 'exam_name', 'academic_year', 'start_date']);
 
         $this->standards = Standard::where('organization_id', $orgId)
             ->where('is_active', true)
@@ -205,6 +208,16 @@ class ExamCopy extends Component
         }
     }
 
+    public function updatedByStudentExam(): void    { $this->studentResults = []; $this->autoSearchStudent(); }
+    public function updatedByStudentStudent(): void { $this->studentResults = []; $this->autoSearchStudent(); }
+
+    private function autoSearchStudent(): void
+    {
+        if ($this->byStudentExam && $this->byStudentStandard && $this->byStudentSection && $this->byStudentStudent) {
+            $this->searchPerformance();
+        }
+    }
+
     public function updatedByStudentSection($value): void
     {
         $this->byStudentStudent = '';
@@ -214,15 +227,13 @@ class ExamCopy extends Component
             $this->students = StudentDetail::where('standard_id', $this->byStudentStandard)
                 ->where('section_id', $value)
                 ->with('user:id,name')
+                ->orderBy('full_name')
                 ->orderBy('roll_no')
-                ->get(['id', 'user_id', 'roll_no', 'admission_no']);
+                ->get(['id', 'user_id', 'roll_no', 'admission_no', 'image', 'full_name']);
         } else {
             $this->students = collect();
         }
     }
-
-    public function updatedByStudentStudent(): void { $this->studentResults = []; }
-    public function updatedByStudentExam(): void    { $this->studentResults = []; }
 
     public function clearStudentFilters(): void
     {
@@ -250,7 +261,7 @@ class ExamCopy extends Component
                 'standard:id,name',
                 'section:id,name',
                 'subject:id,name',
-                'studentDetail:id,user_id,roll_no,admission_no',
+                'studentDetail:id,user_id,roll_no,admission_no,image,full_name',
                 'studentDetail.user:id,name',
             ])
             ->where('exam_id', $this->byStudentExam)
@@ -261,12 +272,10 @@ class ExamCopy extends Component
 
         if ($results->isEmpty()) {
             $this->studentResults = [];
-            $this->notification()->warning('No Results', 'No exam copies found for the selected student.');
             return;
         }
 
         $this->studentResults = $results->toArray();
-        $this->notification()->success('Loaded', count($this->studentResults) . ' record(s) found.');
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -296,8 +305,10 @@ class ExamCopy extends Component
 
         if ($value) {
             $this->sections = Section::where('standard_id', $value)
-                ->where('is_active', true)->get();
-            $this->loadSubjectsForStandard($value);
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+            $this->loadSubjectsWithMarks();
         } else {
             $this->sections = collect();
         }
@@ -312,16 +323,53 @@ class ExamCopy extends Component
             $this->students = StudentDetail::where('standard_id', $this->uploadStandard)
                 ->where('section_id', $value)
                 ->with('user:id,name')
+                ->orderBy('full_name')
                 ->orderBy('roll_no')
-                ->get(['id', 'user_id', 'roll_no', 'admission_no']);
-            $this->loadSubjectsForStandard($this->uploadStandard, $value);
+                ->get(['id', 'user_id', 'roll_no', 'admission_no', 'image', 'full_name']);
+            $this->loadSubjectsWithMarks();
         } else {
             $this->students = collect();
         }
     }
 
     public function updatedUploadSubject(): void { $this->loadStudentPdfs(); }
-    public function updatedUploadExam(): void    { $this->loadStudentPdfs(); }
+    public function updatedUploadExam(): void
+    {
+        $this->uploadSubject = '';
+        $this->resetStudentPdfs();
+        $this->loadSubjectsWithMarks();
+        $this->loadStudentPdfs();
+    }
+
+    /**
+     * Subject dropdown for the Upload modal is restricted to subjects where
+     * marks have already been uploaded (via Performance) for the chosen
+     * (exam, class, section). This enforces "only upload PDFs for subjects
+     * whose marks exist".
+     */
+    private function loadSubjectsWithMarks(): void
+    {
+        if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection) {
+            $this->subjects = collect();
+            return;
+        }
+
+        $orgId = Auth::user()->organization_id;
+
+        $this->subjects = Subject::query()
+            ->join('exam_copies', 'subjects.id', '=', 'exam_copies.subject_id')
+            ->where('exam_copies.organization_id', $orgId)
+            ->where('exam_copies.exam_id',         $this->uploadExam)
+            ->where('exam_copies.standard_id',     $this->uploadStandard)
+            ->where('exam_copies.section_id',      $this->uploadSection)
+            ->whereNotNull('exam_copies.marks_obtained')
+            ->where('subjects.organization_id', $orgId)
+            ->where('subjects.is_active', true)
+            ->select('subjects.id', 'subjects.name')
+            ->distinct()
+            ->orderBy('subjects.name')
+            ->get();
+    }
 
     private function loadStudentPdfs(): void
     {
@@ -347,7 +395,8 @@ class ExamCopy extends Component
             $this->studentPdfs[$student->id] = [
                 'copy_id'       => $existing ? $existing->id : null,
                 'student_id'    => $student->id,
-                'student_name'  => $student->user->name ?? '—',
+                'student_name'  => $student->user->name ?? $student->full_name ?? '—',
+                'student_image' => $student->image ?? null,
                 'roll_no'       => $student->roll_no,
                 'admission_no'  => $student->admission_no,
                 'standard_name' => $standardName,
@@ -396,6 +445,11 @@ class ExamCopy extends Component
         }
     }
 
+    /**
+     * One-shot bulk save: validates everything up front, then writes all rows
+     * inside a single DB transaction. If any single row fails, the whole
+     * batch rolls back so the admin doesn't end up with half-saved state.
+     */
     public function uploadPdfs(): void
     {
         $this->validate([
@@ -403,64 +457,99 @@ class ExamCopy extends Component
             'uploadStandard' => 'required',
             'uploadSection'  => 'required',
             'uploadSubject'  => 'required',
+        ], [
+            'uploadExam.required'     => 'Please select an exam.',
+            'uploadStandard.required' => 'Please select a class.',
+            'uploadSection.required'  => 'Please select a section.',
+            'uploadSubject.required'  => 'Please select a subject.',
         ]);
 
-        $rules = [];
+        $fileRules = [];
         foreach ($this->uploadedFiles as $studentId => $file) {
             if ($file) {
-                $rules["uploadedFiles.$studentId"] = 'file|mimes:pdf|max:5120';
+                $fileRules["uploadedFiles.$studentId"] = 'file|mimes:pdf|max:5120';
             }
         }
-        if (!empty($rules)) $this->validate($rules);
+        if (!empty($fileRules)) $this->validate($fileRules);
+
+        // Anything to save?
+        $newFiles      = array_filter($this->uploadedFiles, fn($f) => (bool) $f);
+        $remarksOnly   = false;
+        foreach ($this->studentPdfs as $sid => $sp) {
+            if (!empty($sp['copy_id']) && ($sp['remarks'] ?? '') !== '') {
+                $remarksOnly = true;
+                break;
+            }
+        }
+        if (empty($newFiles) && !$remarksOnly) {
+            $this->notification()->warning('Nothing to upload', 'Pick at least one PDF (or update a remark) before saving.');
+            return;
+        }
 
         try {
-            $savedCount = 0;
-            foreach ($this->uploadedFiles as $studentId => $file) {
-                if (!$file) continue;
+            $savedCount  = 0;
+            $uploadedNew = [];      // paths uploaded to S3 in this pass (for rollback cleanup)
+            $orgId       = Auth::user()->organization_id;
 
-                $existing = ModelsExamCopy::where('exam_id', $this->uploadExam)
-                    ->where('standard_id', $this->uploadStandard)
-                    ->where('section_id', $this->uploadSection)
-                    ->where('subject_id', $this->uploadSubject)
-                    ->where('student_detail_id', $studentId)
-                    ->first();
-
-                if ($existing && $existing->pdf_path) {
-                    Storage::disk('s3')->delete($existing->pdf_path);
-                }
-
+            // Upload all PDFs to S3 FIRST so we have the keys ready. If S3 fails
+            // for any file, we abort before touching the DB.
+            $pathByStudent = [];
+            foreach ($newFiles as $studentId => $file) {
                 $path = $file->store('admin/exam-copies', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
+                $pathByStudent[$studentId] = $path;
+                $uploadedNew[]             = $path;
+            }
 
-                $remarks = $this->studentPdfs[$studentId]['remarks'] ?? '';
+            // One DB transaction for all upserts.
+            DB::transaction(function () use (&$savedCount, $pathByStudent, $orgId) {
+                foreach ($this->studentPdfs as $studentId => $sp) {
+                    $hasNewPath = isset($pathByStudent[$studentId]);
+                    $hasRemark  = !empty($sp['copy_id']) && ($sp['remarks'] ?? '') !== '';
+                    if (!$hasNewPath && !$hasRemark) continue;
 
-                ModelsExamCopy::updateOrCreate(
-                    [
-                        'exam_id'           => $this->uploadExam,
-                        'standard_id'       => $this->uploadStandard,
-                        'section_id'        => $this->uploadSection,
-                        'subject_id'        => $this->uploadSubject,
-                        'student_detail_id' => $studentId,
-                    ],
-                    [
-                        'organization_id' => Auth::user()->organization_id,
-                        'pdf_path'        => $path,
-                        'remarks'         => $remarks,
+                    $payload = [
+                        'organization_id' => $orgId,
                         'uploaded_by'     => Auth::id(),
-                    ]
-                );
-                $savedCount++;
-            }
+                        'remarks'         => $sp['remarks'] ?? '',
+                    ];
+                    if ($hasNewPath) $payload['pdf_path'] = $pathByStudent[$studentId];
 
-            if ($savedCount > 0) {
-                $this->notification()->success('Uploaded', "$savedCount PDF(s) uploaded successfully.");
-                $this->uploadedFiles = [];
-                $this->loadStudentPdfs();
-                $this->loadStatistics();
-            } else {
-                $this->notification()->warning('Nothing to upload', 'Please select at least one PDF.');
+                    // If replacing an existing PDF, delete the old S3 object.
+                    $existing = ModelsExamCopy::where('exam_id', $this->uploadExam)
+                        ->where('standard_id', $this->uploadStandard)
+                        ->where('section_id', $this->uploadSection)
+                        ->where('subject_id', $this->uploadSubject)
+                        ->where('student_detail_id', $studentId)
+                        ->first();
+                    if ($hasNewPath && $existing && $existing->pdf_path) {
+                        Storage::disk('s3')->delete($existing->pdf_path);
+                    }
+
+                    ModelsExamCopy::updateOrCreate(
+                        [
+                            'exam_id'           => $this->uploadExam,
+                            'standard_id'       => $this->uploadStandard,
+                            'section_id'        => $this->uploadSection,
+                            'subject_id'        => $this->uploadSubject,
+                            'student_detail_id' => $studentId,
+                        ],
+                        $payload
+                    );
+                    $savedCount++;
+                }
+            });
+
+            $this->notification()->success('Uploaded', "{$savedCount} record(s) saved in one go.");
+            $this->uploadedFiles = [];
+            $this->loadStudentPdfs();
+            $this->loadStatistics();
+        } catch (\Throwable $e) {
+            // Clean up any S3 uploads on failure so we don't orphan files.
+            foreach ($uploadedNew ?? [] as $path) {
+                try { Storage::disk('s3')->delete($path); } catch (\Throwable $ignore) {}
             }
-        } catch (\Exception $e) {
+            logger()->error('ExamCopy uploadPdfs: ' . $e->getMessage());
             $this->notification()->error('Upload failed', $e->getMessage());
         }
     }
@@ -640,7 +729,7 @@ class ExamCopy extends Component
                 'standard:id,name',
                 'section:id,name',
                 'subject:id,name',
-                'studentDetail:id,user_id,roll_no,admission_no',
+                'studentDetail:id,user_id,roll_no,admission_no,image,full_name',
                 'studentDetail.user:id,name',
             ])
             ->where('organization_id', $orgId);

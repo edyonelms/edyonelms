@@ -622,10 +622,11 @@ class Performance extends Component
     {
         $orgId = Auth::user()->organization_id;
 
-        // Exams: descending by exam_name (so "Unit Test 3", "Unit Test 2", "Unit Test 1")
+        // Match the Exam admin page order: by start_date ASC (nulls last), then id ASC.
         $this->exams = Exam::where('organization_id', $orgId)
             ->where('is_published', true)
-            ->orderBy('exam_name', 'desc')
+            ->orderByRaw('start_date IS NULL, start_date ASC')
+            ->orderBy('id', 'asc')
             ->get();
 
         // Classes: by configured order, but break ties with name asc for stability.
