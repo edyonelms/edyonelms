@@ -20,40 +20,42 @@ class Performance extends Component
 
     public string $activeTab = 'subject';
 
-    // ─── View slider ────────────────────────────────────────────────────────
-    public bool   $showSlider = false;
+    // ─── View slider (read-only) ───────────────────────────────────────────────
+    public bool   $showSlider  = false;
     public string $sliderTitle = '';
-    public array  $sliderData = [];
+    public array  $sliderData  = [];
 
-    // ─── View by Subject tab filters ────────────────────────────────────────
-    #[Url] public string $search        = '';
-    #[Url] public int    $perPage       = 10;
+    // ─── Edit slider ──────────────────────────────────────────────────────────
+    public bool  $showEditSlider = false;
+    public ?int  $editingMarkId  = null;
+    public array $editMarkData   = [];
+
+    // ─── Filters (Subject tab) ────────────────────────────────────────────────
+    #[Url] public string $search         = '';
+    #[Url] public int    $perPage        = 10;
     #[Url] public string $filterExam     = '';
     #[Url] public string $filterStandard = '';
     #[Url] public string $filterSection  = '';
     #[Url] public string $filterSubject  = '';
 
-    // Inline edit for subject tab
-    public ?int  $editingMarkId  = null;
-    public array $editMarkData   = [];
-
-    // ─── View by Student tab ────────────────────────────────────────────────
-    public string $selectedExam     = '';
-    public string $selectedStandard = '';
-    public string $selectedSection  = '';
-    public string $selectedStudent  = '';
+    // ─── View by Student tab ──────────────────────────────────────────────────
+    public string $selectedExam       = '';
+    public string $selectedStandard   = '';
+    public string $selectedSection    = '';
+    public string $selectedStudent    = '';
     public array  $studentPerformance = [];
 
-    // ─── Upload Marks modal ─────────────────────────────────────────────────
-    public bool   $showUploadModal   = false;
-    public string $uploadExam        = '';
-    public string $uploadStandard    = '';
-    public string $uploadSection     = '';
-    public string $uploadSubject     = '';
-    public array  $studentMarks      = [];
-    public array  $editingStudents   = [];   // [studentId => true] when in edit mode
+    // ─── Upload Marks slide-in ────────────────────────────────────────────────
+    public bool   $showUploadModal  = false;
+    public string $uploadExam       = '';
+    public string $uploadStandard   = '';
+    public string $uploadSection    = '';
+    public string $uploadSubject    = '';
+    public int    $uploadTotalMarks = 100; // Pulled from exam.total_marks
+    public array  $studentMarks     = [];
+    public array  $editingStudents  = [];
 
-    // ─── Performers tab ──────────────────────────────────────────────────────
+    // ─── Performers tab ───────────────────────────────────────────────────────
     public string $perfMode     = 'class-section';
     public string $perfStandard = '';
     public string $perfSection  = '';
@@ -62,17 +64,20 @@ class Performance extends Component
     public array  $perfSections = [];
     public array  $performers   = [];
 
-    // ─── Shared dropdown data ────────────────────────────────────────────────
+    // ─── Shared lookup ────────────────────────────────────────────────────────
     public $exams     = [];
     public $standards = [];
     public $sections  = [];
     public $students  = [];
     public $subjects  = [];
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Boot
-    // ════════════════════════════════════════════════════════════════════════
+    // ─── Header stats ─────────────────────────────────────────────────────────
+    public int   $totalRecords = 0;
+    public int   $totalExamsCount = 0;
+    public int   $totalStudentsCount = 0;
+    public float $avgPercentage = 0.0;
 
+    // ════════════════════════════════════════════════════════════════════════
     public function mount(): void
     {
         $this->loadFilters();
@@ -81,12 +86,23 @@ class Performance extends Component
                 ->where('is_active', true)->get();
             $this->loadSubjectsForStandard($this->filterStandard, $this->filterSection ?: null);
         }
+        $this->loadStats();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Tab navigation
-    // ════════════════════════════════════════════════════════════════════════
+    private function loadStats(): void
+    {
+        $orgId = Auth::user()->organization_id;
+        $row   = ExamCopy::where('organization_id', $orgId)
+            ->selectRaw('COUNT(*) as total, AVG(percentage) as avg_pct, COUNT(DISTINCT exam_id) as exams_cnt, COUNT(DISTINCT student_detail_id) as students_cnt')
+            ->first();
 
+        $this->totalRecords       = (int)   ($row->total        ?? 0);
+        $this->totalExamsCount    = (int)   ($row->exams_cnt    ?? 0);
+        $this->totalStudentsCount = (int)   ($row->students_cnt ?? 0);
+        $this->avgPercentage      = (float) round($row->avg_pct ?? 0, 2);
+    }
+
+    // ─── Tabs ────────────────────────────────────────────────────────────────
     public function showTab(string $tab): void
     {
         $this->activeTab = $tab;
@@ -104,43 +120,7 @@ class Performance extends Component
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Upload Marks modal
-    // ════════════════════════════════════════════════════════════════════════
-
-    public function openUploadMarks(): void
-    {
-        $this->showUploadModal  = true;
-        $this->uploadExam       = '';
-        $this->uploadStandard   = '';
-        $this->uploadSection    = '';
-        $this->uploadSubject    = '';
-        $this->studentMarks     = [];
-        $this->editingStudents  = [];
-        $this->sections         = [];
-        $this->students         = [];
-        $this->loadFilters();
-    }
-
-    public function closeUploadModal(): void
-    {
-        $this->showUploadModal = false;
-        $this->editingStudents = [];
-        // Re-load shared data for active tab
-        if ($this->activeTab === 'subject') {
-            $this->loadFilters();
-        }
-    }
-
-    public function toggleEditStudent(int $studentId): void
-    {
-        $this->editingStudents[$studentId] = !($this->editingStudents[$studentId] ?? false);
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // View by Subject – real-time filter updates
-    // ════════════════════════════════════════════════════════════════════════
-
+    // ─── Filter updates (Subject tab) ────────────────────────────────────────
     public function updated(string $property, mixed $value): void
     {
         if (in_array($property, ['search', 'filterExam', 'filterStandard', 'filterSection', 'filterSubject'])) {
@@ -169,34 +149,33 @@ class Performance extends Component
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // View by Student – real-time updates
-    // ════════════════════════════════════════════════════════════════════════
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'filterExam', 'filterStandard', 'filterSection', 'filterSubject']);
+        $this->sections = [];
+        $this->loadFilters();
+        $this->resetPage();
+    }
 
+    // ─── Student tab (View by Student) ───────────────────────────────────────
     public function updatedSelectedStandard(mixed $value): void
     {
-        $this->selectedSection  = '';
-        $this->selectedStudent  = '';
-        $this->students         = [];
+        $this->selectedSection    = '';
+        $this->selectedStudent    = '';
+        $this->students           = [];
         $this->studentPerformance = [];
-
-        if ($value) {
-            $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
-        } else {
-            $this->sections = [];
-        }
+        $this->sections           = $value
+            ? Section::where('standard_id', $value)->where('is_active', true)->get()
+            : [];
     }
 
     public function updatedSelectedSection(mixed $value): void
     {
         $this->selectedStudent    = '';
         $this->studentPerformance = [];
-
-        if ($value && $this->selectedStandard) {
-            $this->loadStudents($this->selectedStandard, $value);
-        } else {
-            $this->students = [];
-        }
+        $this->students           = ($value && $this->selectedStandard)
+            ? $this->loadStudents($this->selectedStandard, $value)
+            : [];
     }
 
     public function updatedSelectedStudent(mixed $value): void
@@ -207,15 +186,56 @@ class Performance extends Component
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Upload Marks – real-time updates
-    // ════════════════════════════════════════════════════════════════════════
+    // ─── Upload Marks slide-in ───────────────────────────────────────────────
+    public function openUploadMarks(): void
+    {
+        $this->showUploadModal  = true;
+        $this->uploadExam       = '';
+        $this->uploadStandard   = '';
+        $this->uploadSection    = '';
+        $this->uploadSubject    = '';
+        $this->uploadTotalMarks = 100;
+        $this->studentMarks     = [];
+        $this->editingStudents  = [];
+        $this->sections         = [];
+        $this->students         = [];
+        $this->loadFilters();
+    }
+
+    public function closeUploadModal(): void
+    {
+        $this->showUploadModal = false;
+        $this->editingStudents = [];
+        if ($this->activeTab === 'subject') {
+            $this->loadFilters();
+        }
+    }
+
+    public function toggleEditStudent(int $studentId): void
+    {
+        $this->editingStudents[$studentId] = !($this->editingStudents[$studentId] ?? false);
+    }
+
+    public function updatedUploadExam(mixed $value): void
+    {
+        $this->editingStudents  = [];
+        $this->uploadTotalMarks = 100;
+
+        if ($value) {
+            $exam = Exam::where('organization_id', Auth::user()->organization_id)->find($value);
+            if ($exam && $exam->total_marks) {
+                $this->uploadTotalMarks = (int) $exam->total_marks;
+            }
+        }
+        $this->loadStudentMarks();
+    }
 
     public function updatedUploadStandard(mixed $value): void
     {
         $this->uploadSection   = '';
         $this->uploadSubject   = '';
         $this->editingStudents = [];
+        $this->students        = [];
 
         if ($value) {
             $this->sections = Section::where('standard_id', $value)->where('is_active', true)->get();
@@ -232,7 +252,7 @@ class Performance extends Component
         $this->editingStudents = [];
 
         if ($value && $this->uploadStandard) {
-            $this->loadStudents($this->uploadStandard, $value);
+            $this->students = $this->loadStudents($this->uploadStandard, $value);
             $this->loadSubjectsForStandard($this->uploadStandard, $value);
         } else {
             $this->students = [];
@@ -246,143 +266,142 @@ class Performance extends Component
         $this->loadStudentMarks();
     }
 
-    public function updatedUploadExam(): void
+    public function uploadMarks(): void
     {
-        $this->editingStudents = [];
-        $this->loadStudentMarks();
+        $this->validate([
+            'uploadExam'     => 'required',
+            'uploadStandard' => 'required',
+            'uploadSection'  => 'required',
+            'uploadSubject'  => 'required',
+        ], [
+            'uploadExam.required'     => 'Please select an exam.',
+            'uploadStandard.required' => 'Please select a class.',
+            'uploadSection.required'  => 'Please select a section.',
+            'uploadSubject.required'  => 'Please select a subject.',
+        ]);
+
+        $max = max(1, (int) $this->uploadTotalMarks);
+
+        try {
+            $savedCount = 0;
+            foreach ($this->studentMarks as $studentId => $marks) {
+                if (!isset($marks['marks_obtained']) || $marks['marks_obtained'] === '' || !is_numeric($marks['marks_obtained'])) {
+                    continue;
+                }
+                $obt = max(0, min($max, (float) $marks['marks_obtained']));
+                $pct = $max > 0 ? ($obt / $max) * 100 : 0;
+
+                ExamCopy::updateOrCreate(
+                    [
+                        'exam_id'           => $this->uploadExam,
+                        'standard_id'       => $this->uploadStandard,
+                        'section_id'        => $this->uploadSection,
+                        'subject_id'        => $this->uploadSubject,
+                        'student_detail_id' => $studentId,
+                    ],
+                    [
+                        'organization_id' => Auth::user()->organization_id,
+                        'marks_obtained'  => $obt,
+                        'max_marks'       => $max,
+                        'percentage'      => round($pct, 2),
+                        'grade'           => $this->calculateGrade($pct),
+                        'remarks'         => $marks['remarks'] ?? '',
+                    ]
+                );
+                $savedCount++;
+            }
+
+            if ($savedCount > 0) {
+                $this->notification()->success('Saved!', "Marks for {$savedCount} student(s) saved successfully.");
+                $this->loadStudentMarks();
+                $this->editingStudents = [];
+                $this->loadStats();
+            } else {
+                $this->notification()->warning('Nothing to save', 'Please enter marks for at least one student.');
+            }
+        } catch (\Exception $e) {
+            logger()->error('Performance uploadMarks: ' . $e->getMessage());
+            $this->notification()->error('Error saving marks', $e->getMessage());
+        }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Performers tab
-    // ════════════════════════════════════════════════════════════════════════
-
+    // ─── Performers tab (unchanged behavior, kept compact) ────────────────────
     public function updatedPerfMode(): void
     {
-        $this->perfExam     = '';
-        $this->perfSubject  = '';
-        $this->performers   = [];
-        // Reload subjects for selected standard/section
+        $this->perfExam = ''; $this->perfSubject = ''; $this->performers = [];
         if ($this->perfStandard && $this->perfSection) {
             $this->loadSubjectsForStandard($this->perfStandard, $this->perfSection);
         }
     }
-
     public function updatedPerfStandard(mixed $value): void
     {
-        $this->perfSection  = '';
-        $this->perfExam     = '';
-        $this->perfSubject  = '';
-        $this->performers   = [];
-        $this->perfSections = [];
-
-        if ($value) {
-            $this->perfSections = Section::where('standard_id', $value)->where('is_active', true)->get();
-        }
+        $this->perfSection = ''; $this->perfExam = ''; $this->perfSubject = '';
+        $this->performers = []; $this->perfSections = [];
+        if ($value) $this->perfSections = Section::where('standard_id', $value)->where('is_active', true)->get();
     }
-
     public function updatedPerfSection(): void
     {
-        $this->perfExam    = '';
-        $this->perfSubject = '';
-        $this->performers  = [];
-
+        $this->perfExam = ''; $this->perfSubject = ''; $this->performers = [];
         if ($this->perfSection && $this->perfStandard) {
             $this->loadSubjectsForStandard($this->perfStandard, $this->perfSection);
-            if ($this->perfMode === 'class-section') {
-                $this->loadPerformers();
-            }
+            if ($this->perfMode === 'class-section') $this->loadPerformers();
         }
     }
-
     public function updatedPerfExam(): void
     {
-        if ($this->perfMode === 'exam-class-section') {
-            $this->loadPerformers();
-        }
+        if ($this->perfMode === 'exam-class-section') $this->loadPerformers();
     }
-
     public function updatedPerfSubject(): void
     {
-        if ($this->perfMode === 'class-section-subject') {
-            $this->loadPerformers();
-        }
+        if ($this->perfMode === 'class-section-subject') $this->loadPerformers();
     }
 
     public function loadPerformers(): void
     {
-        if (!$this->perfStandard || !$this->perfSection) {
-            $this->performers = [];
-            return;
-        }
-
+        if (!$this->perfStandard || !$this->perfSection) { $this->performers = []; return; }
         $orgId = Auth::user()->organization_id;
-
         $query = ExamCopy::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section'])
             ->where('organization_id', $orgId)
             ->where('standard_id', $this->perfStandard)
             ->where('section_id', $this->perfSection);
-
         if ($this->perfMode === 'exam-class-section') {
             if (!$this->perfExam) { $this->performers = []; return; }
             $query->where('exam_id', $this->perfExam);
         }
-
         if ($this->perfMode === 'class-section-subject') {
             if (!$this->perfSubject) { $this->performers = []; return; }
             $query->where('subject_id', $this->perfSubject);
         }
-
         $records = $query->get();
         if ($records->isEmpty()) { $this->performers = []; return; }
-
         $totals = [];
-        foreach ($records as $record) {
-            $sid = $record->student_detail_id;
-            if (!isset($totals[$sid])) {
-                $totals[$sid] = [
-                    'student'        => $record->studentDetail,
-                    'total_obtained' => 0,
-                    'total_max'      => 0,
-                    'percentage'     => 0,
-                    'grade'          => '',
-                    'rank'           => 0,
-                ];
-            }
-            $totals[$sid]['total_obtained'] += (float) $record->marks_obtained;
-            $totals[$sid]['total_max']      += (float) $record->max_marks;
+        foreach ($records as $r) {
+            $sid = $r->student_detail_id;
+            $totals[$sid] ??= ['student' => $r->studentDetail, 'total_obtained' => 0, 'total_max' => 0, 'percentage' => 0, 'grade' => '', 'rank' => 0];
+            $totals[$sid]['total_obtained'] += (float) $r->marks_obtained;
+            $totals[$sid]['total_max']      += (float) $r->max_marks;
         }
-
-        foreach ($totals as &$data) {
-            $pct = $data['total_max'] > 0
-                ? round(($data['total_obtained'] / $data['total_max']) * 100, 2)
-                : 0;
-            $data['percentage'] = $pct;
-            $data['grade']      = $this->calculateGrade($pct);
+        foreach ($totals as &$d) {
+            $pct = $d['total_max'] > 0 ? round(($d['total_obtained'] / $d['total_max']) * 100, 2) : 0;
+            $d['percentage'] = $pct;
+            $d['grade']      = $this->calculateGrade($pct);
         }
-        unset($data);
-
+        unset($d);
         usort($totals, fn($a, $b) => $b['percentage'] <=> $a['percentage']);
-
         $rank = 1;
-        foreach ($totals as &$data) { $data['rank'] = $rank++; }
-        unset($data);
-
+        foreach ($totals as &$d) { $d['rank'] = $rank++; }
+        unset($d);
         $this->performers = array_values($totals);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // CRUD
-    // ════════════════════════════════════════════════════════════════════════
-
+    // ─── View / Edit ─────────────────────────────────────────────────────────
     public function onView(int $id): void
     {
         try {
             $examCopy = ExamCopy::with([
                 'exam', 'standard', 'section', 'subject', 'studentDetail.user', 'examSubjectMarks.subject'
             ])->find($id);
-
             if (!$examCopy) { $this->notification()->error('Record not found!'); return; }
-
             $this->sliderTitle = 'Exam Copy Details';
             $this->sliderData  = ['exam_copy' => $examCopy, 'subject_marks' => $examCopy->examSubjectMarks];
             $this->showSlider  = true;
@@ -390,58 +409,59 @@ class Performance extends Component
             $this->notification()->error('Error loading details', $e->getMessage());
         }
     }
-
     public function closeSlider(): void
     {
-        $this->showSlider  = false;
-        $this->sliderData  = [];
-        $this->sliderTitle = '';
+        $this->showSlider = false; $this->sliderData = []; $this->sliderTitle = '';
     }
 
     public function onEdit(int $id): void
     {
-        $examCopy = ExamCopy::find($id);
-        if ($examCopy) {
-            $this->editingMarkId = $id;
-            $this->editMarkData  = [
-                'marks_obtained' => $examCopy->marks_obtained,
-                'max_marks'      => $examCopy->max_marks,
-                'remarks'        => $examCopy->remarks ?? '',
-            ];
-        }
+        $ec = ExamCopy::with(['exam:id,exam_name,total_marks', 'subject:id,name', 'standard:id,name', 'section:id,name', 'studentDetail.user'])->find($id);
+        if (!$ec) { $this->notification()->error('Record not found!'); return; }
+        $this->editingMarkId = $id;
+        $this->editMarkData  = [
+            'student_name'   => $ec->studentDetail?->user?->name ?? 'N/A',
+            'admission_no'   => $ec->studentDetail?->admission_no ?? '',
+            'class_label'    => trim(($ec->standard?->name ?? '') . ' · ' . ($ec->section?->name ?? '')),
+            'exam_name'      => $ec->exam?->exam_name ?? '—',
+            'subject_name'   => $ec->subject?->name ?? '—',
+            'marks_obtained' => $ec->marks_obtained,
+            'max_marks'      => $ec->max_marks ?: ($ec->exam?->total_marks ?: 100),
+            'remarks'        => $ec->remarks ?? '',
+        ];
+        $this->showEditSlider = true;
     }
-
+    public function closeEditSlider(): void
+    {
+        $this->showEditSlider = false;
+        $this->editingMarkId  = null;
+        $this->editMarkData   = [];
+    }
     public function saveEditMark(): void
     {
         $this->validate([
             'editMarkData.marks_obtained' => 'required|numeric|min:0',
             'editMarkData.max_marks'      => 'required|numeric|min:1',
         ]);
-
         try {
-            $examCopy = ExamCopy::find($this->editingMarkId);
-            if ($examCopy) {
-                $pct = ($this->editMarkData['marks_obtained'] / $this->editMarkData['max_marks']) * 100;
-                $examCopy->update([
-                    'marks_obtained' => $this->editMarkData['marks_obtained'],
-                    'max_marks'      => $this->editMarkData['max_marks'],
-                    'percentage'     => round($pct, 2),
-                    'grade'          => $this->calculateGrade($pct),
-                    'remarks'        => $this->editMarkData['remarks'] ?? '',
-                ]);
-                $this->editingMarkId = null;
-                $this->editMarkData  = [];
-                $this->notification()->success('Marks updated successfully!');
-            }
+            $ec = ExamCopy::find($this->editingMarkId);
+            if (!$ec) return;
+            $max = (float) $this->editMarkData['max_marks'];
+            $obt = max(0, min($max, (float) $this->editMarkData['marks_obtained']));
+            $pct = $max > 0 ? ($obt / $max) * 100 : 0;
+            $ec->update([
+                'marks_obtained' => $obt,
+                'max_marks'      => $max,
+                'percentage'     => round($pct, 2),
+                'grade'          => $this->calculateGrade($pct),
+                'remarks'        => $this->editMarkData['remarks'] ?? '',
+            ]);
+            $this->notification()->success('Marks updated successfully!');
+            $this->closeEditSlider();
+            $this->loadStats();
         } catch (\Exception $e) {
             $this->notification()->error('Error updating marks', $e->getMessage());
         }
-    }
-
-    public function cancelEdit(): void
-    {
-        $this->editingMarkId = null;
-        $this->editMarkData  = [];
     }
 
     public function onDelete(int $id): void
@@ -455,18 +475,15 @@ class Performance extends Component
             'reject'      => ['label' => 'Cancel'],
         ]);
     }
-
     public function doDelete(int $id): void
     {
         try {
-            $examCopy = ExamCopy::find($id);
-            if ($examCopy) {
-                $examCopy->delete();
+            $ec = ExamCopy::find($id);
+            if ($ec) {
+                $ec->delete();
                 $this->notification()->success('Record deleted successfully!');
-                if ($this->showUploadModal) {
-                    $this->loadStudentMarks();
-                    $this->editingStudents = [];
-                }
+                if ($this->showUploadModal) { $this->loadStudentMarks(); $this->editingStudents = []; }
+                $this->loadStats();
             }
         } catch (\Exception $e) {
             $this->notification()->error('Error deleting record', $e->getMessage());
@@ -497,13 +514,10 @@ class Performance extends Component
                 ->where('student_detail_id', $this->selectedStudent)
                 ->get();
 
+            $this->studentPerformance = $results->isEmpty() ? [] : $results->toArray();
             if ($results->isEmpty()) {
-                $this->studentPerformance = [];
                 $this->notification()->warning('No Results', 'No records found for the selected criteria.');
-                return;
             }
-
-            $this->studentPerformance = $results->toArray();
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -512,66 +526,12 @@ class Performance extends Component
         }
     }
 
-    public function uploadMarks(): void
-    {
-        $this->validate([
-            'uploadExam'     => 'required',
-            'uploadStandard' => 'required',
-            'uploadSection'  => 'required',
-            'uploadSubject'  => 'required',
-        ]);
-
-        try {
-            $savedCount = 0;
-
-            foreach ($this->studentMarks as $studentId => $marks) {
-                if (!empty($marks['marks_obtained']) && is_numeric($marks['marks_obtained'])) {
-                    $max    = (float) ($marks['max_marks'] ?? 100);
-                    $obt    = (float) $marks['marks_obtained'];
-                    $pct    = $max > 0 ? ($obt / $max) * 100 : 0;
-
-                    ExamCopy::updateOrCreate(
-                        [
-                            'exam_id'           => $this->uploadExam,
-                            'standard_id'       => $this->uploadStandard,
-                            'section_id'        => $this->uploadSection,
-                            'subject_id'        => $this->uploadSubject,
-                            'student_detail_id' => $studentId,
-                        ],
-                        [
-                            'organization_id' => Auth::user()->organization_id,
-                            'marks_obtained'  => $obt,
-                            'max_marks'       => $max,
-                            'percentage'      => round($pct, 2),
-                            'grade'           => $this->calculateGrade($pct),
-                            'remarks'         => $marks['remarks'] ?? '',
-                        ]
-                    );
-                    $savedCount++;
-                }
-            }
-
-            if ($savedCount > 0) {
-                $this->notification()->success('Marks Saved', "Marks for {$savedCount} student(s) saved successfully.");
-                $this->loadStudentMarks();
-                $this->editingStudents = [];
-            } else {
-                $this->notification()->warning('No Marks Saved', 'Please enter marks for at least one student.');
-            }
-        } catch (\Exception $e) {
-            $this->notification()->error('Error saving marks', $e->getMessage());
-        }
-    }
-
     public function onDownloadPdf(?int $examCopyId = null, string $type = 'single'): void
     {
         $this->notification()->success('PDF Download', 'PDF download initiated.');
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Private helpers
-    // ════════════════════════════════════════════════════════════════════════
-
+    // ─── Helpers ─────────────────────────────────────────────────────────────
     private function loadFilters(): void
     {
         $orgId = Auth::user()->organization_id;
@@ -592,9 +552,9 @@ class Performance extends Component
             ->get();
     }
 
-    private function loadStudents(string $standardId, string $sectionId): void
+    private function loadStudents(string $standardId, string $sectionId)
     {
-        $this->students = StudentDetail::where('standard_id', $standardId)
+        return StudentDetail::where('standard_id', $standardId)
             ->where('section_id', $sectionId)
             ->with('user')
             ->orderBy('roll_no')
@@ -619,10 +579,7 @@ class Performance extends Component
                 ->where('subjects.is_active', true)
                 ->select('subjects.*')->distinct()->orderBy('subjects.name')->get();
         }
-
-        if ($this->subjects->isEmpty()) {
-            $this->subjects = collect();
-        }
+        if ($this->subjects->isEmpty()) $this->subjects = collect();
     }
 
     private function loadStudentMarks(): void
@@ -632,6 +589,8 @@ class Performance extends Component
         if (!$this->uploadExam || !$this->uploadStandard || !$this->uploadSection || !$this->uploadSubject) {
             return;
         }
+
+        $max = max(1, (int) $this->uploadTotalMarks);
 
         foreach ($this->students as $student) {
             $existing = ExamCopy::where('exam_id', $this->uploadExam)
@@ -647,8 +606,8 @@ class Performance extends Component
                 'roll_no'        => $student->roll_no,
                 'admission_no'   => $student->admission_no,
                 'image'          => $student->image,
-                'marks_obtained' => $existing ? $existing->marks_obtained : '',
-                'max_marks'      => $existing ? $existing->max_marks : 100,
+                'marks_obtained' => $existing ? (string) $existing->marks_obtained : '',
+                'max_marks'      => $existing ? (int) $existing->max_marks : $max,
                 'grade'          => $existing ? $existing->grade : '',
                 'remarks'        => $existing ? ($existing->remarks ?? '') : '',
                 'saved'          => $existing ? true : false,
@@ -669,10 +628,7 @@ class Performance extends Component
         return 'F';
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Render
-    // ════════════════════════════════════════════════════════════════════════
-
+    // ─── Render ──────────────────────────────────────────────────────────────
     public function render()
     {
         $examCopies = $this->getExamCopies();
@@ -682,26 +638,30 @@ class Performance extends Component
     private function getExamCopies()
     {
         if ($this->activeTab !== 'subject') {
-            return collect();
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->perPage);
+        }
+
+        // Subject tab is gated on class+section selection.
+        if (!$this->filterStandard || !$this->filterSection) {
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->perPage);
         }
 
         $query = ExamCopy::with(['exam', 'standard', 'section', 'subject', 'studentDetail.user', 'studentDetail'])
-            ->where('organization_id', Auth::user()->organization_id);
+            ->where('organization_id', Auth::user()->organization_id)
+            ->where('standard_id', $this->filterStandard)
+            ->where('section_id',  $this->filterSection);
 
         if ($this->search) {
             $query->where(function ($q) {
                 $q->whereHas('studentDetail.user', fn($u) => $u->where('name', 'like', "%{$this->search}%"))
                   ->orWhereHas('studentDetail', fn($s) => $s->where('full_name', 'like', "%{$this->search}%")
                                                              ->orWhere('admission_no', 'like', "%{$this->search}%"))
-                  ->orWhereHas('exam', fn($e) => $e->where('exam_name', 'like', "%{$this->search}%"))
-                  ->orWhereHas('subject', fn($s) => $s->where('name', 'like', "%{$this->search}%"));
+                  ->orWhereHas('exam',    fn($e) => $e->where('exam_name', 'like', "%{$this->search}%"))
+                  ->orWhereHas('subject', fn($s) => $s->where('name',      'like', "%{$this->search}%"));
             });
         }
-
-        if ($this->filterExam)     $query->where('exam_id', $this->filterExam);
-        if ($this->filterStandard) $query->where('standard_id', $this->filterStandard);
-        if ($this->filterSection)  $query->where('section_id', $this->filterSection);
-        if ($this->filterSubject)  $query->where('subject_id', $this->filterSubject);
+        if ($this->filterExam)    $query->where('exam_id',    $this->filterExam);
+        if ($this->filterSubject) $query->where('subject_id', $this->filterSubject);
 
         return $query->orderBy('created_at', 'desc')->paginate($this->perPage);
     }
