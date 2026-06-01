@@ -14,41 +14,66 @@ class SwitchAccountController extends ApiController
     /**
      * POST /api/v1/switch-account/add
      *
-     * Log in with credentials and return an enriched profile snapshot for the
-     * app's local "added accounts" list. The app stores { token, snapshot }
-     * locally; the user can switch between stored accounts without re-login.
+     * Instagram-style "Add Account" flow. The app stores { token, account }
+     * locally; the user can switch between stored accounts without re-login,
+     * and can remove any one of them.
      *
-     * Body:
-     *   - login_type: 'student' | 'teacher' (required)
-     *   - admission_number: string (required when login_type=student)
-     *   - email: string (required when login_type=teacher)
-     *   - password: string (required)
+     * Body (preferred, unified):
+     *   - identifier: string (required) — student admission number OR teacher email
+     *   - password:   string (required)
+     *   - login_type: 'student' | 'teacher' (optional, auto-detected)
      *
-     * Returns: { user, token, token_type, snapshot }
+     * Body (legacy, still accepted):
+     *   - admission_number: string  (with login_type=student)
+     *   - email:            string  (with login_type=teacher)
+     *   - password:         string
+     *
+     * Returns: { account: <snapshot>, token, token_type }
+     *   where snapshot includes user_type ('student' | 'teacher') for the card UI.
      */
     public function add(Request $request)
     {
+        // ── Normalize input (unified `identifier` OR legacy fields) ─────
+        $identifier = trim((string) $request->input('identifier', ''));
+        $loginType  = $request->input('login_type');
+        $admission  = $request->input('admission_number');
+        $email      = $request->input('email');
+
+        if ($identifier === '') {
+            // Fall back to legacy fields
+            $identifier = $loginType === 'teacher' ? (string) $email : (string) $admission;
+        }
+
+        // Auto-detect login_type if not provided
+        if (!in_array($loginType, ['student', 'teacher'], true)) {
+            $loginType = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'teacher' : 'student';
+        }
+
         $validationErr = $this->validateWith($request, [
-            'login_type'       => 'required|in:student,teacher',
-            'admission_number' => 'required_if:login_type,student|string',
-            'email'            => 'required_if:login_type,teacher|email',
-            'password'         => 'required|string',
+            'password' => 'required|string',
         ]);
         if ($validationErr) return $validationErr;
 
-        $user = null;
+        if ($identifier === '') {
+            return $this->error('Please provide an admission number or email.', 422);
+        }
+        if ($loginType === 'teacher' && !filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return $this->error('A valid email is required for a teacher account.', 422);
+        }
 
-        if ($request->login_type === 'student') {
-            $studentDetail = StudentDetail::where('admission_no', $request->admission_number)->first();
+        // ── Resolve user ────────────────────────────────────────────────
+        $user = null;
+        if ($loginType === 'student') {
+            $studentDetail = StudentDetail::where('admission_no', $identifier)->first();
             if (!$studentDetail) {
-                return $this->error('No account found with this admission number.', 401);
+                return $this->error('No student account found with this admission number.', 401);
             }
             $user = $studentDetail->user()->where('role', 'user')->first();
             if (!$user) {
                 return $this->error('No valid student account for this admission number.', 401);
             }
         } else {
-            $user = User::where('email', $request->email)->where('role', 'teacher')->first();
+            $user = User::where('email', $identifier)->where('role', 'teacher')->first();
             if (!$user) {
                 return $this->error('No teacher account found with this email.', 401);
             }
@@ -57,25 +82,21 @@ class SwitchAccountController extends ApiController
         if (!Hash::check($request->password, $user->password)) {
             return $this->error('The provided password is incorrect.', 401);
         }
-
         if (!$user->is_active) {
             return $this->error('This account has been deactivated.', 403);
         }
 
-        $token    = $user->createToken('switch_account_' . now()->timestamp)->plainTextToken;
-        $snapshot = $this->buildSnapshot($user);
+        // ── Issue a fresh token for this account (each added account has
+        //    its own token; removing one does not log out the others). ──
+        $tokenName = $loginType . '_switch_' . now()->timestamp;
+        $token     = $user->createToken($tokenName)->plainTextToken;
+        $snapshot  = $this->buildSnapshot($user);
 
         return $this->success(
             [
-                'user'       => [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->role,
-                ],
+                'account'    => $snapshot,
                 'token'      => explode('|', $token)[1] ?? $token,
                 'token_type' => 'Bearer',
-                'snapshot'   => $snapshot,
             ],
             'Account added successfully.'
         );

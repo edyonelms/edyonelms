@@ -299,7 +299,7 @@
                   "    if (json.data && json.data.token) {",
                   "        pm.collectionVariables.set('added_token', json.data.token);",
                   "        console.log('Added account token saved');",
-                  "        console.log('Snapshot:', JSON.stringify(json.data.snapshot, null, 2));",
+                  "        console.log('Account:', JSON.stringify(json.data.account, null, 2));",
                   "    }",
                   "}"
                 ],
@@ -315,14 +315,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"login_type\": \"student\",\n  \"admission_number\": \"ADM001\",\n  \"password\": \"Student@123\"\n}"
+              "raw": "{\n  \"identifier\": \"ADM001\",\n  \"password\": \"Student@123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/v1/switch-account/add",
               "host": ["{{baseUrl}}"],
               "path": ["v1", "switch-account", "add"]
             },
-            "description": "**Public.** Log in with credentials and return enriched profile snapshot for app's local 'added accounts' list.\n\n**Request body (student):**\n```json\n{\n  \"login_type\": \"student\",\n  \"admission_number\": \"ADM001\",\n  \"password\": \"Student@123\"\n}\n```\n\n**Request body (teacher):**\n```json\n{\n  \"login_type\": \"teacher\",\n  \"email\": \"teacher@example.com\",\n  \"password\": \"Teacher@123\"\n}\n```\n\n**Response:** `{ user, token, token_type, snapshot }`\n\n**Snapshot fields (for switcher UI):**\n- `user_id`, `name`, `email`, `role`, `role_label` (Student/Teacher)\n- `image` (profile pic URL)\n- `organization` `{ id, name, logo }`\n- `class_info` for students: `{ admission_no, roll_no, standard_id, standard_name, section_id, section_name, class_display }`\n- `class_info` for teachers: `{ employee_id, qualification, class_display }`\n\n**App flow:**\n1. User taps 'Add Account' in switcher\n2. App calls this endpoint with new credentials\n3. App stores `{ token, snapshot }` in local storage\n4. App displays all stored snapshots as cards in switcher UI"
+            "description": "**Public.** Instagram-style \"Add Account\" — one endpoint, both account types. The app stores the returned `{ token, account }` locally; the user can switch between stored accounts without re-login and remove any one of them.\n\n**Unified request body (recommended):**\n```json\n{\n  \"identifier\": \"ADM001\",\n  \"password\": \"Student@123\"\n}\n```\n`identifier` accepts either a student **admission number** OR a teacher **email**. The server auto-detects the type by checking whether the value looks like an email address. Pass an optional `login_type: 'student' | 'teacher'` to override the auto-detection.\n\n**Teacher example:**\n```json\n{\n  \"identifier\": \"priya.mehta@edyone.in\",\n  \"password\": \"Teacher@123\"\n}\n```\n\n**Legacy body (still accepted):**\n```json\n{ \"login_type\": \"student\",  \"admission_number\": \"ADM001\", \"password\": \"...\" }\n{ \"login_type\": \"teacher\",  \"email\": \"t@x.in\",            \"password\": \"...\" }\n```\n\n**Response (200):**\n```json\n{\n  \"data\": {\n    \"account\": {\n      \"user_id\": 42,\n      \"name\": \"Amit Dagur\",\n      \"email\": \"amit@edyone.in\",\n      \"role\": \"user\",\n      \"role_label\": \"Student\",\n      \"user_type\": \"student\",\n      \"image\": \"https://.../avatar.jpg\",\n      \"organization\": { \"id\": 5, \"name\": \"THE DEMO SCHOOL\", \"logo\": \"https://.../logo.png\" },\n      \"class_info\": { \"admission_no\": \"ADM001\", \"roll_no\": \"01\", \"class_display\": \"Class 1 - Section A\", ... }\n    },\n    \"token\":      \"abc123...\",\n    \"token_type\": \"Bearer\"\n  }\n}\n```\nFor a teacher, `user_type` is `\"teacher\"` and `class_info` carries `{ employee_id, qualification, class_display }`.\n\n**App flow (Instagram-style):**\n1. User taps **Add Account** in the switcher and enters admission no / email + password.\n2. App calls this endpoint.\n3. App appends the returned `{ token, account }` to its local accounts list and shows it as a card with: image, name, `user_type` badge.\n4. To switch, the app loads the stored token for the chosen account and uses it as the Bearer.\n5. To remove an account, send `POST /remove` with that account's token (see next request) — only that token is revoked, the other accounts keep working."
           }
         },
         {
