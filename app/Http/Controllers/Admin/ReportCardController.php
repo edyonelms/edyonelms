@@ -92,26 +92,51 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('exam_id');
 
-        // Attendance summary (status 1 = present)
-        $attendanceTotal = StudentAttendance::where('organization_id', $orgId)
+        // Attendance summary (status 1 = present) — split into Term 1 / Term 2
+        // by the midpoint date of all attendance records for this student.
+        $attendanceRows = StudentAttendance::where('organization_id', $orgId)
             ->where('student_detail_id', $studentId)
-            ->count();
-        $attendancePresent = StudentAttendance::where('organization_id', $orgId)
-            ->where('student_detail_id', $studentId)
-            ->where('status', 1)
-            ->count();
+            ->orderBy('date')
+            ->get(['date', 'status']);
+
+        $overallTotal   = $attendanceRows->count();
+        $overallPresent = $attendanceRows->where('status', 1)->count();
+
+        $term1Total = $term1Present = $term2Total = $term2Present = 0;
+        if ($overallTotal > 0) {
+            $midIndex = intdiv($overallTotal, 2);
+            $term1 = $attendanceRows->slice(0, $midIndex);
+            $term2 = $attendanceRows->slice($midIndex);
+            $term1Total   = $term1->count();
+            $term1Present = $term1->where('status', 1)->count();
+            $term2Total   = $term2->count();
+            $term2Present = $term2->where('status', 1)->count();
+        }
+
+        // Co-Scholastic Areas — fixed default subjects, default grade "A" for everyone.
+        // Per spec: same set shown for Term 1 and Term 2, both default to A.
+        $coScholasticSubjects = ['General Studies', 'Health & Physical Education', 'Work Behaviour'];
+        $coScholastic = [
+            'term1' => array_map(fn($s) => ['subject' => $s, 'grade' => 'A'], $coScholasticSubjects),
+            'term2' => array_map(fn($s) => ['subject' => $s, 'grade' => 'A'], $coScholasticSubjects),
+        ];
 
         return [
-            'reportCard' => $reportCard,
-            'student' => $reportCard->studentDetail,
+            'reportCard'   => $reportCard,
+            'student'      => $reportCard->studentDetail,
             'organization' => $reportCard->organization ?? Auth::user()->organization,
-            'exams' => $exams,
-            'subjects' => $subjects,
-            'examCopies' => $examCopies,
-            'attendance' => [
-                'present' => $attendancePresent,
-                'total' => $attendanceTotal,
+            'exams'        => $exams,
+            'subjects'     => $subjects,
+            'examCopies'   => $examCopies,
+            'attendance'   => [
+                'term1'   => ['present' => $term1Present, 'total' => $term1Total],
+                'term2'   => ['present' => $term2Present, 'total' => $term2Total],
+                'overall' => ['present' => $overallPresent, 'total' => $overallTotal],
+                // legacy keys (kept for backwards compatibility with old templates)
+                'present' => $overallPresent,
+                'total'   => $overallTotal,
             ],
+            'coScholastic' => $coScholastic,
         ];
     }
 }
