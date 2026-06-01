@@ -10,9 +10,9 @@
         </div>
     </div>
 
-    {{-- Tile grid — mobile-first: 2 cols on phone, scales up. --}}
+    {{-- Tile grid — 5 cols x 2 rows on desktop; collapses gracefully on smaller screens. --}}
     <div class="p-3 sm:p-4 md:p-6">
-        <div class="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div class="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
             @php
                 $colors = ['blue','indigo','purple','green','yellow','pink','teal','rose','cyan','lime','fuchsia','red','orange','amber','sky','violet','gray'];
             @endphp

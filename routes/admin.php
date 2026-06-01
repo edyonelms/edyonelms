@@ -46,6 +46,7 @@ use App\Livewire\Admin\Transport;
 use App\Livewire\Admin\AccountUsers;
 use App\Livewire\Admin\Admissions;
 use App\Livewire\Admin\Ledger;
+use App\Livewire\Admin\Lists;
 use App\Livewire\Admin\More;
 use App\Livewire\Admin\Users;
 use App\Livewire\Chat\Messenger;
@@ -67,6 +68,7 @@ Route::middleware(['auth:web', 'admin', 'module'])->group(function () {
         Route::get('/add-exam', AddExam::class)->name('admin.add-exam');
         Route::get('/student', Student::class)->name('admin.student');
         Route::get('/admissions', Admissions::class)->name('admin.admissions');
+        Route::get('/lists',      Lists::class)->name('admin.lists');
         Route::get('/teacher', Teacher::class)->name('admin.teacher');
         Route::get('/announcement', Announcement::class)->name('admin.announcement');
         Route::get('/timetable', TimeTable::class)->name('admin.timetable');
