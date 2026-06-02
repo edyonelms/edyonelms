@@ -19,8 +19,16 @@ use Illuminate\Support\Facades\DB;
  */
 trait HandlesTransportFees
 {
-    // Number of billable months in the year (June excluded)
+    // Default number of billable months in the year (June excluded by default)
     public int $billableMonths = 11;
+
+    // Academic year month order (Apr first, Mar last)
+    public array $monthsOrder = [
+        'apr' => 'April',  'may' => 'May',  'jun' => 'June',
+        'jul' => 'July',   'aug' => 'August', 'sep' => 'September',
+        'oct' => 'October','nov' => 'November','dec' => 'December',
+        'jan' => 'January','feb' => 'February','mar' => 'March',
+    ];
 
     // ── Fee Summary tab state ────────────────────────────────────────────────
     public string $feeStudentSearch = '';
@@ -36,12 +44,62 @@ trait HandlesTransportFees
     // Delete payment confirm
     public ?int $pendingDeletePaymentId = null;
 
+    // ── Transport student edit / delete state ────────────────────────────────
+    public bool $editTxStudentModal       = false;
+    public ?int $editTxStudentId          = null;   // student_detail_id
+    public ?int $editTxStudentRouteId     = null;   // transportation_id
+    public string $editTxStudentName      = '';
+    public array $editTxBillableMonths    = [];     // ['apr' => true, 'may' => true, ...]
+
+    public ?int $pendingDeleteTxStudentId = null;   // student_detail_id
+    public ?int $pendingDeleteTxRouteId   = null;   // transportation_id
+    public string $pendingDeleteTxStudentName = '';
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Annual transport fee for a route (monthly × 11). */
+    /** Default month flags — June off, all other 11 months on. */
+    public function defaultBillableMonths(): array
+    {
+        $flags = [];
+        foreach (array_keys($this->monthsOrder) as $key) {
+            $flags[$key] = ($key !== 'jun');
+        }
+        return $flags;
+    }
+
+    /** Normalize stored billable_months (may be null, JSON string, or array). */
+    public function normalizeBillableMonths($raw): array
+    {
+        if (empty($raw)) {
+            return $this->defaultBillableMonths();
+        }
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true) ?: [];
+        }
+        $defaults = $this->defaultBillableMonths();
+        $merged = [];
+        foreach (array_keys($this->monthsOrder) as $key) {
+            $merged[$key] = array_key_exists($key, (array) $raw) ? (bool) $raw[$key] : $defaults[$key];
+        }
+        return $merged;
+    }
+
+    /** Count of months a student is billed for. */
+    public function billableMonthsCount(array $months): int
+    {
+        return count(array_filter($months));
+    }
+
+    /** Annual transport fee for a route at the default 11 months (route-level display). */
     public function annualFee($monthlyFee): float
     {
         return round((float) $monthlyFee * $this->billableMonths, 2);
+    }
+
+    /** Annual transport fee for a specific student (uses their pivot months). */
+    public function studentAnnualFee($monthlyFee, array $months): float
+    {
+        return round((float) $monthlyFee * $this->billableMonthsCount($months), 2);
     }
 
     /** The route a student is assigned to (first active match). */
@@ -55,14 +113,39 @@ trait HandlesTransportFees
 
     // ── Tab 3: Transport Students list ────────────────────────────────────────
 
-    /** Students currently assigned to any route, with fee figures. */
+    /**
+     * Students for the Transport Students tab.
+     *
+     * - If $filterRoute is set: students of that specific route, monthly fee
+     *   pulled from that route, driver from that route, per-student billable
+     *   months from the pivot row tying THAT student to THAT route.
+     * - If $filterRoute is empty (legacy / Accounts behavior): all students
+     *   with any transport assignment, first route used for figures.
+     *
+     * Each row gets _route, _driverName, _monthly, _months, _monthsCount,
+     * _annual, _paid, _remaining.
+     */
     public function transportStudents()
     {
         $orgId = $this->txOrgId();
 
-        $query = StudentDetail::with(['user:id,name,image', 'standard:id,name', 'section:id,name', 'transportations:id,route_name,monthly_fee'])
+        $routeId = !empty($this->filterRoute) ? (int) $this->filterRoute : null;
+        $route   = $routeId
+            ? Transportation::with('driver.user')->where('organization_id', $orgId)->find($routeId)
+            : null;
+
+        if ($routeId && !$route) {
+            return new \Illuminate\Pagination\LengthAwarePaginator(
+                collect(), 0, $this->perPage ?? 15, 1,
+                ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            );
+        }
+
+        $query = StudentDetail::with(['user:id,name,image', 'standard:id,name', 'section:id,name', 'transportations.driver.user'])
             ->where('student_details.organization_id', $orgId)
-            ->whereHas('transportations')
+            ->whereHas('transportations', function ($q) use ($routeId) {
+                if ($routeId) $q->where('transportations.id', $routeId);
+            })
             ->when($this->search ?? '', function ($q) {
                 $q->where(function ($qq) {
                     $qq->where('full_name', 'like', '%' . $this->search . '%')
@@ -70,34 +153,151 @@ trait HandlesTransportFees
                 });
             });
 
-        if (!empty($this->filterRoute)) {
-            $query->whereHas('transportations', fn($q) => $q->where('transportations.id', $this->filterRoute));
-        }
-
         $students = $query->orderBy('full_name')->paginate($this->perPage ?? 15);
 
-        // Precompute paid totals for the page
         $ids = $students->getCollection()->pluck('id')->all();
-        $paidMap = TransportFeePayment::where('organization_id', $orgId)
-            ->whereIn('student_detail_id', $ids)
+
+        // Pull pivot rows (scoped to selected route if any) to read billable_months
+        $pivotQuery = DB::table('transportation_students')
+            ->where('organization_id', $orgId)
+            ->whereIn('student_detail_id', $ids);
+        if ($routeId) $pivotQuery->where('transportation_id', $routeId);
+        $pivotRows = $pivotQuery->get()->groupBy('student_detail_id');
+
+        // Paid totals (scoped to route if any)
+        $paidQuery = TransportFeePayment::where('organization_id', $orgId)
+            ->whereIn('student_detail_id', $ids);
+        if ($routeId) $paidQuery->where('transportation_id', $routeId);
+        $paidMap = $paidQuery
             ->selectRaw('student_detail_id, SUM(amount) as paid')
             ->groupBy('student_detail_id')
             ->pluck('paid', 'student_detail_id');
 
-        $students->getCollection()->transform(function ($s) use ($paidMap) {
-            $route = $s->transportations->first();
-            $monthly = $route?->monthly_fee ?? 0;
-            $annual  = $this->annualFee($monthly);
+        $students->getCollection()->transform(function ($s) use ($route, $pivotRows, $paidMap) {
+            // Resolve the route + monthly fee + driver for this student
+            $rowRoute = $route ?: $s->transportations->first();
+            $monthly  = (float) ($rowRoute?->monthly_fee ?? 0);
+            $driver   = $rowRoute?->driver?->user?->name ?? '—';
+
+            // Pivot for THIS student / THIS route
+            $pivot = $pivotRows->get($s->id, collect())
+                ->first(fn($p) => $rowRoute ? $p->transportation_id == $rowRoute->id : true);
+
+            $months  = $this->normalizeBillableMonths($pivot->billable_months ?? null);
+            $annual  = $this->studentAnnualFee($monthly, $months);
             $paid    = (float) ($paidMap[$s->id] ?? 0);
-            $s->_route     = $route;
-            $s->_monthly   = $monthly;
-            $s->_annual    = $annual;
-            $s->_paid      = $paid;
-            $s->_remaining = max(0, $annual - $paid);
+
+            $s->_route       = $rowRoute;
+            $s->_driverName  = $driver;
+            $s->_monthly     = $monthly;
+            $s->_months      = $months;
+            $s->_monthsCount = $this->billableMonthsCount($months);
+            $s->_annual      = $annual;
+            $s->_paid        = $paid;
+            $s->_remaining   = max(0, $annual - $paid);
             return $s;
         });
 
         return $students;
+    }
+
+    // ── Edit transport student (per-month toggles) ──────────────────────────
+
+    public function editTransportStudent(int $studentDetailId, int $routeId): void
+    {
+        $orgId = $this->txOrgId();
+
+        $student = StudentDetail::where('organization_id', $orgId)->find($studentDetailId);
+        if (!$student) {
+            $this->notification()->error('Error', 'Student not found.');
+            return;
+        }
+
+        $pivot = DB::table('transportation_students')
+            ->where('organization_id', $orgId)
+            ->where('transportation_id', $routeId)
+            ->where('student_detail_id', $studentDetailId)
+            ->first();
+
+        $this->editTxStudentId       = $studentDetailId;
+        $this->editTxStudentRouteId  = $routeId;
+        $this->editTxStudentName     = $student->full_name ?? '';
+        $this->editTxBillableMonths  = $this->normalizeBillableMonths($pivot->billable_months ?? null);
+        $this->editTxStudentModal    = true;
+    }
+
+    public function closeEditTransportStudent(): void
+    {
+        $this->editTxStudentModal   = false;
+        $this->editTxStudentId      = null;
+        $this->editTxStudentRouteId = null;
+        $this->editTxStudentName    = '';
+        $this->editTxBillableMonths = [];
+    }
+
+    public function toggleTxMonth(string $monthKey): void
+    {
+        if (!array_key_exists($monthKey, $this->editTxBillableMonths)) return;
+        $this->editTxBillableMonths[$monthKey] = !$this->editTxBillableMonths[$monthKey];
+    }
+
+    public function saveTransportStudentMonths(): void
+    {
+        if (!$this->editTxStudentId || !$this->editTxStudentRouteId) return;
+
+        try {
+            DB::table('transportation_students')
+                ->where('organization_id', $this->txOrgId())
+                ->where('transportation_id', $this->editTxStudentRouteId)
+                ->where('student_detail_id', $this->editTxStudentId)
+                ->update([
+                    'billable_months' => json_encode($this->editTxBillableMonths),
+                    'updated_at'      => now(),
+                ]);
+
+            $this->notification()->success('Saved', 'Monthly fee schedule updated.');
+            $this->closeEditTransportStudent();
+        } catch (\Exception $e) {
+            $this->notification()->error('Error', 'Failed to save: ' . $e->getMessage());
+        }
+    }
+
+    // ── Delete (remove student from transport) ──────────────────────────────
+
+    public function confirmDeleteTransportStudent(int $studentDetailId, int $routeId, string $name = ''): void
+    {
+        $this->pendingDeleteTxStudentId   = $studentDetailId;
+        $this->pendingDeleteTxRouteId     = $routeId;
+        $this->pendingDeleteTxStudentName = $name;
+    }
+
+    public function cancelDeleteTransportStudent(): void
+    {
+        $this->pendingDeleteTxStudentId   = null;
+        $this->pendingDeleteTxRouteId     = null;
+        $this->pendingDeleteTxStudentName = '';
+    }
+
+    public function executeDeleteTransportStudent(): void
+    {
+        if (!$this->pendingDeleteTxStudentId || !$this->pendingDeleteTxRouteId) {
+            $this->cancelDeleteTransportStudent();
+            return;
+        }
+
+        try {
+            DB::table('transportation_students')
+                ->where('organization_id', $this->txOrgId())
+                ->where('transportation_id', $this->pendingDeleteTxRouteId)
+                ->where('student_detail_id', $this->pendingDeleteTxStudentId)
+                ->delete();
+
+            $this->notification()->success('Removed', 'Student removed from this route. Transport fee no longer applies.');
+        } catch (\Exception $e) {
+            $this->notification()->error('Error', 'Failed to remove: ' . $e->getMessage());
+        }
+
+        $this->cancelDeleteTransportStudent();
     }
 
     // ── Tab 4: Fee Summary for a single student ─────────────────────────────────
@@ -141,8 +341,17 @@ trait HandlesTransportFees
         if (!$student) return null;
 
         $route   = $this->studentRoute($student->id);
-        $monthly = $route?->monthly_fee ?? 0;
-        $annual  = $this->annualFee($monthly);
+        $monthly = (float) ($route?->monthly_fee ?? 0);
+
+        // Per-student months (from pivot)
+        $pivot = $route ? DB::table('transportation_students')
+            ->where('organization_id', $orgId)
+            ->where('transportation_id', $route->id)
+            ->where('student_detail_id', $student->id)
+            ->first() : null;
+        $months      = $this->normalizeBillableMonths($pivot->billable_months ?? null);
+        $monthsCount = $this->billableMonthsCount($months);
+        $annual      = $this->studentAnnualFee($monthly, $months);
 
         $payments = TransportFeePayment::with('transportation:id,route_name')
             ->where('organization_id', $orgId)
@@ -153,13 +362,15 @@ trait HandlesTransportFees
         $paid = (float) $payments->sum('amount');
 
         return [
-            'student'    => $student,
-            'route'      => $route,
-            'monthly'    => $monthly,
-            'annual'     => $annual,
-            'paid'       => $paid,
-            'remaining'  => max(0, $annual - $paid),
-            'payments'   => $payments,
+            'student'      => $student,
+            'route'        => $route,
+            'monthly'      => $monthly,
+            'months'       => $months,
+            'months_count' => $monthsCount,
+            'annual'       => $annual,
+            'paid'         => $paid,
+            'remaining'    => max(0, $annual - $paid),
+            'payments'     => $payments,
         ];
     }
 
