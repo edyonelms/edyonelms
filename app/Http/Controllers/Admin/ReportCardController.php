@@ -94,10 +94,11 @@ class ReportCardController extends Controller
 
         // Attendance summary (status 1 = present) — split into Term 1 / Term 2
         // by the midpoint date of all attendance records for this student.
+        // student_attendances column is `attendance_date`, not `date`.
         $attendanceRows = StudentAttendance::where('organization_id', $orgId)
             ->where('student_detail_id', $studentId)
-            ->orderBy('date')
-            ->get(['date', 'status']);
+            ->orderBy('attendance_date')
+            ->get(['attendance_date', 'status']);
 
         $overallTotal   = $attendanceRows->count();
         $overallPresent = $attendanceRows->where('status', 1)->count();
