@@ -20,10 +20,7 @@ class Quiz extends Component
 {
     use WireUiActions, WithPagination;
 
-    // ─── Tabs ────────────────────────────────────────────────────────────
-    public string $activeTab = 'mcq_questions';
-
-    // ─── Filters (shared for both tabs) ──────────────────────────────────
+    // ─── Filters ─────────────────────────────────────────────────────────
     public string $filterStandard = '';
     public string $filterSection  = '';
     public string $filterSubject  = '';
@@ -53,7 +50,7 @@ class Quiz extends Component
     public $viewTargetName   = '';
     public $viewMcqs         = [];
 
-    // ─── Delete MCQ Modal ────────────────────────────────────────────────
+    // ─── Delete MCQ Modal (select-from-list) ─────────────────────────────
     public $openDeleteModal  = false;
     public $deleteTargetType = '';
     public $deleteTargetId   = null;
@@ -61,13 +58,11 @@ class Quiz extends Component
     public $deleteMcqList    = [];
     public $selectedDeleteIds = [];
 
+    // ─── Final delete confirm overlay ────────────────────────────────────
+    public bool $showDeleteConfirm = false;
+
     // ─── Stats ───────────────────────────────────────────────────────────
     public $totalQuestions = 0;
-    public $totalAnswers   = 0;
-
-    // ─── Answers tab filters ─────────────────────────────────────────────
-    public string $answerSearch = '';
-    public int $perPage = 15;
 
     public function mount(): void
     {
@@ -80,13 +75,6 @@ class Quiz extends Component
     {
         $org = Auth::user()->organization_id;
         $this->totalQuestions = McqQuestion::where('organization_id', $org)->count();
-        $this->totalAnswers   = McqUserAnswer::where('organization_id', $org)->count();
-    }
-
-    public function showTab(string $tab): void
-    {
-        $this->activeTab = $tab;
-        $this->resetPage();
     }
 
     // ─── Filter handlers ─────────────────────────────────────────────────
@@ -141,20 +129,6 @@ class Quiz extends Component
         $this->expandedChapters = in_array($id, $this->expandedChapters)
             ? array_values(array_diff($this->expandedChapters, [$id]))
             : array_merge($this->expandedChapters, [$id]);
-    }
-
-    // ─── Check if has MCQs ───────────────────────────────────────────────
-    public function getChapterMcqCount($chapterId): int
-    {
-        return McqQuestion::where('chapter_id', $chapterId)
-            ->whereNull('topic_id')
-            ->where('organization_id', Auth::user()->organization_id)->count();
-    }
-
-    public function getTopicMcqCount($topicId): int
-    {
-        return McqQuestion::where('topic_id', $topicId)
-            ->where('organization_id', Auth::user()->organization_id)->count();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -448,7 +422,7 @@ class Quiz extends Component
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  DELETE MCQ (select from list)
+    //  DELETE MCQ (select from list -> confirm)
     // ═══════════════════════════════════════════════════════════════════════
 
     public function onDeleteMcq(string $type, int $id): void
@@ -482,6 +456,7 @@ class Quiz extends Component
         $this->openDeleteModal  = false;
         $this->deleteMcqList    = [];
         $this->selectedDeleteIds = [];
+        $this->showDeleteConfirm = false;
     }
 
     public function toggleDeleteSelect(int $id): void
@@ -498,10 +473,24 @@ class Quiz extends Component
         $this->selectedDeleteIds = collect($this->deleteMcqList)->pluck('id')->toArray();
     }
 
-    public function onConfirmDelete(): void
+    public function askDeleteConfirm(): void
     {
         if (empty($this->selectedDeleteIds)) {
             $this->notification()->error('Select at least one MCQ to delete.');
+            return;
+        }
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteConfirm = false;
+    }
+
+    public function confirmDelete(): void
+    {
+        if (empty($this->selectedDeleteIds)) {
+            $this->cancelDelete();
             return;
         }
 
@@ -527,11 +516,10 @@ class Quiz extends Component
         $org      = Auth::user()->organization_id;
         $showList = $this->filterStandard && $this->filterSubject;
         $chapters = collect();
-        $answers  = null;
         $chapterMcqCounts = [];
         $topicMcqCounts   = [];
 
-        if ($this->activeTab === 'mcq_questions' && $showList) {
+        if ($showList) {
             $chapters = Chapter::with(['topics' => fn($q) => $q->orderBy('id')])
                 ->withCount(['topics'])
                 ->where('organization_id', $org)
@@ -541,11 +529,9 @@ class Quiz extends Component
                 ->orderBy('order')
                 ->get();
 
-            // Attach MCQ counts to chapters and topics
             $chapterIds = $chapters->pluck('id')->toArray();
             $topicIds   = $chapters->flatMap(fn($ch) => $ch->topics->pluck('id'))->toArray();
 
-            // Chapter-level MCQ counts (where topic_id is null)
             $chapterMcqCounts = McqQuestion::where('organization_id', $org)
                 ->whereIn('chapter_id', $chapterIds)
                 ->whereNull('topic_id')
@@ -554,7 +540,6 @@ class Quiz extends Component
                 ->pluck('mcq_count', 'chapter_id')
                 ->toArray();
 
-            // Topic-level MCQ counts
             $topicMcqCounts = McqQuestion::where('organization_id', $org)
                 ->whereIn('topic_id', $topicIds)
                 ->selectRaw('topic_id, count(*) as mcq_count')
@@ -563,16 +548,6 @@ class Quiz extends Component
                 ->toArray();
         }
 
-        if ($this->activeTab === 'student_answers') {
-            $answersQuery = McqUserAnswer::with(['user', 'question.chapter', 'question.topic', 'question.options', 'selectedOption'])
-                ->where('organization_id', $org)
-                ->when($this->filterStandard, fn($q) => $q->whereHas('question', fn($qq) => $qq->where('standard_id', $this->filterStandard)))
-                ->when($this->answerSearch, fn($q) => $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%{$this->answerSearch}%")))
-                ->latest();
-
-            $answers = $answersQuery->paginate($this->perPage);
-        }
-
-        return view('livewire.admin.quiz', compact('chapters', 'showList', 'answers', 'chapterMcqCounts', 'topicMcqCounts'));
+        return view('livewire.admin.quiz', compact('chapters', 'showList', 'chapterMcqCounts', 'topicMcqCounts'));
     }
 }
