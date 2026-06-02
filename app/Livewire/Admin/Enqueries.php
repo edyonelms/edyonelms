@@ -61,21 +61,22 @@ class Enqueries extends Component
 
         $orgId = Auth::user()->organization_id;
 
-        // Single aggregate query per table (instead of 3 separate COUNTs each)
-        // returns: total, pending (admin_reply IS NULL), replied (NOT NULL)
+        // Single aggregate query per table (instead of 3 separate COUNTs each).
+        // admin_reply is a BOOLEAN flag (false = pending, true = replied);
+        // the actual reply text lives in admin_text.
         $teacher = ContactAdminTeacher::where('organization_id', $orgId)
             ->selectRaw('
                 COUNT(*) as total,
-                SUM(CASE WHEN admin_reply IS NULL THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN admin_reply IS NOT NULL THEN 1 ELSE 0 END) as replied
+                SUM(CASE WHEN admin_reply = 0 THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN admin_reply = 1 THEN 1 ELSE 0 END) as replied
             ')
             ->first();
 
         $student = ContactAdminStudent::where('organization_id', $orgId)
             ->selectRaw('
                 COUNT(*) as total,
-                SUM(CASE WHEN admin_reply IS NULL THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN admin_reply IS NOT NULL THEN 1 ELSE 0 END) as replied
+                SUM(CASE WHEN admin_reply = 0 THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN admin_reply = 1 THEN 1 ELSE 0 END) as replied
             ')
             ->first();
 
@@ -132,16 +133,16 @@ class Enqueries extends Component
                 $query->where(function ($q) {
                     $q->where('topic', 'like', '%' . $this->search . '%')
                         ->orWhere('teacher_query', 'like', '%' . $this->search . '%')
-                        ->orWhere('admin_reply', 'like', '%' . $this->search . '%')
+                        ->orWhere('admin_text', 'like', '%' . $this->search . '%')
                         ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%')
                             ->orWhere('email', 'like', '%' . $this->search . '%'));
                 });
             })
             ->when($this->statusFilter, function ($query) {
                 if ($this->statusFilter === 'replied') {
-                    $query->whereNotNull('admin_reply');
+                    $query->where('admin_reply', true);
                 } elseif ($this->statusFilter === 'pending') {
-                    $query->whereNull('admin_reply');
+                    $query->where('admin_reply', false);
                 }
             })
             ->latest()
@@ -160,16 +161,16 @@ class Enqueries extends Component
                 $query->where(function ($q) {
                     $q->where('topic', 'like', '%' . $this->search . '%')
                         ->orWhere('student_query', 'like', '%' . $this->search . '%')
-                        ->orWhere('admin_reply', 'like', '%' . $this->search . '%')
+                        ->orWhere('admin_text', 'like', '%' . $this->search . '%')
                         ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%')
                             ->orWhere('email', 'like', '%' . $this->search . '%'));
                 });
             })
             ->when($this->statusFilter, function ($query) {
                 if ($this->statusFilter === 'replied') {
-                    $query->whereNotNull('admin_reply');
+                    $query->where('admin_reply', true);
                 } elseif ($this->statusFilter === 'pending') {
-                    $query->whereNull('admin_reply');
+                    $query->where('admin_reply', false);
                 }
             })
             ->latest()
@@ -193,7 +194,7 @@ class Enqueries extends Component
     {
         $this->viewEnquiry($id);
         $this->showDetailModal = false;
-        $this->adminReply      = $this->selectedEnquiry->admin_reply ?? '';
+        $this->adminReply      = $this->selectedEnquiry->admin_text ?? '';
         $this->showReplyModal  = true;
     }
 
@@ -218,8 +219,8 @@ class Enqueries extends Component
 
         if ($this->selectedEnquiry) {
             $this->selectedEnquiry->update([
-                'admin_reply' => $this->adminReply,
-                'admin_text'  => 'Replied by Admin',
+                'admin_text'  => $this->adminReply,
+                'admin_reply' => true,
             ]);
 
             $this->closeReplyModal();

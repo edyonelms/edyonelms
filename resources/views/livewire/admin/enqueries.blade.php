@@ -286,7 +286,7 @@
                                 <span class="text-xs text-gray-400">{{ $selectedEnquiry->updated_at->format('d M Y · g:i A') }}</span>
                             </div>
                             <div class="bg-gray-50 border-l-2 border-blue-500 rounded-r-md px-4 py-3">
-                                <p class="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{{ $selectedEnquiry->admin_reply }}</p>
+                                <p class="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{{ $selectedEnquiry->admin_text }}</p>
                             </div>
                         </div>
                     @else
