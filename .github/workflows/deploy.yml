@@ -370,6 +370,17 @@ jobs:
             # dynamic route resolution, so every route is reachable.
             rm -f bootstrap/cache/*.php || true
 
+            # ─── Restore storage/cache ownership to www-data ────────────────
+            # The host-side `chown -R $(whoami)` above gives storage/ and
+            # bootstrap/cache/ to ec2-user, but PHP-FPM in the container runs
+            # as www-data (UID 33 on debian bookworm). Without this fix, every
+            # request 500s on the first session write:
+            #   file_put_contents(storage/framework/sessions/...): Permission denied
+            # Hand these two trees back to UID 33 so the container can write
+            # sessions, compiled views, the framework cache, and logs.
+            sudo chown -R 33:33 storage bootstrap/cache 2>/dev/null || true
+            sudo chmod -R u+rwX,g+rwX storage bootstrap/cache 2>/dev/null || true
+
             # Build new app image while old container keeps serving traffic.
             # Compose only recreates services whose image/config changed —
             # nginx, mysql, redis stay untouched (no DB/cache downtime).
