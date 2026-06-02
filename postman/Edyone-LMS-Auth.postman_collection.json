@@ -410,14 +410,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"topic\": \"Fee Issue\",\n  \"description\": \"I have a question about my fees.\"\n}"
+              "raw": "{\n  \"topic\": \"Fee Issue\",\n  \"student_query\": \"I have a question about my fees.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/v1/user/admin/contact",
               "host": ["{{baseUrl}}"],
               "path": ["v1", "user", "admin", "contact"]
             },
-            "description": "Student raises a query/contact request to the school admin.\n\n**Body:** `{ topic, description }`"
+            "description": "Student raises a query/contact request to the school admin.\n\n**Body:** `{ topic, student_query }` (optional `image` as multipart, max 2MB jpeg/png/jpg/gif)"
           }
         },
         {
@@ -468,14 +468,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"topic\": \"Class Schedule\",\n  \"description\": \"Request to update my class timing.\"\n}"
+              "raw": "{\n  \"topic\": \"Class Schedule\",\n  \"teacher_query\": \"Request to update my class timing.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/v1/teacher/admin/contact",
               "host": ["{{baseUrl}}"],
               "path": ["v1", "teacher", "admin", "contact"]
             },
-            "description": "Teacher raises a query/contact request to the school admin."
+            "description": "Teacher raises a query/contact request to the school admin.\n\n**Body:** `{ topic, teacher_query }` (optional `image` as multipart, max 2MB jpeg/png/jpg/gif)"
           }
         },
         {
