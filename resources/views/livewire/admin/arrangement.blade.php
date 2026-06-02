@@ -1,460 +1,228 @@
 <div class="min-h-screen bg-gray-50">
 
-    {{-- ══════════════════════════════════════════════════
-         HEADER
-    ══════════════════════════════════════════════════ --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
+{{-- ══════════════════════════════════════════════════
+     HEADER + FILTER BAR (exams-style)
+══════════════════════════════════════════════════ --}}
+<div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+    <div class="px-4 sm:px-6 py-4 sm:py-5">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Teacher Arrangements</h1>
-                <p class="text-sm text-gray-500 mt-0.5">Manage substitute teacher assignments</p>
+                <p class="text-sm text-gray-500 mt-0.5">Assign substitutes for absent teachers' classes</p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-3 divide-x divide-gray-200">
-                    <span class="pr-4">Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
-                    <span class="px-4">Absent: <strong class="text-red-500">{{ $absentCount }}</strong></span>
-                    <span class="px-4">Available: <strong
-                            class="text-emerald-600">{{ $availableCount }}</strong></span>
-                    <span class="pl-4">Arrangements: <strong
-                            class="text-blue-600">{{ $arrangementCount }}</strong></span>
-                </div>
-                <button wire:click="onCreateArrangement"
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700
-                           text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span class="hidden sm:inline">Create Arrangement</span>
-                </button>
+            <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 divide-x divide-gray-200">
+                <span class="pr-4">Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
+                <span class="px-4">Absent: <strong class="text-red-500">{{ $absentCount }}</strong></span>
+                <span class="px-4">Available: <strong class="text-emerald-600">{{ $availableCount }}</strong></span>
+                <span class="pl-4">Arranged: <strong class="text-blue-600">{{ $arrangementCount }}</strong></span>
             </div>
         </div>
         <div class="flex lg:hidden items-center gap-3 text-xs text-gray-500 mt-3 flex-wrap">
             <span>Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
             <span>Absent: <strong class="text-red-500">{{ $absentCount }}</strong></span>
             <span>Available: <strong class="text-emerald-600">{{ $availableCount }}</strong></span>
-            <span>Arrangements: <strong class="text-blue-600">{{ $arrangementCount }}</strong></span>
+            <span>Arranged: <strong class="text-blue-600">{{ $arrangementCount }}</strong></span>
         </div>
     </div>
 
-    <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
-
-        {{-- ══════════════════════════════════════════════════
-             FILTERS
-        ══════════════════════════════════════════════════ --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
-                {{-- Date --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Date</label>
-                    <input type="date" wire:model.live="date"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                {{-- Class filter --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Class</label>
-                    <select wire:model.live="filterClass"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="">All Classes</option>
-                        @foreach ($standards as $std)
-                            <option value="{{ $std->id }}">{{ $std->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Teacher filter (only absent teachers) --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Absent Teacher</label>
-                    <select wire:model.live="filterTeacher"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="">All Absent Teachers</option>
-                        @foreach ($absentTeachers as $t)
-                            <option value="{{ $t->id }}">{{ $t->user?->name ?? '—' }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Clear --}}
-                <div class="flex items-end">
-                    @if ($filterClass || $filterTeacher)
-                        <button wire:click="$set('filterClass', ''); $set('filterTeacher', '')" title="Clear filters"
-                            class="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    @endif
-                </div>
+    {{-- Filter bar (exams-style) --}}
+    <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                Filter by:
             </div>
-        </div>
 
-        {{-- ══════════════════════════════════════════════════
-             ARRANGEMENTS TABLE (Desktop)
-        ══════════════════════════════════════════════════ --}}
-        <div class="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="px-6 py-3 border-b border-gray-100">
-                <h2 class="text-sm font-semibold text-gray-700">
-                    Arrangements — {{ \Carbon\Carbon::parse($date)->format('d M Y') }}
-                </h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">
-                                S.No</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Original Teacher</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Substitute</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Class / Section</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Subject</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Time</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Reason</th>
-                            <th
-                                class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">
-                                Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($arrangements as $index => $arr)
-                            <tr class="hover:bg-gray-50/70 transition-colors">
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm text-gray-500 font-medium">{{ $arrangements->firstItem() + $index }}</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                                            <span class="text-xs font-semibold text-red-600">
-                                                {{ strtoupper(substr($arr->originalTeacher?->user?->name ?? 'T', 0, 1)) }}
-                                            </span>
-                                        </div>
-                                        <span
-                                            class="text-sm font-medium text-gray-900">{{ $arr->originalTeacher?->user?->name ?? '—' }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                            <span class="text-xs font-semibold text-emerald-600">
-                                                {{ strtoupper(substr($arr->substituteTeacher?->user?->name ?? 'S', 0, 1)) }}
-                                            </span>
-                                        </div>
-                                        <span
-                                            class="text-sm font-medium text-emerald-700">{{ $arr->substituteTeacher?->user?->name ?? '—' }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex flex-wrap gap-1">
-                                        @if ($arr->timetable?->standard)
-                                            <span
-                                                class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">
-                                                {{ $arr->timetable->standard->name }}
-                                            </span>
-                                        @endif
-                                        @if ($arr->timetable?->section)
-                                            <span
-                                                class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium border border-purple-100">
-                                                {{ $arr->timetable->section->name }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm text-gray-800">{{ $arr->timetable?->subject?->name ?? '—' }}</span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="text-sm text-gray-700">
-                                        {{ $arr->timetable ? \Carbon\Carbon::parse($arr->timetable->start_time)->format('h:i A') . ' – ' . \Carbon\Carbon::parse($arr->timetable->end_time)->format('h:i A') : '—' }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-600 truncate block max-w-[150px]"
-                                        title="{{ $arr->reason }}">
-                                        {{ \Illuminate\Support\Str::limit($arr->reason, 30) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center justify-center">
-                                        <button wire:click="deleteArrangement({{ $arr->id }})"
-                                            class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-16 text-center">
-                                    <div
-                                        class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                    <p class="text-gray-500 text-sm">No arrangements for
-                                        {{ \Carbon\Carbon::parse($date)->format('d M Y') }}</p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if ($arrangements->hasPages())
-                <div
-                    class="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p class="text-sm text-gray-500">
-                        Showing <span class="font-medium text-gray-700">{{ $arrangements->firstItem() }}</span>
-                        to <span class="font-medium text-gray-700">{{ $arrangements->lastItem() }}</span>
-                        of <span class="font-medium text-gray-700">{{ $arrangements->total() }}</span>
-                    </p>
-                    <div class="flex items-center gap-1">
-                        @if ($arrangements->onFirstPage())
-                            <span
-                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed">&laquo;
-                                Prev</span>
-                        @else
-                            <button wire:click="previousPage"
-                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">&laquo;
-                                Prev</button>
-                        @endif
-                        @foreach ($arrangements->getUrlRange(max(1, $arrangements->currentPage() - 2), min($arrangements->lastPage(), $arrangements->currentPage() + 2)) as $page => $url)
-                            <button wire:click="gotoPage({{ $page }})"
-                                class="px-3 py-1.5 text-sm rounded-lg {{ $page == $arrangements->currentPage() ? 'bg-blue-600 text-white border border-blue-600' : 'text-gray-600 border border-gray-300 hover:bg-gray-50' }}">{{ $page }}</button>
-                        @endforeach
-                        @if ($arrangements->hasMorePages())
-                            <button wire:click="nextPage"
-                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Next
-                                &raquo;</button>
-                        @else
-                            <span
-                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed">Next
-                                &raquo;</span>
-                        @endif
-                    </div>
-                </div>
+            <input type="date" wire:model.live="date"
+                class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 min-w-[150px]">
+
+            <select wire:model.live="filterClass"
+                class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 min-w-[140px]">
+                <option value="">All Classes</option>
+                @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
+            </select>
+
+            <span class="text-xs text-gray-500 ml-auto">
+                Showing slots for <strong class="text-gray-700">{{ \Carbon\Carbon::parse($date)->format('D, d M Y') }}</strong>
+            </span>
+
+            @if ($filterClass)
+                <button wire:click="clearFilters"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Clear
+                </button>
             @endif
         </div>
+    </div>
+</div>
 
-        {{-- ══════════════════════════════════════════════════
-             MOBILE CARDS
-        ══════════════════════════════════════════════════ --}}
-        <div class="md:hidden space-y-3">
-            @forelse ($arrangements as $index => $arr)
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div class="flex items-center justify-between p-4 border-b border-gray-100">
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="text-xs font-bold text-gray-400">{{ $arrangements->firstItem() + $index }}</span>
-                            <span class="text-xs text-gray-500">
-                                {{ $arr->timetable ? \Carbon\Carbon::parse($arr->timetable->start_time)->format('h:i A') . ' – ' . \Carbon\Carbon::parse($arr->timetable->end_time)->format('h:i A') : '—' }}
+<div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+
+@if ($absentTeachers->isEmpty())
+    {{-- ─── Empty state: nobody absent ───────────────────── --}}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+        <div class="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p class="text-sm text-gray-600 font-medium">No teachers marked absent for this date.</p>
+        <p class="text-xs text-gray-400 mt-1">Mark attendance to begin arranging substitutes.</p>
+    </div>
+@else
+    {{-- ─── Absent teacher cards ─────────────────────────── --}}
+    @foreach ($absentTeachers as $teacher)
+        @php
+            $teacherSlots = $absentSlots->get($teacher->id, collect());
+            $arrangedHere = $teacherSlots->filter(fn($s) => $arrangementsForDate->has($s->id))->count();
+            $totalHere    = $teacherSlots->count();
+        @endphp
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {{-- Card header --}}
+            <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-gray-200 bg-gradient-to-r from-red-50/40 to-transparent">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm flex-shrink-0">
+                        {{ strtoupper(substr($teacher->user?->name ?? 'T', 0, 1)) }}
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-gray-900 truncate">{{ $teacher->user?->name ?? '—' }}</h3>
+                        <p class="text-xs text-gray-500">
+                            Absent today
+                            @if ($totalHere > 0)
+                                · <span class="text-blue-600 font-medium">{{ $arrangedHere }}/{{ $totalHere }} slots arranged</span>
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs px-2 py-1 bg-red-50 text-red-700 rounded-full font-medium border border-red-100 flex-shrink-0">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Absent
+                </span>
+            </div>
+
+            {{-- Slots --}}
+            <div class="divide-y divide-gray-100">
+                @forelse ($teacherSlots as $slot)
+                    @php
+                        $arrangement = $arrangementsForDate->get($slot->id);
+                        $available   = $slotAvailability[$slot->id] ?? collect();
+                    @endphp
+
+                    <div class="px-4 sm:px-6 py-3.5">
+                        <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+                            <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100 flex-shrink-0">
+                                    {{ $slot->standard?->name ?? '—' }}
+                                </span>
+                                @if ($slot->section)
+                                    <span class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium border border-purple-100 flex-shrink-0">
+                                        {{ $slot->section->name }}
+                                    </span>
+                                @endif
+                                <span class="text-sm font-medium text-gray-800 truncate">{{ $slot->subject?->name ?? '—' }}</span>
+                            </div>
+                            <span class="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                {{ \Carbon\Carbon::parse($slot->start_time)->format('h:i A') }}
+                                –
+                                {{ \Carbon\Carbon::parse($slot->end_time)->format('h:i A') }}
                             </span>
                         </div>
-                        <div class="flex gap-1">
-                            @if ($arr->timetable?->standard)
-                                <span
-                                    class="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">{{ $arr->timetable->standard->name }}</span>
-                            @endif
-                            @if ($arr->timetable?->section)
-                                <span
-                                    class="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded font-medium">{{ $arr->timetable->section->name }}</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="px-4 py-3 space-y-2">
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <p class="text-xs text-gray-400">Original Teacher</p>
-                                <p class="text-red-600 font-medium">{{ $arr->originalTeacher?->user?->name ?? '—' }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-gray-400">Substitute</p>
-                                <p class="text-emerald-700 font-medium">
-                                    {{ $arr->substituteTeacher?->user?->name ?? '—' }}</p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <p class="text-xs text-gray-400">Subject</p>
-                                <p class="text-gray-800">{{ $arr->timetable?->subject?->name ?? '—' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-gray-400">Reason</p>
-                                <p class="text-gray-600 truncate" title="{{ $arr->reason }}">
-                                    {{ \Illuminate\Support\Str::limit($arr->reason, 25) }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex items-center border-t border-gray-100">
-                        <button wire:click="deleteArrangement({{ $arr->id }})"
-                            class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            @empty
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-                    <p class="text-gray-500 text-sm">No arrangements for
-                        {{ \Carbon\Carbon::parse($date)->format('d M Y') }}</p>
-                </div>
-            @endforelse
 
-            @if ($arrangements->hasPages())
-                <div
-                    class="flex items-center justify-between bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3">
-                    <p class="text-xs text-gray-500">{{ $arrangements->firstItem() }}–{{ $arrangements->lastItem() }}
-                        of {{ $arrangements->total() }}</p>
-                    <div class="flex items-center gap-1">
-                        @if (!$arrangements->onFirstPage())
-                            <button wire:click="previousPage"
-                                class="px-2.5 py-1 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Prev</button>
-                        @endif
-                        <span
-                            class="px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg">{{ $arrangements->currentPage() }}</span>
-                        @if ($arrangements->hasMorePages())
-                            <button wire:click="nextPage"
-                                class="px-2.5 py-1 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Next</button>
-                        @endif
-                    </div>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- ══════════════════════════════════════════════════
-         CREATE ARRANGEMENT MODAL
-    ══════════════════════════════════════════════════ --}}
-    <x-modal-form show="{{ $open }}"
-        title="Create Arrangement — {{ \Carbon\Carbon::parse($date)->format('d M Y') }}"
-        submitAction="onSaveArrangements" submitButton="Save Arrangements" closeAction="closeModal">
-
-        {{-- Date display --}}
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input type="date" wire:model.live="date"
-                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                min="{{ now()->format('Y-m-d') }}">
-        </div>
-
-        {{-- Absent Teacher Selection --}}
-        <div class="mb-5">
-            <x-native-select label="Select Absent Teacher *" wire:model.live="selectedTeacherId">
-                <option value="">Choose absent teacher</option>
-                @foreach ($absentTeachers as $teacher)
-                    <option value="{{ $teacher->id }}">
-                        {{ $teacher->user?->name ?? '—' }}
-                    </option>
-                @endforeach
-            </x-native-select>
-            @if ($absentTeachers->isEmpty())
-                <p class="text-xs text-emerald-600 mt-1">No teachers marked absent for this date.</p>
-            @endif
-        </div>
-
-        {{-- Timetable Slots with Substitute Selection --}}
-        @if ($selectedTeacherId)
-            @if (empty($teacherSlots))
-                <div class="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
-                    <p class="text-sm text-gray-400">No remaining slots to arrange for this teacher on this day.</p>
-                </div>
-            @else
-                <div class="space-y-4">
-                    <h3 class="text-sm font-semibold text-gray-700">Class Slots to Arrange</h3>
-
-                    @foreach ($teacherSlots as $i => $slot)
-                        @php
-                            $availableSubs = $this->getAvailableSubstitutesForSlot($i);
-                        @endphp
-                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
-                            {{-- Slot info --}}
-                            <div class="flex items-center justify-between flex-wrap gap-2">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-xs font-bold text-gray-400 uppercase">Slot
-                                        {{ $i + 1 }}</span>
-                                    <span
-                                        class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100">
-                                        {{ $slot['standard']['name'] ?? '—' }}
+                        @if ($arrangement)
+                            {{-- Already arranged: show substitute + delete --}}
+                            <div class="flex items-center justify-between gap-3 bg-emerald-50/60 border border-emerald-100 rounded-lg px-3 py-2">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
+                                        {{ strtoupper(substr($arrangement->substituteTeacher?->user?->name ?? 'S', 0, 1)) }}
                                     </span>
-                                    @if (!empty($slot['section']))
-                                        <span
-                                            class="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium border border-purple-100">
-                                            {{ $slot['section']['name'] }}
-                                        </span>
-                                    @endif
-                                    <span
-                                        class="text-xs font-medium text-gray-600">{{ $slot['subject']['name'] ?? '—' }}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-emerald-800 truncate">
+                                            <svg class="w-3.5 h-3.5 inline -mt-0.5 mr-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            {{ $arrangement->substituteTeacher?->user?->name ?? '—' }}
+                                        </p>
+                                        @if ($arrangement->reason)
+                                            <p class="text-xs text-emerald-700/70 truncate">{{ $arrangement->reason }}</p>
+                                        @endif
+                                    </div>
                                 </div>
-                                <span class="text-xs text-gray-500">
-                                    {{ \Carbon\Carbon::parse($slot['start_time'])->format('h:i A') }}
-                                    –
-                                    {{ \Carbon\Carbon::parse($slot['end_time'])->format('h:i A') }}
-                                </span>
+                                <button wire:click="deleteArrangement({{ $arrangement->id }})"
+                                    class="p-1.5 text-red-600 hover:bg-red-100 rounded-md transition-colors flex-shrink-0"
+                                    title="Remove substitute">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
                             </div>
-
-                            {{-- Substitute selection --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Substitute
-                                        Teacher</label>
-                                    <select wire:model="slotSubstitutes.{{ $i }}"
-                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                        @else
+                            {{-- Unarranged: dropdown + reason + assign --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-gray-50 border border-gray-200 rounded-lg p-2.5">
+                                <div class="sm:col-span-5">
+                                    <select wire:model.live="slotSubstitutes.{{ $slot->id }}"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
                                         <option value="">Select substitute</option>
-                                        @foreach ($availableSubs as $sub)
-                                            <option value="{{ $sub['id'] }}">{{ $sub['user']['name'] ?? '—' }}
-                                            </option>
+                                        @foreach ($available as $sub)
+                                            <option value="{{ $sub->id }}">{{ $sub->user?->name ?? '—' }}</option>
                                         @endforeach
                                     </select>
-                                    @if (empty($availableSubs))
-                                        <p class="text-xs text-amber-600 mt-1">No teachers available for this time
-                                            slot.</p>
+                                    @if ($available->isEmpty())
+                                        <p class="text-xs text-amber-600 mt-1">No teacher available for this time.</p>
                                     @endif
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Reason</label>
-                                    <input type="text" wire:model="slotReasons.{{ $i }}"
-                                        placeholder="e.g. Sick leave"
-                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <div class="sm:col-span-5">
+                                    <input type="text" wire:model="slotReasons.{{ $slot->id }}"
+                                        placeholder="Reason (e.g. Sick leave)"
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-blue-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <button wire:click="assignSlot({{ $slot->id }})" wire:loading.attr="disabled"
+                                        @disabled(empty($slotSubstitutes[$slot->id] ?? null))
+                                        class="w-full px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                                        <span wire:loading.remove wire:target="assignSlot">Assign</span>
+                                        <span wire:loading wire:target="assignSlot">…</span>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        @else
-            <div class="text-center py-6 text-sm text-gray-400">
-                Select an absent teacher to see their class slots.
+                        @endif
+                    </div>
+                @empty
+                    <div class="px-6 py-6 text-center text-sm text-gray-400">
+                        No classes scheduled for this teacher on
+                        {{ \Carbon\Carbon::parse($date)->format('l') }}.
+                    </div>
+                @endforelse
             </div>
-        @endif
+        </div>
+    @endforeach
+@endif
 
-    </x-modal-form>
+</div>
+
+{{-- ═══════════════════════════════════════════════════
+     DELETE CONFIRM OVERLAY (custom, no WireUI dialog)
+═══════════════════════════════════════════════════ --}}
+@if ($showDeleteConfirm)
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDelete"></div>
+    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-gray-900 mb-1">Remove this arrangement?</h3>
+                <p class="text-sm text-gray-500">
+                    <strong>{{ $deleteTargetLabel }}</strong> will be unassigned. The slot will become unarranged again.
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 mt-5">
+            <button wire:click="cancelDelete" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+            <button wire:click="confirmDelete" wire:loading.attr="disabled"
+                class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 flex items-center gap-1.5">
+                <span wire:loading.remove wire:target="confirmDelete">Remove</span>
+                <span wire:loading wire:target="confirmDelete">Removing…</span>
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 
 </div>
