@@ -50,6 +50,12 @@ class Content extends Component
     public $viewContentData   = [];
     public $viewContentTitle  = '';
 
+    // ─── Delete confirm overlay (replaces broken WireUI dialog) ──────────
+    public bool   $showDeleteConfirm = false;
+    public string $deleteTargetType  = ''; // 'chapter' | 'topic'
+    public ?int   $deleteTargetId    = null;
+    public string $deleteTargetName  = '';
+
     // ─── Stats ───────────────────────────────────────────────────────────
     public $totalChapters = 0;
     public $totalTopics   = 0;
@@ -476,25 +482,41 @@ class Content extends Component
 
     public function deleteContent(string $type, int $id): void
     {
-        $this->dialog()->confirm([
-            'title'       => 'Remove Content?',
-            'description' => 'This will remove all content from this item. The chapter/topic itself will remain.',
-            'icon'        => 'error',
-            'accept'      => ['label' => 'Yes, Remove', 'method' => 'confirmDeleteContent', 'params' => [$type, $id]],
-            'reject'      => ['label' => 'Cancel'],
-        ]);
+        $this->deleteTargetType = $type;
+        $this->deleteTargetId   = (int) $id;
+
+        if ($type === 'chapter') {
+            $this->deleteTargetName = Chapter::find($id)?->name ?? '';
+        } else {
+            $this->deleteTargetName = Topic::find($id)?->topic_name ?? '';
+        }
+
+        $this->showDeleteConfirm = true;
     }
 
-    public function confirmDeleteContent(string $type, int $id): void
+    public function cancelDelete(): void
     {
+        $this->showDeleteConfirm = false;
+        $this->deleteTargetType  = '';
+        $this->deleteTargetId    = null;
+        $this->deleteTargetName  = '';
+    }
+
+    public function confirmDelete(): void
+    {
+        if (!$this->deleteTargetId || !$this->deleteTargetType) {
+            $this->cancelDelete();
+            return;
+        }
+
         try {
-            if ($type === 'chapter') {
-                $ch = Chapter::findOrFail($id);
+            if ($this->deleteTargetType === 'chapter') {
+                $ch = Chapter::findOrFail($this->deleteTargetId);
                 if ($ch->image_path) $this->deleteS3File($ch->image_path);
                 if ($ch->pdf_path)   $this->deleteS3File($ch->pdf_path);
                 $ch->update(['description' => null, 'file_path' => null, 'image_path' => null, 'pdf_path' => null]);
             } else {
-                $tp = Topic::findOrFail($id);
+                $tp = Topic::findOrFail($this->deleteTargetId);
                 if ($tp->image_path) $this->deleteS3File($tp->image_path);
                 if ($tp->pdf_path)   $this->deleteS3File($tp->pdf_path);
                 $tp->update(['topic_content' => null, 'image_path' => null, 'pdf_path' => null]);
@@ -504,6 +526,8 @@ class Content extends Component
         } catch (\Exception $e) {
             $this->notification()->error('Error: ' . $e->getMessage());
         }
+
+        $this->cancelDelete();
     }
 
     // ─── Render ──────────────────────────────────────────────────────────
