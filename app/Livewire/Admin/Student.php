@@ -350,21 +350,21 @@ class Student extends Component
         // listing (which joins through StudentDetail) showed nothing, so
         // there was no way to fix it from the UI.
         //
-        // Now: if a User row with this email exists in the org but has no
-        // StudentDetail, treat it as an orphan and *reuse it* below. The
-        // create path will fill its fields and create the missing
-        // StudentDetail. We also wrap the actual save in DB::transaction so
-        // this orphan state can never re-emerge.
+        // Strategy: if we find an orphan User (User with no StudentDetail),
+        // DELETE it before creating the new one. Trying to UPDATE the orphan
+        // proved risky — any stale state on the row (triggers, FK rows in
+        // password_resets, sanctum tokens, etc.) can slow or block the
+        // update and we hit a 504. A clean DELETE + INSERT is bulletproof.
         $orgId = Auth::user()->organization_id ?? null;
 
-        // Holds an orphan User to reuse, when detected. Reset on every call.
-        $orphanUserToReuse = null;
+        // Holds an orphan User id queued for deletion inside the transaction.
+        $orphanUserIdToDelete = null;
 
         if (empty($this->studentData['id'])) {
             $existingStudentUser = User::where('email', $this->studentsEmail)
                 ->where('role', 'user')
                 ->when($orgId, fn($q, $org) => $q->where('organization_id', $org))
-                ->first();
+                ->first(['id', 'email']);
 
             if ($existingStudentUser) {
                 $hasDetail = StudentDetail::where('user_id', $existingStudentUser->id)->exists();
@@ -375,12 +375,12 @@ class Student extends Component
                     return;
                 }
 
-                // Orphan User from a previous failed save — silently reuse it.
-                logger()->info('Reusing orphan student User row', [
+                // Orphan User from a previous failed save — queue for deletion.
+                logger()->info('Found orphan student User row, queueing for delete-then-recreate', [
                     'user_id' => $existingStudentUser->id,
                     'email'   => $existingStudentUser->email,
                 ]);
-                $orphanUserToReuse = $existingStudentUser;
+                $orphanUserIdToDelete = $existingStudentUser->id;
             }
         } else {
             // On edit, just make sure no OTHER student row in this org owns it
@@ -404,12 +404,10 @@ class Student extends Component
 
             // Pick which User row to write into:
             //   - Edit mode  → load by id
-            //   - Orphan     → reuse the prior failed-save row
-            //   - Fresh add  → brand new
+            //   - Fresh add  → brand new (orphan, if any, is deleted in the
+            //                  transaction below before the new User is saved)
             if (!empty($this->studentData['id'])) {
                 $student = User::find($this->studentData['id']);
-            } elseif ($orphanUserToReuse) {
-                $student = $orphanUserToReuse;
             } else {
                 $student = new User();
             }
@@ -451,7 +449,14 @@ class Student extends Component
             // rolls back — no more orphan User rows from previous saves
             // dying mid-flow. THIS is the structural fix; the orphan-reuse
             // logic above is the self-heal for orphans that already exist.
-            [$detail, $admissionNo] = DB::transaction(function () use ($student, $studentData, $isNew, $org, $orgId) {
+            [$detail, $admissionNo] = DB::transaction(function () use ($student, $studentData, $isNew, $org, $orgId, $orphanUserIdToDelete) {
+                // Wipe any orphan User row holding the same email — cleans
+                // the slate so the new User save can't trip a unique conflict
+                // or hit stale row state.
+                if ($orphanUserIdToDelete) {
+                    User::where('id', $orphanUserIdToDelete)->delete();
+                }
+
                 $student->fill($studentData)->save();
 
                 // Identifiers — on edit, keep what's there; otherwise mint.
