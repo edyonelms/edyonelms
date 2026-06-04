@@ -10,6 +10,7 @@ use App\Models\Student\StudentDetail;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -320,22 +321,46 @@ class Student extends Component
             'selectedRoute.required'   => 'Please select a transport route.',
         ];
 
-        // Email uniqueness — only collide with a *student* in the *same org*.
-        // The previous `unique:users,email` was global, which produced the
-        // weird "email already used but I can't see them in the list" bug
-        // when the same email was used by a teacher in this org or a student
-        // in a different org. Matches the teacher controller's pattern.
+        // Email uniqueness — only collide with a *real* student in the *same
+        // org*. "Real" means a User row that ALSO has a StudentDetail row.
+        //
+        // Why: previous failed saves used to leave orphan User rows (User
+        // created, StudentDetail creation then failed mid-flow). That bricked
+        // the form — the validation said "exists in this school" but the
+        // listing (which joins through StudentDetail) showed nothing, so
+        // there was no way to fix it from the UI.
+        //
+        // Now: if a User row with this email exists in the org but has no
+        // StudentDetail, treat it as an orphan and *reuse it* below. The
+        // create path will fill its fields and create the missing
+        // StudentDetail. We also wrap the actual save in DB::transaction so
+        // this orphan state can never re-emerge.
         $orgId = Auth::user()->organization_id ?? null;
 
+        // Holds an orphan User to reuse, when detected. Reset on every call.
+        $orphanUserToReuse = null;
+
         if (empty($this->studentData['id'])) {
-            $existingStudent = User::where('email', $this->studentsEmail)
+            $existingStudentUser = User::where('email', $this->studentsEmail)
                 ->where('role', 'user')
                 ->when($orgId, fn($q, $org) => $q->where('organization_id', $org))
                 ->first();
 
-            if ($existingStudent) {
-                $this->addError('studentsEmail', 'A student with this email already exists in this school.');
-                return;
+            if ($existingStudentUser) {
+                $hasDetail = StudentDetail::where('user_id', $existingStudentUser->id)->exists();
+
+                if ($hasDetail) {
+                    // Real existing student — block.
+                    $this->addError('studentsEmail', 'A student with this email already exists in this school.');
+                    return;
+                }
+
+                // Orphan User from a previous failed save — silently reuse it.
+                logger()->info('Reusing orphan student User row', [
+                    'user_id' => $existingStudentUser->id,
+                    'email'   => $existingStudentUser->email,
+                ]);
+                $orphanUserToReuse = $existingStudentUser;
             }
         } else {
             // On edit, just make sure no OTHER student row in this org owns it
@@ -356,7 +381,17 @@ class Student extends Component
             $org      = $authUser->organization ?? null; // may be null for some admin contexts
             $plainPassword = null;
 
-            $student = !empty($this->studentData['id']) ? User::find($this->studentData['id']) : new User();
+            // Pick which User row to write into:
+            //   - Edit mode  → load by id
+            //   - Orphan     → reuse the prior failed-save row
+            //   - Fresh add  → brand new
+            if (!empty($this->studentData['id'])) {
+                $student = User::find($this->studentData['id']);
+            } elseif ($orphanUserToReuse) {
+                $student = $orphanUserToReuse;
+            } else {
+                $student = new User();
+            }
 
             $studentData = [
                 'name'            => $this->studentsName,
@@ -367,6 +402,9 @@ class Student extends Component
                 'organization_id' => $orgId,
             ];
 
+            // S3 upload happens BEFORE the DB transaction — S3 can't be
+            // rolled back, so we'd rather leak a small image file on a
+            // transaction failure than block the save retry.
             if ($this->studentImage) {
                 if ($student->image) {
                     Storage::disk('s3')->delete(parse_url($student->image, PHP_URL_PATH));
@@ -376,74 +414,86 @@ class Student extends Component
                 $studentData['image'] = Storage::disk('s3')->url($path);
             }
 
+            // "isNew" = a brand-new student in the DB sense (no StudentDetail
+            // yet). Edit mode is the only non-new case; orphan reuse is still
+            // "new" because we're creating the missing StudentDetail.
             $isNew = empty($this->studentData['id']);
             if ($isNew) {
                 $plainPassword = substr(str_shuffle('abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789@#$!'), 0, 10);
                 $studentData['password'] = Hash::make($plainPassword);
             }
 
-            $student->fill($studentData)->save();
+            // ─── Atomic save ──────────────────────────────────────────────
+            // Wrap User save + StudentDetail upsert + transport-route sync
+            // in a single transaction. If any step fails the whole thing
+            // rolls back — no more orphan User rows from previous saves
+            // dying mid-flow. THIS is the structural fix; the orphan-reuse
+            // logic above is the self-heal for orphans that already exist.
+            [$detail, $admissionNo] = DB::transaction(function () use ($student, $studentData, $isNew, $org, $orgId) {
+                $student->fill($studentData)->save();
 
-            // Generate identifiers ONCE so the list, DB and email always match.
-            // On edit, keep the existing admission/roll numbers.
-            if ($isNew) {
-                $admissionNo = $this->generateAdmissionNumber();
-                $rollNo      = $this->generateRollNumber();
-            } else {
-                $existingDetail = StudentDetail::where('user_id', $student->id)->first(['admission_no', 'roll_no']);
-                $admissionNo = $existingDetail->admission_no ?? $this->generateAdmissionNumber();
-                $rollNo      = $existingDetail->roll_no ?? $this->generateRollNumber();
-            }
+                // Identifiers — on edit, keep what's there; otherwise mint.
+                if ($isNew) {
+                    $admissionNo = $this->generateAdmissionNumber();
+                    $rollNo      = $this->generateRollNumber();
+                } else {
+                    $existingDetail = StudentDetail::where('user_id', $student->id)->first(['admission_no', 'roll_no']);
+                    $admissionNo = $existingDetail->admission_no ?? $this->generateAdmissionNumber();
+                    $rollNo      = $existingDetail->roll_no ?? $this->generateRollNumber();
+                }
 
-            // Board is auto-fetched from the chosen class. Use null-safe
-            // access on organization so a missing org relationship doesn't
-            // throw TypeError ("Attempt to read property on null").
-            $standardBoard = Standard::where('id', (int) $this->studentsClass)->value('board')
-                ?? ($org?->education_board)
-                ?? null;
+                // Board is auto-fetched from the chosen class. Null-safe so
+                // a missing org relationship doesn't TypeError.
+                $standardBoard = Standard::where('id', (int) $this->studentsClass)->value('board')
+                    ?? ($org?->education_board)
+                    ?? null;
 
-            $detailData = [
-                'user_id'                => $student->id,
-                'standard_id'            => (int) $this->studentsClass,
-                'section_id'             => (int) $this->studentsSection,
-                'full_name'              => $this->studentsName,
-                'father_name'            => $this->fatherName,
-                'mother_name'            => $this->motherName,
-                'email'                  => $this->studentsEmail,
-                'dob'                    => $this->dob,
-                'gender'                 => $this->studentsGender,
-                'religion'               => $this->religion ?? null,
-                'local_address'          => $this->localAddress ?? null,
-                'permanent_address'      => $this->permanentAddress ?? null,
-                'city'                   => $this->selectedCity ?? null,
-                'state'                  => $this->selectedState ?? null,
-                'pincode'                => $this->pincode ?? null,
-                'admission_no'           => $admissionNo,
-                'date_of_admission'      => $this->dateOfAdmission ?: now()->toDateString(),
-                'roll_no'                => $rollNo,
-                'board'                  => $standardBoard,
-                'aadhar_no'              => $this->aadharNo ?? null,
-                'phone'                  => $this->studentsMobile,
-                'transportation_required' => (bool) $this->transportationRequired,
-                'organization_id'        => $orgId,
-                'appar_id'               => $this->apparId ?? null,
-                'registration_number'    => $this->registrationNumber ?? null,
-            ];
+                $detailData = [
+                    'user_id'                => $student->id,
+                    'standard_id'            => (int) $this->studentsClass,
+                    'section_id'             => (int) $this->studentsSection,
+                    'full_name'              => $this->studentsName,
+                    'father_name'            => $this->fatherName,
+                    'mother_name'            => $this->motherName,
+                    'email'                  => $this->studentsEmail,
+                    'dob'                    => $this->dob,
+                    'gender'                 => $this->studentsGender,
+                    'religion'               => $this->religion ?? null,
+                    'local_address'          => $this->localAddress ?? null,
+                    'permanent_address'      => $this->permanentAddress ?? null,
+                    'city'                   => $this->selectedCity ?? null,
+                    'state'                  => $this->selectedState ?? null,
+                    'pincode'                => $this->pincode ?? null,
+                    'admission_no'           => $admissionNo,
+                    'date_of_admission'      => $this->dateOfAdmission ?: now()->toDateString(),
+                    'roll_no'                => $rollNo,
+                    'board'                  => $standardBoard,
+                    'aadhar_no'              => $this->aadharNo ?? null,
+                    'phone'                  => $this->studentsMobile,
+                    'transportation_required' => (bool) $this->transportationRequired,
+                    'organization_id'        => $orgId,
+                    'appar_id'               => $this->apparId ?? null,
+                    'registration_number'    => $this->registrationNumber ?? null,
+                ];
 
-            if (!$isNew) {
                 $detail = StudentDetail::updateOrCreate(['user_id' => $student->id], $detailData);
+
                 // syncTransportRoute is wrapped because the pivot table or
-                // relationship config can throw and we don't want to take
-                // the whole save down for a transport-route mishap.
+                // relationship config can throw and we don't want a transport
+                // misconfig to roll back the entire student creation.
                 try { $this->syncTransportRoute($detail); }
                 catch (\Throwable $e) { logger()->error('syncTransportRoute failed: ' . $e->getMessage()); }
+
+                return [$detail, $admissionNo];
+            });
+
+            // ─── After commit ─────────────────────────────────────────────
+            if (!$isNew) {
                 $this->notification()->success('Student Updated Successfully!');
             } else {
-                $detail = StudentDetail::create($detailData);
-                try { $this->syncTransportRoute($detail); }
-                catch (\Throwable $e) { logger()->error('syncTransportRoute failed: ' . $e->getMessage()); }
-
-                // Send welcome email with login credentials on student creation
+                // Welcome email — fire-and-forget, never blocks the response.
+                // ZeptoMail has tight HTTP timeouts (3s connect, 5s total) so
+                // worst case adds ~8s before the success notification.
                 try {
                     $templateKey = config('services.zeptomail.student_password_template_key');
                     if ($templateKey && $plainPassword) {
