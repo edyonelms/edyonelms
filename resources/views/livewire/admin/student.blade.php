@@ -509,8 +509,7 @@
 
     {{-- ══════════════════════════════════════════════════
          ADD / EDIT — teacher-style slide-in panel
-         (flat 2-col grid, sticky header + footer, supports
-          rapid multi-add via "Save & Add Another")
+         (flat 2-col grid, sticky header + footer)
     ══════════════════════════════════════════════════ --}}
     @if ($open)
         <div class="fixed inset-0 z-50 overflow-hidden">
@@ -527,22 +526,12 @@
                             {{ $editId ? 'Update the student details below' : 'Welcome email with login credentials will be sent on save' }}
                         </p>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        @if (!$editId && $batchAddCount > 0)
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full
-                                         bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                  title="Students added so far in this session">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                {{ $batchAddCount }} added
-                            </span>
-                        @endif
-                        <button wire:click="closeModal" type="button"
-                            class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+                    <button wire:click="closeModal" type="button"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
                 {{-- Scrollable form body (flat teacher grid) --}}
@@ -789,25 +778,12 @@
                     </div>
                 </form>
 
-                {{-- Footer — Cancel + (add mode: Save & Add Another + Create) / (edit: Update) --}}
+                {{-- Footer — Cancel + single Save / Update button --}}
                 <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button type="button" wire:click="closeModal"
                         class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
                         Cancel
                     </button>
-
-                    @if (!$editId)
-                        {{-- Save & Add Another — keeps the panel open for the next student --}}
-                        <button type="button" wire:click="onSaveAndAddAnother" wire:loading.attr="disabled"
-                            class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 text-sm font-medium rounded-md
-                                   flex items-center gap-1.5 disabled:opacity-60">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span wire:loading.remove wire:target="onSaveAndAddAnother">Save &amp; Add Another</span>
-                            <span wire:loading wire:target="onSaveAndAddAnother">Saving…</span>
-                        </button>
-                    @endif
 
                     <button type="submit" form="student-form" wire:loading.attr="disabled" wire:target="onSave"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md
