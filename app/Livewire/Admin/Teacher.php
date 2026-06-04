@@ -307,31 +307,42 @@ class Teacher extends Component
                 ]
             );
 
-            // Send welcome email on creation only — never blocks save
+            // Send welcome email on creation only — dispatched after-response so
+            // a slow ZeptoMail can never block the user's "Saving…" spinner.
+            // Same pattern as Student.php for consistency.
             if (!$isEdit && $plainPassword) {
-                try {
-                    $templateKey = config('services.zeptomail.teacher_password_template_key');
-                    if ($templateKey) {
-                        $schoolName = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
-                        \App\Services\ZeptoMailService::sendTemplate(
-                            $templateKey,
-                            $teacher->email,
-                            $teacher->name,
-                            [
-                                'password'      => $plainPassword,
-                                'email_address' => $teacher->email,
-                                'school_name'   => $schoolName,
-                                'username'      => $teacher->name,
-                                'name'          => $teacher->name,
-                                'login_url'     => url('/login'),
-                            ]
-                        );
-                        logger()->info('Teacher welcome email sent to: ' . $teacher->email);
-                    } else {
-                        logger()->warning('ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
-                    }
-                } catch (\Throwable $e) {
-                    logger()->error('Teacher welcome email failed for ' . $teacher->email . ': ' . $e->getMessage());
+                $emailTemplateKey = config('services.zeptomail.teacher_password_template_key');
+                if ($emailTemplateKey) {
+                    $schoolName   = Organization::find(Auth::user()->organization_id)?->name ?? 'School';
+                    $emailPayload = [
+                        'template_key' => $emailTemplateKey,
+                        'to_email'     => $teacher->email,
+                        'to_name'      => $teacher->name,
+                        'merge'        => [
+                            'password'      => $plainPassword,
+                            'email_address' => $teacher->email,
+                            'school_name'   => $schoolName,
+                            'username'      => $teacher->name,
+                            'name'          => $teacher->name,
+                            'login_url'     => url('/login'),
+                        ],
+                    ];
+
+                    dispatch(function () use ($emailPayload) {
+                        try {
+                            \App\Services\ZeptoMailService::sendTemplate(
+                                $emailPayload['template_key'],
+                                $emailPayload['to_email'],
+                                $emailPayload['to_name'],
+                                $emailPayload['merge'],
+                            );
+                            logger()->info('Teacher welcome email sent (after-response) to: ' . $emailPayload['to_email']);
+                        } catch (\Throwable $e) {
+                            logger()->error('Teacher welcome email failed (after-response) for ' . $emailPayload['to_email'] . ': ' . $e->getMessage());
+                        }
+                    })->afterResponse();
+                } else {
+                    logger()->warning('ZEPTOMAIL_TEACHER_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
                 }
             }
 

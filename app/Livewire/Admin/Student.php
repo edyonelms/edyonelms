@@ -286,6 +286,26 @@ class Student extends Component
 
     public function onSave(): void
     {
+        // ─── Hard caps ────────────────────────────────────────────────────
+        // 1. PHP-side cap: fail in ≤20s so nginx (60s proxy_read_timeout)
+        //    never sees a 504. The error will bubble through our \Throwable
+        //    catch as a clean notification instead.
+        // 2. MySQL-side cap: if a previous worker died holding row locks
+        //    (e.g. a 504-killed request earlier in this debugging session),
+        //    a fresh save would normally wait innodb_lock_wait_timeout
+        //    (default 50s) on those locks → 504. Drop to 5s for this
+        //    session so we surface "Lock wait timeout" fast.
+        @set_time_limit(20);
+        try { DB::statement('SET SESSION innodb_lock_wait_timeout = 5'); } catch (\Throwable $e) { /* not all drivers support this; safe to ignore */ }
+
+        $stepStart = microtime(true);
+        $stepLog = function (string $step) use (&$stepStart) {
+            $now = microtime(true);
+            logger()->info('student-save step', ['step' => $step, 'ms' => (int) (($now - $stepStart) * 1000)]);
+            $stepStart = $now;
+        };
+        $stepLog('start');
+
         // Orphaned students cannot be activated until a class is re-assigned (req #6).
         if ($this->isOrphaned && (int) $this->studentsActive === 1) {
             $this->addError('studentsActive', 'Assign a class before activating this student.');
@@ -370,6 +390,7 @@ class Student extends Component
         }
 
         $this->validate($rules, $messages);
+        $stepLog('validated');
 
         // Catch \Throwable (not just \Exception) so PHP 8 Errors — TypeError
         // on a null Auth::user()->organization, BadMethodCallException on a
@@ -412,6 +433,7 @@ class Student extends Component
                 $path = $this->studentImage->store('admin/students/images', 's3');
                 Storage::disk('s3')->setVisibility($path, 'public');
                 $studentData['image'] = Storage::disk('s3')->url($path);
+                $stepLog('s3-upload');
             }
 
             // "isNew" = a brand-new student in the DB sense (no StudentDetail
@@ -487,37 +509,56 @@ class Student extends Component
                 return [$detail, $admissionNo];
             });
 
+            $stepLog('db-saved');
+
             // ─── After commit ─────────────────────────────────────────────
             if (!$isNew) {
                 $this->notification()->success('Student Updated Successfully!');
             } else {
-                // Welcome email — fire-and-forget, never blocks the response.
-                // ZeptoMail has tight HTTP timeouts (3s connect, 5s total) so
-                // worst case adds ~8s before the success notification.
-                try {
-                    $templateKey = config('services.zeptomail.student_password_template_key');
-                    if ($templateKey && $plainPassword) {
-                        $schoolName = Organization::find($orgId)?->name ?? 'School';
-                        \App\Services\ZeptoMailService::sendTemplate(
-                            $templateKey,
-                            $student->email,
-                            $student->name,
-                            [
-                                'password'         => $plainPassword,
-                                'school_name'      => $schoolName,
-                                'admission_number' => $admissionNo,
-                                'username'         => $student->name,
-                                'name'             => $student->name,
-                                'email'            => $student->email,
-                                'login_url'        => url('/login'),
-                            ]
-                        );
-                        logger()->info('Student welcome email sent to: ' . $student->email);
-                    } else {
-                        logger()->warning('ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
-                    }
-                } catch (\Throwable $e) {
-                    logger()->error('Student welcome email failed for ' . $student->email . ': ' . $e->getMessage());
+                // Welcome email — needs to fire (carries password + admission_no
+                // for first-time student login). But ZeptoMail can be slow and
+                // blocked the request long enough to trip nginx's 504 earlier.
+                //
+                // Solution: dispatch the email send via Laravel's afterResponse
+                // hook. PHP delivers the Livewire response to the browser first,
+                // THEN runs this closure on the same FPM worker — so the user
+                // sees "Student Created Successfully!" immediately while the
+                // email goes out in the background. Combined with ZeptoMail's
+                // 3s connect / 5s total timeout, the FPM worker is freed in ≤8s
+                // either way.
+                $emailTemplateKey = config('services.zeptomail.student_password_template_key');
+                if ($emailTemplateKey && $plainPassword) {
+                    $schoolName     = Organization::find($orgId)?->name ?? 'School';
+                    $emailPayload   = [
+                        'template_key' => $emailTemplateKey,
+                        'to_email'     => $student->email,
+                        'to_name'      => $student->name,
+                        'merge'        => [
+                            'password'         => $plainPassword,
+                            'school_name'      => $schoolName,
+                            'admission_number' => $admissionNo,
+                            'username'         => $student->name,
+                            'name'             => $student->name,
+                            'email'            => $student->email,
+                            'login_url'        => url('/login'),
+                        ],
+                    ];
+
+                    dispatch(function () use ($emailPayload) {
+                        try {
+                            \App\Services\ZeptoMailService::sendTemplate(
+                                $emailPayload['template_key'],
+                                $emailPayload['to_email'],
+                                $emailPayload['to_name'],
+                                $emailPayload['merge'],
+                            );
+                            logger()->info('Student welcome email sent (after-response) to: ' . $emailPayload['to_email']);
+                        } catch (\Throwable $e) {
+                            logger()->error('Student welcome email failed (after-response) for ' . $emailPayload['to_email'] . ': ' . $e->getMessage());
+                        }
+                    })->afterResponse();
+                } else {
+                    logger()->warning('ZEPTOMAIL_STUDENT_PASSWORD_TEMPLATE_KEY not configured — skipping welcome email.');
                 }
 
                 $this->notification()->success('Student Created Successfully!');
@@ -526,6 +567,7 @@ class Student extends Component
             $this->resetForm();
             $this->loadStats();
             $this->resetPage();
+            $stepLog('done');
         } catch (\Throwable $e) {
             // \Throwable catches both \Exception and \Error (TypeError etc.) —
             // ensures the UI never stays stuck on "Saving…" because the
