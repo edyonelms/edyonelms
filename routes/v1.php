@@ -15,8 +15,11 @@ use App\Http\Controllers\v1\IdCardController;
 use App\Http\Controllers\v1\InstructorController;
 use App\Http\Controllers\v1\LibraryController;
 use App\Http\Controllers\v1\McqController;
-use App\Http\Controllers\v1\PerformanceController;
 use App\Http\Controllers\v1\ReportCardController;
+use App\Http\Controllers\v1\Student\ExamCopyController as StudentExamCopyController;
+use App\Http\Controllers\v1\Student\MarksController as StudentMarksController;
+use App\Http\Controllers\v1\Teacher\ExamCopyController as TeacherExamCopyController;
+use App\Http\Controllers\v1\Teacher\MarksController as TeacherMarksController;
 use App\Http\Controllers\v1\SeatingPlanController;
 use App\Http\Controllers\v1\StudentContactController;
 use App\Http\Controllers\v1\SubjectController;
@@ -160,28 +163,48 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/all', [AuthController::class, 'getCompleteCurriculumSimple']);
         });
 
-        //Performance Routes All
-        Route::prefix('performance')->group(function () {
-            Route::get('/exam-copies', [PerformanceController::class, 'getAllExamCopies']);
-            Route::get('/exam-copies/{id}', [PerformanceController::class, 'getExamCopy']);
-            Route::post('/student-performance-by-teacher', [PerformanceController::class, 'getStudentPerformanceByTeacher']);
-            Route::get('/filters', [PerformanceController::class, 'getPerformanceFilters']);
-            Route::get('/sections/{standardId}', [PerformanceController::class, 'getSectionsByStandard']);
-            Route::post('/students', [PerformanceController::class, 'getStudentsByClass']);
-            Route::delete('/exam-copies/{id}', [PerformanceController::class, 'deleteExamCopy']);
-            Route::get('/download/exam-copy/{id}', [PerformanceController::class, 'downloadExamCopyPdf']);
-            Route::post('/download/multiple-exam-copies', [PerformanceController::class, 'downloadMultipleExamCopiesPdf']);
+        // ─── Teacher: Marks + Exam-Copy management ───────────────────────────
+        // All endpoints scoped automatically to the (class, section, subject)
+        // triples the teacher teaches via the timetable.
+        Route::prefix('teacher')->group(function () {
 
-            //Teacher  Upload Exam Copy
-            Route::post('/upload-exam-copies', [PerformanceController::class, 'uploadExamCopy']);
-            Route::post('/update-exam-copies/{id}', [PerformanceController::class, 'updateExamCopy']);
-            Route::post('/bulk-upload', [PerformanceController::class, 'bulkUploadExamCopies']);
-            Route::get('/teacher-subjects', [PerformanceController::class, 'getTeacherSubjects']);
-            Route::get('/teacher-classes', [PerformanceController::class, 'getTeacherClasses']);
-            Route::post('/check-exists', [PerformanceController::class, 'checkExamCopyExists']);
+            // Dropdown source — class+section+subject combos the teacher teaches
+            Route::get('/classes-subjects', [TeacherMarksController::class, 'classesSubjects']);
 
-            //Student View Api
-            Route::post('/student-performance', [PerformanceController::class, 'getStudentPerformance']);
+            // Marks (text data)
+            Route::prefix('marks')->group(function () {
+                Route::get('/students',   [TeacherMarksController::class, 'students']); // ?standard_id=&section_id=
+                Route::get('/',           [TeacherMarksController::class, 'index']);
+                Route::post('/',          [TeacherMarksController::class, 'store']);
+                Route::get('/{id}',       [TeacherMarksController::class, 'show'])->whereNumber('id');
+                Route::put('/{id}',       [TeacherMarksController::class, 'update'])->whereNumber('id');
+                Route::delete('/{id}',    [TeacherMarksController::class, 'destroy'])->whereNumber('id');
+            });
+
+            // Exam-copy PDFs
+            Route::prefix('exam-copies')->group(function () {
+                Route::get('/',           [TeacherExamCopyController::class, 'index']);
+                Route::post('/',          [TeacherExamCopyController::class, 'store']);    // multipart
+                Route::get('/{id}',       [TeacherExamCopyController::class, 'show'])->whereNumber('id');
+                Route::post('/{id}',      [TeacherExamCopyController::class, 'update'])->whereNumber('id'); // multipart, accepts _method=PUT
+                Route::put('/{id}',       [TeacherExamCopyController::class, 'update'])->whereNumber('id');
+                Route::delete('/{id}',    [TeacherExamCopyController::class, 'destroy'])->whereNumber('id');
+            });
+        });
+
+        // ─── Student: View own marks + own exam-copy PDFs ────────────────────
+        // Read-only, always scoped to the authenticated student.
+        Route::prefix('student')->group(function () {
+
+            Route::prefix('marks')->group(function () {
+                Route::get('/',                    [StudentMarksController::class, 'index']);
+                Route::get('/overall-performance', [StudentMarksController::class, 'overallPerformance']);
+            });
+
+            Route::prefix('exam-copies')->group(function () {
+                Route::get('/',     [StudentExamCopyController::class, 'index']);
+                Route::get('/{id}', [StudentExamCopyController::class, 'show'])->whereNumber('id');
+            });
         });
 
         //TimeTable Routes All
