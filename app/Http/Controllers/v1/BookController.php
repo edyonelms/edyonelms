@@ -13,11 +13,22 @@ class BookController extends ApiController
     /**
      * GET /api/v1/books
      *
-     * Returns books auto-scoped by user role:
-     *   - Student (role=user) → books for their class + (section or null)
-     *   - Teacher → books for their assigned (standard, subject) pairs
+     * Returns books auto-scoped by user role. The response payload is shaped
+     * to match the front-end book card directly — every field needed to render
+     * a card AND to open the PDF is included in a single call (no separate
+     * detail request required for "tap to read").
      *
-     * Optional filters: standard_id, section_id, subject_id, search
+     * Student (role=user) — books for their class + their section (or
+     * section-less / shared books for that class). Each item carries:
+     *   id, title, cover_url, pdf_url, subject{ id, name }
+     *   plus standard/section for completeness.
+     *
+     * Teacher — books for the (class, subject) pairs they teach via the
+     * timetable. Each item carries:
+     *   id, title, cover_url, pdf_url, subject{ id, name },
+     *   standard{ id, name }, section{ id, name }
+     *
+     * Optional filters: standard_id, section_id, subject_id, search.
      */
     public function index(Request $request)
     {
@@ -48,7 +59,9 @@ class BookController extends ApiController
 
         $books = $query->latest()->paginate((int) $request->get('per_page', 20));
 
-        $items = $books->getCollection()->map(fn($b) => $this->formatBook($b));
+        // List response carries pdf_url too — the card "open" action goes
+        // straight to the PDF without an extra round-trip.
+        $items = $books->getCollection()->map(fn($b) => $this->formatBook($b, withPdf: true));
 
         return $this->paginated($items, $this->paginationMeta($books), 'Books fetched successfully.');
     }
@@ -126,15 +139,33 @@ class BookController extends ApiController
 
     // ── Private ───────────────────────────────────────────────────────────────
 
+    /**
+     * Build the JSON payload for a book row.
+     *
+     * Field reference for front-end cards:
+     *   title      → "book name" on the card
+     *   cover_url  → "cover image" on the card (alias of book_logo column)
+     *   subject    → { id, name } — subject name on the card
+     *   standard   → { id, name } — class name (shown on teacher card)
+     *   section    → { id, name } — section name (shown on teacher card)
+     *   pdf_url    → tap-to-open PDF target
+     *
+     * `logo_url` is retained as a backwards-compat alias for `cover_url`
+     * so old clients don't break while new clients migrate to the
+     * clearer field name.
+     */
     private function formatBook(Book $book, bool $withPdf = false): array
     {
+        $cover = $book->book_logo;
+
         $data = [
-            'id'       => $book->id,
-            'title'    => $book->title,
-            'logo_url' => $book->book_logo,
-            'standard' => $book->standard ? ['id' => $book->standard->id, 'name' => $book->standard->name] : null,
-            'section'  => $book->section  ? ['id' => $book->section->id,  'name' => $book->section->name]  : null,
-            'subject'  => $book->subject  ? ['id' => $book->subject->id,  'name' => $book->subject->name]  : null,
+            'id'        => $book->id,
+            'title'     => $book->title,
+            'cover_url' => $cover,
+            'logo_url'  => $cover, // alias — back-compat
+            'standard'  => $book->standard ? ['id' => $book->standard->id, 'name' => $book->standard->name] : null,
+            'section'   => $book->section  ? ['id' => $book->section->id,  'name' => $book->section->name]  : null,
+            'subject'   => $book->subject  ? ['id' => $book->subject->id,  'name' => $book->subject->name]  : null,
         ];
 
         if ($withPdf) {
