@@ -623,6 +623,7 @@
     },
     {
       "name": "9. Books",
+      "description": "Class library (PDF books).\n\n**Auto-scoped by role** (same endpoint, both roles):\n- **Student** → books for their class + section (and class-wide books with `section_id=NULL`).\n- **Teacher** → books for `(class, subject)` pairs derived from their **timetable**.\n\nList response carries `pdf_url` too — the card 'open' action does NOT need a separate detail call.\n\n**Card field mapping:**\n- Student card → `title` (book name), `cover_url` (cover image), `subject.name` → tap = open `pdf_url`.\n- Teacher card → `title`, `cover_url`, `subject.name`, `standard.name` (class), `section.name` → tap = open `pdf_url`.\n\n`logo_url` is a back-compat alias of `cover_url`.",
       "item": [
         {
           "name": "List Books (role-scoped)",
@@ -638,14 +639,42 @@
               "path": ["v1", "books"],
               "query": [
                 { "key": "per_page", "value": "20" },
-                { "key": "standard_id", "value": "", "disabled": true },
-                { "key": "section_id",  "value": "", "disabled": true },
-                { "key": "subject_id",  "value": "", "disabled": true },
-                { "key": "search",      "value": "", "disabled": true }
+                { "key": "standard_id", "value": "", "disabled": true, "description": "Narrow within caller's scope." },
+                { "key": "section_id",  "value": "", "disabled": true, "description": "Narrow within caller's scope." },
+                { "key": "subject_id",  "value": "", "disabled": true, "description": "Narrow within caller's scope." },
+                { "key": "search",      "value": "", "disabled": true, "description": "Case-insensitive substring match on title." }
               ]
             },
-            "description": "Lists books auto-scoped by user role:\n- **Student** → books for their class + (section or class-wide)\n- **Teacher** → books for assigned (standard, subject) pairs\n\n**Optional filters:** `standard_id`, `section_id`, `subject_id`, `search`, `per_page`\n\nReturns: `[{ id, title, logo_url, standard, section, subject }]`"
-          }
+            "description": "Lists books auto-scoped by caller's role.\n\n- **Student** → books for their class + section (also picks up class-wide books where `section_id IS NULL`).\n- **Teacher** → books for the `(class, subject)` pairs they teach (derived from `teacher_time_tables`).\n\n**Optional filters:** `standard_id`, `section_id`, `subject_id`, `search`, `per_page`.\n\n**Each item:**\n```json\n{\n  \"id\": 14,\n  \"title\": \"NCERT Mathematics — Class 8\",\n  \"cover_url\": \"https://.../math-8.png\",\n  \"logo_url\":  \"https://.../math-8.png\",\n  \"standard\": { \"id\": 8,  \"name\": \"Class 8\" },\n  \"section\":  { \"id\": 24, \"name\": \"A\" },\n  \"subject\":  { \"id\": 3,  \"name\": \"Mathematics\" },\n  \"pdf_url\":  \"https://.../math-8.pdf\"\n}\n```\n\n**Use:** student/teacher app library screen. Tap on a card → open `pdf_url` directly (no extra detail call needed)."
+          },
+          "response": [
+            {
+              "name": "Sample — Student (role=user)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [ { "key": "Accept", "value": "application/json" } ],
+                "url": { "raw": "{{baseUrl}}/v1/books?per_page=20", "host": ["{{baseUrl}}"], "path": ["v1", "books"], "query": [ { "key": "per_page", "value": "20" } ] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [ { "key": "Content-Type", "value": "application/json" } ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Books fetched successfully.\",\n  \"data\": [\n    {\n      \"id\": 14,\n      \"title\": \"NCERT Mathematics — Class 8\",\n      \"cover_url\": \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n      \"logo_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n      \"standard\": { \"id\": 8, \"name\": \"Class 8\" },\n      \"section\":  { \"id\": 24, \"name\": \"A\" },\n      \"subject\":  { \"id\": 3, \"name\": \"Mathematics\" },\n      \"pdf_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/pdfs/math-8.pdf\"\n    },\n    {\n      \"id\": 15,\n      \"title\": \"NCERT Science — Class 8\",\n      \"cover_url\": \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/sci-8.png\",\n      \"logo_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/sci-8.png\",\n      \"standard\": { \"id\": 8, \"name\": \"Class 8\" },\n      \"section\":  null,\n      \"subject\":  { \"id\": 4, \"name\": \"Science\" },\n      \"pdf_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/pdfs/sci-8.pdf\"\n    }\n  ],\n  \"meta\": { \"current_page\": 1, \"per_page\": 20, \"total\": 6, \"last_page\": 1 }\n}"
+            },
+            {
+              "name": "Sample — Teacher (role=teacher)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [ { "key": "Accept", "value": "application/json" } ],
+                "url": { "raw": "{{baseUrl}}/v1/books?per_page=20", "host": ["{{baseUrl}}"], "path": ["v1", "books"], "query": [ { "key": "per_page", "value": "20" } ] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [ { "key": "Content-Type", "value": "application/json" } ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Books fetched successfully.\",\n  \"data\": [\n    {\n      \"id\": 14,\n      \"title\": \"NCERT Mathematics — Class 8\",\n      \"cover_url\": \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n      \"logo_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n      \"standard\": { \"id\": 8, \"name\": \"Class 8\" },\n      \"section\":  { \"id\": 24, \"name\": \"A\" },\n      \"subject\":  { \"id\": 3, \"name\": \"Mathematics\" },\n      \"pdf_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/pdfs/math-8.pdf\"\n    },\n    {\n      \"id\": 22,\n      \"title\": \"NCERT Mathematics — Class 9\",\n      \"cover_url\": \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-9.png\",\n      \"logo_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-9.png\",\n      \"standard\": { \"id\": 9, \"name\": \"Class 9\" },\n      \"section\":  { \"id\": 27, \"name\": \"B\" },\n      \"subject\":  { \"id\": 3, \"name\": \"Mathematics\" },\n      \"pdf_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/pdfs/math-9.pdf\"\n    }\n  ],\n  \"meta\": { \"current_page\": 1, \"per_page\": 20, \"total\": 4, \"last_page\": 1 }\n}"
+            }
+          ]
         },
         {
           "name": "Get Book Detail (with PDF)",
@@ -660,8 +689,36 @@
               "host": ["{{baseUrl}}"],
               "path": ["v1", "books", "1"]
             },
-            "description": "Returns a single book with PDF URL. Same role scoping as list — returns 404 if caller is not entitled to access the book."
-          }
+            "description": "Returns a single book (same shape as a list item), still role-scoped.\n\nMostly **optional** for the normal list flow — list response already carries `pdf_url`. Use this for **deep-link / share-link / push-notification** scenarios where the front-end only has a book id, not a list.\n\n- **200** → full book payload\n- **404** → book outside the caller's scope or doesn't exist (security check — a teacher cannot deep-link to another class's book)."
+          },
+          "response": [
+            {
+              "name": "Sample — 200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [ { "key": "Accept", "value": "application/json" } ],
+                "url": { "raw": "{{baseUrl}}/v1/books/14", "host": ["{{baseUrl}}"], "path": ["v1", "books", "14"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [ { "key": "Content-Type", "value": "application/json" } ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Book fetched successfully.\",\n  \"data\": {\n    \"id\": 14,\n    \"title\": \"NCERT Mathematics — Class 8\",\n    \"cover_url\": \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n    \"logo_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/covers/math-8.png\",\n    \"standard\": { \"id\": 8, \"name\": \"Class 8\" },\n    \"section\":  { \"id\": 24, \"name\": \"A\" },\n    \"subject\":  { \"id\": 3, \"name\": \"Mathematics\" },\n    \"pdf_url\":  \"https://edyonelms-prod.s3.ap-south-1.amazonaws.com/admin/books/pdfs/math-8.pdf\"\n  }\n}"
+            },
+            {
+              "name": "Sample — 404 Out of scope",
+              "originalRequest": {
+                "method": "GET",
+                "header": [ { "key": "Accept", "value": "application/json" } ],
+                "url": { "raw": "{{baseUrl}}/v1/books/9999", "host": ["{{baseUrl}}"], "path": ["v1", "books", "9999"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [ { "key": "Content-Type", "value": "application/json" } ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Book not found.\"\n}"
+            }
+          ]
         }
       ]
     },
