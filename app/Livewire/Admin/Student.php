@@ -320,8 +320,28 @@ class Student extends Component
             'selectedRoute.required'   => 'Please select a transport route.',
         ];
 
+        // Email uniqueness — only collide with a *student* in the *same org*.
+        // The previous `unique:users,email` was global, which produced the
+        // weird "email already used but I can't see them in the list" bug
+        // when the same email was used by a teacher in this org or a student
+        // in a different org. Matches the teacher controller's pattern.
+        $orgId = Auth::user()->organization_id ?? null;
+
         if (empty($this->studentData['id'])) {
-            $rules['studentsEmail'] .= '|unique:users,email';
+            $existingStudent = User::where('email', $this->studentsEmail)
+                ->where('role', 'user')
+                ->when($orgId, fn($q, $org) => $q->where('organization_id', $org))
+                ->first();
+
+            if ($existingStudent) {
+                $this->addError('studentsEmail', 'A student with this email already exists in this school.');
+                return;
+            }
+        } else {
+            // On edit, just make sure no OTHER student row in this org owns it
+            $rules['studentsEmail'] .= '|unique:users,email,' . $this->studentData['id']
+                . ',id,role,user'
+                . ($orgId ? ',organization_id,' . $orgId : '');
         }
 
         $this->validate($rules, $messages);

@@ -72,11 +72,19 @@ class ZeptoMailService
             $payload['bounce_address'] = $bounceAddress;
         }
 
+        // Hard cap the HTTP call: connect ≤3s, full request ≤5s. Without
+        // this Laravel falls back to PHP's max_execution_time (≈60s) when
+        // the upstream is unreachable — which then trips nginx's 60s
+        // proxy_read_timeout and the user sees a 504 Gateway Timeout on
+        // forms that send a welcome email (student/teacher create, OTP).
         $response = Http::withHeaders([
             'Authorization' => 'Zoho-enczapikey ' . $apiToken,
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
-        ])->post(config('services.zeptomail.api_url') . '/email/template', $payload);
+        ])
+            ->connectTimeout(3)
+            ->timeout(5)
+            ->post(config('services.zeptomail.api_url') . '/email/template', $payload);
 
         if ($response->failed()) {
             $error = $response->json('message') ?? $response->body();
@@ -133,11 +141,16 @@ class ZeptoMailService
             $payload['bounce_address'] = $bounceAddress;
         }
 
+        // Same tight timeout as sendTemplate() — never block a web request
+        // for more than 8s on an upstream Zoho hiccup.
         $response = Http::withHeaders([
             'Authorization' => 'Zoho-enczapikey ' . $apiToken,
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
-        ])->post(config('services.zeptomail.api_url') . '/email', $payload);
+        ])
+            ->connectTimeout(3)
+            ->timeout(5)
+            ->post(config('services.zeptomail.api_url') . '/email', $payload);
 
         if ($response->failed()) {
             $error = $response->json('message') ?? $response->body();
