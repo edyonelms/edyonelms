@@ -73,6 +73,9 @@ class Teacher extends Component
     public bool $showDeleteConfirm = false;
     public $deleteTargetId         = null;
 
+    // ─── Multi-add ───────────────────────────────────────────────────────
+    public bool $saveAndAddAnother = false;
+
     // ─── Search & Filters ────────────────────────────────────────────────
     public string $search        = '';
     public string $filterGender  = '';
@@ -204,6 +207,12 @@ class Teacher extends Component
         $this->openImage = false;
     }
 
+    public function onSaveAndAddAnother(): void
+    {
+        $this->saveAndAddAnother = true;
+        $this->onSave();
+    }
+
     // ─── Save ────────────────────────────────────────────────────────────
     public function onSave(): void
     {
@@ -330,11 +339,24 @@ class Teacher extends Component
                 $isEdit ? 'Teacher Updated Successfully!' : 'Teacher Created Successfully!'
             );
 
-            $this->resetForm();
+            $keepOpen = $this->saveAndAddAnother && !$isEdit;
+            $this->saveAndAddAnother = false;
+
+            // Clear any active search so the newly-added teacher's email doesn't auto-filter the list
+            $this->search = '';
+
+            if ($keepOpen) {
+                $this->resetFormFields();
+                $this->open = true;
+            } else {
+                $this->resetForm();
+            }
+
             $this->loadTeacherDashboardData();
             $this->resetPage();
             $this->dispatch('onTeacherAddUpdate');
         } catch (\Throwable $e) {
+            $this->saveAndAddAnother = false;
             $this->notification()->error('Error Saving Teacher', $e->getMessage());
             logger()->error('Teacher save error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
         }
@@ -461,16 +483,18 @@ class Teacher extends Component
         $teachers = TeacherDetail::with('user')
             ->where('organization_id', $org)->get();
 
-        return response()->stream(function () use ($teachers) {
+        $orgName = Organization::find($org)?->name ?? '';
+
+        return response()->stream(function () use ($teachers, $orgName) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
                 'S.No',
-                'Name',
+                'Employee ID',
+                'Full Name',
                 'Email',
-                'Mobile',
+                'Mobile Number',
                 'Gender',
                 'Date of Birth',
-                'Employee ID',
                 'Date of Joining',
                 'Qualification',
                 'Emergency Contact',
@@ -478,25 +502,38 @@ class Teacher extends Component
                 'City',
                 'State',
                 'Pincode',
+                'Profile Image',
+                'Organization',
                 'Status',
             ]);
 
             foreach ($teachers as $i => $t) {
+                $dob = $t->user->dob ?? null;
+                if ($dob instanceof \Carbon\Carbon) {
+                    $dob = $dob->format('d-m-Y');
+                }
+                $doj = $t->date_of_joining ?? null;
+                if ($doj instanceof \Carbon\Carbon) {
+                    $doj = $doj->format('d-m-Y');
+                }
+
                 fputcsv($handle, [
                     $i + 1,
+                    $t->employee_id ?? '',
                     $t->user->name ?? '',
                     $t->user->email ?? '',
                     $t->user->mobile_number ?? '',
                     ucfirst($t->user->gender ?? ''),
-                    $t->user->dob ?? '',
-                    $t->employee_id ?? '',
-                    $t->date_of_joining ?? '',
+                    $dob ?? '',
+                    $doj ?? '',
                     $t->qualification ?? '',
                     $t->emergency_contact ?? '',
                     $t->address ?? '',
                     $t->city ?? '',
                     $t->state ?? '',
                     $t->pincode ?? '',
+                    $t->user->image ?? '',
+                    $orgName,
                     ($t->user->is_active ?? false) ? 'Active' : 'Inactive',
                 ]);
             }
@@ -508,7 +545,7 @@ class Teacher extends Component
     }
 
     // ─── Reset ───────────────────────────────────────────────────────────
-    protected function resetForm(): void
+    protected function resetFormFields(): void
     {
         $this->reset([
             'teacherData',
@@ -528,7 +565,14 @@ class Teacher extends Component
             'emergencyContact',
             'teacherActive',
             'teacherImage',
+            'teacherImageUrl',
         ]);
+        $this->resetErrorBag();
+    }
+
+    protected function resetForm(): void
+    {
+        $this->resetFormFields();
         $this->open = false;
     }
 
