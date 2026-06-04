@@ -609,6 +609,34 @@
                                 </select>
                                 @error('studentsGender')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
+                            {{-- Class & Section: moved up here so users don't miss them. Save was
+                                 silently "failing" because validation flagged these required fields,
+                                 but the error messages rendered below the visible viewport. --}}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Class <span class="text-red-500">*</span></label>
+                                <select wire:model.live="studentsClass"
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+                                           @error('studentsClass') border-red-400 @enderror">
+                                    <option value="">Select Class</option>
+                                    @foreach ($standards as $standard)
+                                        <option value="{{ $standard->id }}">{{ $standard->name }}{{ $standard->board ? ' · ' . $standard->board : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error('studentsClass')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                                <p class="mt-1 text-[11px] text-gray-400">Board is auto-fetched from the class.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Section <span class="text-red-500">*</span></label>
+                                <select wire:model.defer="studentsSection" @disabled(!$studentsClass)
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50
+                                           @error('studentsSection') border-red-400 @enderror">
+                                    <option value="">Select Section</option>
+                                    @foreach ($sections as $section)
+                                        <option value="{{ $section->id }}">{{ $section->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('studentsSection')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth <span class="text-red-500">*</span></label>
                                 <input wire:model.defer="dob" type="date" max="{{ now()->subDay()->format('Y-m-d') }}"
@@ -652,31 +680,6 @@
                                     class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500
                                            @error('motherName') border-red-400 @enderror">
                                 @error('motherName')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Class <span class="text-red-500">*</span></label>
-                                <select wire:model.live="studentsClass"
-                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-                                           @error('studentsClass') border-red-400 @enderror">
-                                    <option value="">Select Class</option>
-                                    @foreach ($standards as $standard)
-                                        <option value="{{ $standard->id }}">{{ $standard->name }}{{ $standard->board ? ' · ' . $standard->board : '' }}</option>
-                                    @endforeach
-                                </select>
-                                @error('studentsClass')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
-                                <p class="mt-1 text-[11px] text-gray-400">Board is auto-fetched from the class.</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Section <span class="text-red-500">*</span></label>
-                                <select wire:model.defer="studentsSection" @disabled(!$studentsClass)
-                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50
-                                           @error('studentsSection') border-red-400 @enderror">
-                                    <option value="">Select Section</option>
-                                    @foreach ($sections as $section)
-                                        <option value="{{ $section->id }}">{{ $section->name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('studentsSection')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Apaar ID</label>
