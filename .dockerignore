@@ -23,6 +23,14 @@ storage/framework/cache/data/*
 storage/framework/sessions/*
 storage/framework/views/*
 storage/framework/testing/*
+# Runtime-only state under storage/app/ (livewire-tmp etc.). After deploy chowns
+# storage/ to UID 33, the SSH user can't traverse these dirs and BuildKit's
+# context loader bails with "error from sender: ... permission denied".
+# Storage is bind-mounted at runtime so excluding it from the image is correct.
+storage/app/private/*
+!storage/app/private/.gitignore
+storage/app/public/*
+!storage/app/public/.gitignore
 bootstrap/cache/*.php
 
 tests
