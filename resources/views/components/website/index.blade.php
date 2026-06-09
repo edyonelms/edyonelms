@@ -249,11 +249,11 @@
 
         @keyframes marquee {
             from {
-                transform: translateX(0);
+                transform: translateX(-50%);
             }
 
             to {
-                transform: translateX(-50%);
+                transform: translateX(0);
             }
         }
 
@@ -940,18 +940,29 @@
         .marquee-track {
             display: flex;
             gap: 56px;
-            animation: marquee 22s linear infinite;
+            animation: marquee var(--marquee-duration, 22s) linear infinite;
             width: max-content;
         }
 
         .marquee-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: var(--text4);
-            font-size: 13px;
+            gap: 12px;
+            color: var(--text2);
+            font-size: 14px;
             font-weight: 500;
             white-space: nowrap;
+        }
+
+        .marquee-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #fff;
+            border: 1px solid var(--border2);
+            padding: 3px;
+            flex-shrink: 0;
         }
 
         /* ─── How It Works ─── */
@@ -2489,8 +2500,9 @@
             <div class="section-center reveal">
                 <div class="section-tag tag-violet">Process</div>
                 <h2 class="section-title">How It <span class="gradient-text">Works</span></h2>
-                <p class="section-subtitle">See how EDYONE LMS bridges technology with effective learning in 3 simple
-                    steps.</p>
+                <p class="section-subtitle"
+                    style="font-size:clamp(18px, 2vw, 22px); line-height:1.6; max-width:780px;">See how EDYONE LMS
+                    bridges technology with effective learning in 3 simple steps.</p>
             </div>
 
             <div class="hiw-grid stagger-children">
@@ -3482,18 +3494,27 @@
                 const track = document.getElementById('marqueeTrack');
                 if (!track || !data || data.length === 0) return;
 
+                const fallbackLogo = "{{ asset('website-image/Vector 215.png') }}";
                 const colors = ['#DB57B2', '#6F56FE'];
                 // Build items (×2 for seamless loop)
                 let html = '';
                 [data, data].forEach(set => {
                     set.forEach((school, i) => {
                         const name = typeof school === 'string' ? school : school.name;
+                        const logo = (typeof school === 'object' && school.logo_url) ? school.logo_url : fallbackLogo;
                         const c = colors[i % 2];
                         html +=
-                            `<div class="marquee-item"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="${c}"/></svg> ${escText(name)}</div>`;
+                            `<div class="marquee-item">` +
+                            `<img class="marquee-logo" src="${escText(logo)}" alt="${escText(name)} logo" loading="lazy" onerror="this.onerror=null;this.src='${fallbackLogo}'"/>` +
+                            `<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="${c}"/></svg>` +
+                            `<span>${escText(name)}</span>` +
+                            `</div>`;
                     });
                 });
                 track.innerHTML = html;
+
+                // 2 seconds per item — duration scales with item count.
+                track.style.setProperty('--marquee-duration', (data.length * 2) + 's');
             })
             .catch(() => {});
 

@@ -43,13 +43,29 @@ class WebsiteController extends Controller
             ->get()
             ->map(fn($school) => [
                 'name'     => $school->name,
-                'logo_url' => $school->logo,
+                'logo_url' => $this->resolveLogoUrl($school->logo),
             ]);
 
         return response()->json([
             'success' => true,
             'data'    => $schools,
         ]);
+    }
+
+    /**
+     * Return an absolute URL for an Organization logo path, or null when missing.
+     * Some records store an absolute URL (S3); others store a relative path
+     * served via asset().
+     */
+    private function resolveLogoUrl(?string $logo): ?string
+    {
+        if (! $logo) {
+            return null;
+        }
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return $logo;
+        }
+        return asset($logo);
     }
 
     /** GET /api/website/testimonials */
@@ -76,9 +92,8 @@ class WebsiteController extends Controller
                     'rating'       => $r->rating,
                     'school_name'  => $name,
                     'logo'        => $logo,
-                    'logo_url'     => $r->organization->logo ?? null,
+                    'logo_url'     => $this->resolveLogoUrl($r->organization->logo ?? null),
                     'initials'     => $initials ?: 'S',
-                    // 'initials'    => $initials,
                 ];
             });
 
