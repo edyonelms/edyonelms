@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\TestController;
 use App\Http\Controllers\WebsiteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -17,15 +16,13 @@ Route::prefix('website')->group(function () {
     Route::get('/privacy-policy',   [WebsiteController::class, 'privacyPolicy']);
     Route::get('/terms-conditions', [WebsiteController::class, 'termsConditions']);
     Route::get('/terms-of-use',     [WebsiteController::class, 'termsOfUse']);
-    Route::post('/contact',         [WebsiteController::class, 'contact']);
-    Route::post('/demo',            [WebsiteController::class, 'demo']);
+
+    // Anti-spam: 5 submissions per minute per IP on form endpoints.
+    Route::middleware('throttle:5,1')->group(function () {
+        Route::post('/contact', [WebsiteController::class, 'contact']);
+        Route::post('/demo',    [WebsiteController::class, 'demo']);
+    });
 });
 
-//v1 api 
+//v1 api
 require __DIR__ . '/v1.php';
-
-//Test Api 
-Route::post('/test', [TestController::class, 'index']);
-
-//Save Data 
-Route::post('/save-data', [TestController::class, 'saveData']);

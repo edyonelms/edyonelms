@@ -37,18 +37,25 @@ Route::get('/unauthenticate', [AuthController::class, 'unauthenticate'])->name('
 
 //v1 version
 Route::prefix('v1')->group(function () {
-    Route::post('/user/login', [UserController::class, 'studentLogin']);
-    Route::post('/teacher/login', [TeacherController::class, 'teacherLogin']);
-    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-    Route::post('/change-password', [AuthController::class, 'changePassword']);
+    // Login: per-email rate limit defined in AppServiceProvider.
+    Route::middleware('throttle:login')->group(function () {
+        Route::post('/user/login', [UserController::class, 'studentLogin']);
+        Route::post('/teacher/login', [TeacherController::class, 'teacherLogin']);
+        // Switch Account — `add` is public (login + return snapshot)
+        Route::post('/switch-account/add', [SwitchAccountController::class, 'add']);
+    });
+
+    // OTP / password reset: per-email rate limit defined in AppServiceProvider.
+    Route::middleware('throttle:otp')->group(function () {
+        Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+    });
+
     Route::get('/terms-and-conditions', [AuthController::class, 'termsAndConditions']);
     Route::get('/privacy-policy', [AuthController::class, 'privacyPolicy']);
     Route::get('/terms-of-use', [AuthController::class, 'termsOfUse']);
-
-    // Switch Account — `add` is public (login + return snapshot)
-    Route::post('/switch-account/add', [SwitchAccountController::class, 'add']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

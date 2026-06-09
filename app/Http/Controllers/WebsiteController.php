@@ -153,10 +153,10 @@ class WebsiteController extends Controller
         $validated = $request->validate([
             'full_name'    => 'required|string|max:255',
             'school_name'  => 'required|string|max:255',
-            'phone_number' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
+            'phone_number' => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
             'email'        => 'required|email|max:255',
             'subject'      => 'required|string|max:255',
-            'description'  => 'required|string',
+            'description'  => 'required|string|max:5000',
         ]);
 
         WebsiteContact::create($validated);
@@ -173,7 +173,7 @@ class WebsiteController extends Controller
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'school_name'    => 'required|string|max:255',
-            'phone'          => ['required', 'string', 'regex:/^[0-9]{10}$/'],
+            'phone'          => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
             'email'          => 'required|email|max:255',
             'city'           => 'required|string|max:255',
             'no_of_students' => 'required|string|max:50',

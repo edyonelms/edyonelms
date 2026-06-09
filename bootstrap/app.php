@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureIsAccounts;
 use App\Http\Middleware\EnsureIsAdmin;
 use App\Http\Middleware\EnsureIsSuperAdmin;
 use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyOrganizationAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -37,13 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_AWS_ELB,
         );
 
-        // $middleware->web(append: [
-        //     \App\Http\Middleware\SecureInput::class,
-        // ]);
-
-        // $middleware->api(append: [
-        //     \App\Http\Middleware\SecureInput::class,
-        // ]);
+        // Always-on security response headers (clickjacking, MIME-sniff, referrer leakage).
+        $middleware->web(append: [SecurityHeaders::class]);
+        $middleware->api(append: [SecurityHeaders::class]);
 
         $middleware->redirectGuestsTo('/api/unauthenticate');
     })

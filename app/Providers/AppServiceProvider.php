@@ -4,24 +4,18 @@ namespace App\Providers;
 
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         // Record last login timestamp on every successful authentication
@@ -32,47 +26,32 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // // Rate limiting for API
-        // RateLimiter::for('api', function (Request $request) {
-        //     $key = $request->user()?->id ?: $request->ip();
+        // Per-email login throttle (6/min). Stops password brute-force
+        // against a single account without locking out unrelated users
+        // sharing an IP (e.g. school computer labs).
+        RateLimiter::for('login', function (Request $request) {
+            $email = strtolower((string) $request->input('email', ''));
+            $key = $email !== '' ? 'login:' . sha1($email) : 'login:ip:' . $request->ip();
 
-        //     // Stricter limits for suspicious patterns
-        //     if ($this->isSuspiciousRequest($request)) {
-        //         return Limit::perMinute(10)->by($key)->response(function () {
-        //             return response()->json([
-        //                 'success' => false,
-        //                 'message' => 'Too many requests',
-        //                 'status_code' => 429
-        //             ], 429);
-        //         });
-        //     }
+            return Limit::perMinute(6)->by($key)->response(function () {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many login attempts. Please try again in a minute.',
+                ], 429);
+            });
+        });
 
-        //     return Limit::perMinute(60)->by($key);
-        // });
+        // OTP / password reset throttle (4/min per email or IP fallback).
+        RateLimiter::for('otp', function (Request $request) {
+            $email = strtolower((string) $request->input('email', ''));
+            $key = $email !== '' ? 'otp:' . sha1($email) : 'otp:ip:' . $request->ip();
 
-        // // Specific limit for auth endpoints
-        // RateLimiter::for('login', function (Request $request) {
-        //     return Limit::perMinute(5)->by($request->ip());
-        // });
-    }
-
-    private function isSuspiciousRequest(Request $request): bool
-    {
-        $suspiciousPatterns = [
-            'carto.run.place',
-            'union select',
-            '<script',
-            'base64_decode',
-        ];
-
-        $allInput = implode(' ', array_values($request->all()));
-
-        foreach ($suspiciousPatterns as $pattern) {
-            if (stripos($allInput, $pattern) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+            return Limit::perMinute(4)->by($key)->response(function () {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many OTP requests. Please wait a minute before retrying.',
+                ], 429);
+            });
+        });
     }
 }
