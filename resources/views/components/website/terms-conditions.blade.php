@@ -729,11 +729,6 @@
     <!-- CONTENT -->
     <div class="policy-body">
         <div class="policy-inner">
-            <div id="tcToc" class="toc" style="display:none;">
-                <div class="toc-title">Table of Contents</div>
-                <ul class="toc-list" id="tcTocList"></ul>
-            </div>
-
             <div id="tcSections"></div>
             <div id="tcFallback">
                 <!-- 1 -->
@@ -1007,14 +1002,6 @@
                     if (data.platform_name) {
                         document.getElementById('tcPlatformName').textContent = data.platform_name;
                     }
-
-                    const tocList = document.getElementById('tcTocList');
-                    data.sections.forEach((sec, i) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<a href="#tcs${i+1}">${i+1}. ${escHtml(sec.head)}</a>`;
-                        tocList.appendChild(li);
-                    });
-                    document.getElementById('tcToc').style.display = '';
 
                     const container = document.getElementById('tcSections');
                     data.sections.forEach((sec, i) => {

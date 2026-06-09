@@ -148,7 +148,7 @@ class WebsiteController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Message sent successfully! We will get back to you within 24 hours.',
+            'message' => 'Message sent successfully! We will get back to you within 3 business days.',
         ]);
     }
 
@@ -169,7 +169,7 @@ class WebsiteController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Demo request received! Our team will contact you within 2 hours.',
+            'message' => 'Demo request received! Our team will contact you within 3 business days.',
         ]);
     }
 }

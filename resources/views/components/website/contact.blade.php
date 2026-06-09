@@ -846,8 +846,8 @@
                         <div class="form-group">
                             <label class="form-label">Phone *</label>
                             <input class="form-input" type="tel" name="phone" placeholder="10-digit mobile number"
-                                required inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
-                                title="Enter a valid 10-digit mobile number"
+                                required inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"
+                                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
                                 oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" />
                         </div>
                         <div class="form-group">
@@ -883,7 +883,7 @@
         <div class="toast-icon">✅</div>
         <div>
             <div class="toast-title">Message Sent!</div>
-            <div class="toast-msg">We'll get back to you within 7 working days or as soon as possible.</div>
+            <div class="toast-msg">We'll get back to you within 3 business days.</div>
         </div>
     </div>
 

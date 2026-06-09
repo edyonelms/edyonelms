@@ -750,10 +750,6 @@
     <!-- ══════════════════ POLICY CONTENT ══════════════════ -->
     <div class="policy-body">
         <div class="policy-inner">
-            <div id="ppToc" class="toc" style="display:none;">
-                <div class="toc-title">Table of Contents</div>
-                <ul class="toc-list" id="ppTocList"></ul>
-            </div>
             <div id="ppSections"></div>
             <div id="ppFallback"></div>
         </div>
@@ -775,15 +771,6 @@
                     if (data.last_updated) {
                         document.getElementById('ppLastUpdated').textContent = 'Last updated: ' + data.last_updated;
                     }
-
-                    // TOC
-                    const tocList = document.getElementById('ppTocList');
-                    data.sections.forEach((sec, i) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<a href="#pps${i+1}">${i+1}. ${escHtml(sec.head)}</a>`;
-                        tocList.appendChild(li);
-                    });
-                    document.getElementById('ppToc').style.display = '';
 
                     // Sections
                     const container = document.getElementById('ppSections');

@@ -724,11 +724,6 @@
     <!-- CONTENT -->
     <div class="policy-body">
         <div class="policy-inner">
-            <div id="touToc" class="toc" style="display:none;">
-                <div class="toc-title">Table of Contents</div>
-                <ul class="toc-list" id="touTocList"></ul>
-            </div>
-
             <div id="touSections"></div>
             <div id="touFallback">
                 <!-- Static fallback content -->
@@ -775,14 +770,6 @@
                         document.getElementById('touLastUpdated').textContent = 'Last updated: ' + data
                         .last_updated;
                     }
-
-                    const tocList = document.getElementById('touTocList');
-                    data.sections.forEach((sec, i) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<a href="#tous${i+1}">${i+1}. ${escHtml(sec.head)}</a>`;
-                        tocList.appendChild(li);
-                    });
-                    document.getElementById('touToc').style.display = '';
 
                     const container = document.getElementById('touSections');
                     data.sections.forEach((sec, i) => {

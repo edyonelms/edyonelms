@@ -900,8 +900,7 @@
             <div>
                 <div class="form-card">
                     <div class="form-card-title">Book Your Free Demo</div>
-                    <p class="form-card-sub">Fill in the form and our team will reach out within 2 hours on business
-                        days.</p>
+                    <p class="form-card-sub">Fill in the form and our team will reach out within 3 business days.</p>
                     <form id="demoForm" onsubmit="handleDemoSubmit(event)">
                         <div class="form-row">
                             <div class="form-group">
@@ -919,8 +918,8 @@
                             <div class="form-group">
                                 <label class="form-label">Phone *</label>
                                 <input class="form-input" type="tel" name="phone" placeholder="10-digit mobile number"
-                                    required inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
-                                    title="Enter a valid 10-digit mobile number"
+                                    required inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}"
+                                    title="Enter a valid 10-digit Indian mobile number starting with 6-9"
                                     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" />
                             </div>
                             <div class="form-group">
@@ -981,7 +980,7 @@
         <div class="toast-icon">✅</div>
         <div>
             <div class="toast-title">Demo Requested!</div>
-            <div class="toast-msg">Our team will contact you within 3 working days.</div>
+            <div class="toast-msg">Our team will contact you within 3 business days.</div>
         </div>
     </div>
 
