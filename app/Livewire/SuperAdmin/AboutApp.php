@@ -193,11 +193,16 @@ class AboutApp extends Component
             'newTeamMember.name'     => 'required|string|max:255',
             'newTeamMember.position' => 'required|string|max:255',
             'newTeamMember.description' => 'nullable|string',
-            'newTeamMember.link'     => 'nullable|url:http,https|max:255',
+            'newTeamMember.link'     => 'nullable|string|max:255',
             'newTeamMemberImage'     => 'nullable|image|max:2048',
         ]);
 
         $member = $this->newTeamMember;
+
+        // Accept profile links without an explicit scheme — normalize to https://
+        if (!empty($member['link'])) {
+            $member['link'] = $this->normalizeUrl($member['link']);
+        }
 
         // Upload new image if provided
         if ($this->newTeamMemberImage) {
@@ -274,11 +279,14 @@ class AboutApp extends Component
     {
         $this->validate([
             'newSocialMedia.platform' => 'required|string|max:100',
-            'newSocialMedia.url'      => 'required|url|max:255',
+            'newSocialMedia.url'      => 'required|string|max:255',
             'newSocialMediaIcon'      => 'nullable|image|max:1024',
         ]);
 
         $social = $this->newSocialMedia;
+
+        // Accept any URL — normalize so links without http(s) still work
+        $social['url'] = $this->normalizeUrl($social['url']);
 
         if ($this->newSocialMediaIcon) {
             $path = $this->newSocialMediaIcon->store('superadmin/social-media/icons', 's3');
@@ -457,5 +465,29 @@ class AboutApp extends Component
     public function render()
     {
         return view('livewire.super-admin.about-app');
+    }
+
+    /**
+     * Normalize a user-entered URL so links without a scheme still work.
+     * Examples:
+     *   "instagram.com/foo"   → "https://instagram.com/foo"
+     *   "www.linkedin.com/x"  → "https://www.linkedin.com/x"
+     *   "http://foo.com"      → "http://foo.com" (untouched)
+     *   "mailto:x@y.com"      → "mailto:x@y.com" (untouched)
+     */
+    private function normalizeUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        // Already has a scheme like http(s):, mailto:, tel:, ftp:, etc.
+        if (preg_match('#^[a-z][a-z0-9+\-.]*:#i', $url)) {
+            return $url;
+        }
+
+        return 'https://' . ltrim($url, '/');
     }
 }

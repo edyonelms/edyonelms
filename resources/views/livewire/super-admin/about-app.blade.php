@@ -1,17 +1,17 @@
 <div class="min-h-screen bg-gray-50">
 
     {{-- ══════════ TABS ══════════ --}}
-    <div class="bg-white border-b border-gray-200 px-6 sticky top-0 z-40">
-        <nav class="flex gap-1">
+    <div class="bg-white border-b border-gray-200 px-3 sm:px-6 sticky top-0 z-40 overflow-x-auto">
+        <nav class="flex gap-1 min-w-max">
             <button wire:click="setTab('view')"
-                class="py-3.5 px-5 text-sm font-semibold border-b-2 transition-colors
+                class="py-3 sm:py-3.5 px-3 sm:px-5 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
                        {{ $activeTab === 'view'
                            ? 'border-blue-500 text-blue-700'
                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                 View About App
             </button>
             <button wire:click="setTab('edit')"
-                class="py-3.5 px-5 text-sm font-semibold border-b-2 transition-colors
+                class="py-3 sm:py-3.5 px-3 sm:px-5 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
                        {{ $activeTab === 'edit'
                            ? 'border-purple-500 text-purple-700'
                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
@@ -67,7 +67,7 @@
                 </div>
             </div>
 
-            <div class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+            <div class="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
 
                 {{-- Content Sections --}}
                 @if (!empty($aboutApp->content))
@@ -78,7 +78,7 @@
                                         hover:border-indigo-200 hover:shadow-md transition-all duration-200">
                                 @if (!empty($section['title']))
                                     <div
-                                        class="px-6 py-4 border-b border-gray-100 flex items-center gap-3
+                                                        class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-3
                                                 bg-gradient-to-r from-indigo-50 to-blue-50">
                                         <span
                                             class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600
@@ -90,7 +90,7 @@
                                     </div>
                                 @endif
                                 @if (!empty($section['description']))
-                                    <div class="px-6 py-5">
+                                    <div class="px-4 sm:px-6 py-5">
                                         <p class="text-sm text-gray-600 leading-relaxed">
                                             {!! nl2br(e($section['description'])) !!}
                                         </p>
@@ -107,7 +107,7 @@
                         class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
                                 hover:border-blue-200 hover:shadow-md transition-all duration-200">
                         <div
-                            class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
+                            class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
                                     flex items-center gap-3">
                             <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
@@ -118,7 +118,7 @@
                             </div>
                             <h2 class="text-base font-semibold text-gray-900">Contact Details</h2>
                         </div>
-                        <div class="px-6 py-5 space-y-3">
+                        <div class="px-4 sm:px-6 py-5 space-y-3">
                             @foreach ($aboutApp->contact_details as $contact)
                                 @php $type = strtolower($contact['type'] ?? ''); @endphp
                                 <div
@@ -168,7 +168,7 @@
                         class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden
                                 hover:border-green-200 hover:shadow-md transition-all duration-200">
                         <div
-                            class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50
+                            class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50
                                     flex items-center gap-3">
                             <div class="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center shadow-sm">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
@@ -181,7 +181,7 @@
                             </div>
                             <h2 class="text-base font-semibold text-gray-900">Address</h2>
                         </div>
-                        <div class="px-6 py-5">
+                        <div class="px-4 sm:px-6 py-5">
                             <p class="text-sm text-gray-600 leading-relaxed">{{ $aboutApp->address }}</p>
                         </div>
                     </div>
@@ -191,7 +191,7 @@
                 @if (!empty($aboutApp->core_team))
                     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <div
-                            class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50
+                            class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50
                                     flex items-center gap-3">
                             <div class="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
@@ -205,47 +205,55 @@
                                 <p class="text-xs text-gray-400">{{ count($aboutApp->core_team) }} members</p>
                             </div>
                         </div>
-                        <div class="px-6 py-6">
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <div class="px-4 sm:px-6 py-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
                                 @foreach ($aboutApp->core_team as $member)
                                     @php $memberUrl = $member['link'] ?? null; @endphp
-                                    <div
-                                        class="group flex flex-col items-center text-center p-4 bg-gray-50
-                                                rounded-2xl border border-gray-200 hover:border-amber-300
-                                                hover:shadow-md hover:bg-amber-50 transition-all duration-200">
-                                        @if (!empty($member['image']))
-                                            <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}"
-                                                class="w-16 h-16 rounded-full object-cover border-2 border-white
-                                                       shadow-md mb-3 group-hover:scale-105 transition-transform duration-200">
-                                        @else
-                                            <div
-                                                class="w-16 h-16 rounded-full bg-amber-100 border-2 border-white
-                                                        shadow-md mb-3 flex items-center justify-center
-                                                        group-hover:scale-105 transition-transform duration-200">
-                                                <svg class="w-8 h-8 text-amber-500" fill="none"
-                                                    stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="1.5"
-                                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                            </div>
-                                        @endif
-                                        <p class="font-semibold text-sm text-gray-800 leading-tight">
-                                            {{ $member['name'] ?? '' }}</p>
+                                    <div class="group relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1
+                                                hover:border-indigo-200 transition-all duration-200 p-6 text-center">
+                                        {{-- Avatar with colored ring --}}
+                                        <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 rounded-full p-1
+                                                    bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400
+                                                    shadow-md group-hover:scale-105 transition-transform duration-200">
+                                            @if (!empty($member['image']))
+                                                <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}"
+                                                    class="w-full h-full rounded-full object-cover border-2 border-white">
+                                            @else
+                                                <div class="w-full h-full rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
+                                                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        {{-- Name --}}
+                                        <h3 class="font-semibold text-base text-gray-900 leading-tight">{{ $member['name'] ?? '' }}</h3>
+
+                                        {{-- Designation --}}
                                         @if (!empty($member['position']))
-                                            <p class="text-xs text-gray-500 mt-0.5">{{ $member['position'] }}</p>
+                                            <p class="mt-1 text-xs sm:text-sm font-medium bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
+                                                {{ $member['position'] }}
+                                            </p>
                                         @endif
+
+                                        {{-- Description (compact, optional) --}}
                                         @if (!empty($member['description']))
-                                            <p class="text-xs text-gray-500 mt-2 leading-relaxed line-clamp-3">
+                                            <p class="mt-3 text-xs text-gray-500 leading-relaxed line-clamp-2">
                                                 {{ $member['description'] }}
                                             </p>
                                         @endif
+
+                                        {{-- View Profile button --}}
                                         @if ($memberUrl)
                                             <a href="{{ $memberUrl }}" target="_blank" rel="noopener noreferrer"
-                                                class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors">
+                                                class="mt-4 inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold
+                                                       text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full
+                                                       hover:bg-indigo-100 hover:border-indigo-300 transition-colors">
                                                 View Profile
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
                                                 </svg>
                                             </a>
                                         @endif
@@ -260,7 +268,7 @@
                 @if (!empty($aboutApp->social_media))
                     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <div
-                            class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
+                            class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
                                     flex items-center gap-3">
                             <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
@@ -271,39 +279,22 @@
                             </div>
                             <h2 class="text-base font-semibold text-gray-900">Follow Us On Social Media</h2>
                         </div>
-                        <div class="px-6 py-6">
-                            @php
-                                $platformIconsView = [
-                                    'facebook'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12S0 5.446 0 12.073C0 18.062 4.388 23.027 10.125 23.927v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
-                                    'twitter'   => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#1DA1F2"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>',
-                                    'instagram' => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#E4405F"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
-                                    'linkedin'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
-                                    'youtube'   => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
-                                    'github'    => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#181717"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>',
-                                    'whatsapp'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>',
-                                ];
-                            @endphp
-                            <div class="flex flex-wrap gap-3">
+                        <div class="px-4 sm:px-6 py-6">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                                 @foreach ($aboutApp->social_media as $social)
-                                    @php
-                                        $platform = strtolower($social['platform'] ?? '');
-                                        $defaultIcon = $platformIconsView[$platform] ?? null;
-                                    @endphp
                                     <a href="{{ $social['url'] ?? '#' }}" target="_blank" rel="noopener noreferrer"
-                                        class="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200
-                                               rounded-xl hover:shadow-md hover:border-blue-200 transition-all group">
-                                        <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                                        class="group flex flex-col items-center gap-2 px-3 py-4 bg-gray-50 border border-gray-200
+                                               rounded-2xl hover:shadow-md hover:border-blue-300 hover:bg-blue-50/50
+                                               hover:-translate-y-0.5 transition-all duration-200">
+                                        <div class="w-12 h-12 bg-white rounded-xl p-2 border border-gray-100 shadow-sm
+                                                    flex items-center justify-center group-hover:scale-110 transition-transform">
                                             @if (!empty($social['icon']))
-                                                <img src="{{ $social['icon'] }}" class="w-6 h-6 object-contain">
-                                            @elseif ($defaultIcon)
-                                                {!! $defaultIcon !!}
+                                                <img src="{{ $social['icon'] }}" class="w-full h-full object-contain">
                                             @else
-                                                <div class="w-6 h-6 bg-gray-400 rounded-lg flex items-center justify-center">
-                                                    <span class="text-white text-[10px] font-bold">{{ strtoupper(substr($platform, 0, 2)) }}</span>
-                                                </div>
+                                                <x-social-platform-icon :platform="$social['platform'] ?? ''" class="w-full h-full block" />
                                             @endif
                                         </div>
-                                        <span class="text-sm font-medium text-gray-700 capitalize group-hover:text-blue-700 transition-colors">
+                                        <span class="text-xs sm:text-sm font-semibold text-gray-700 capitalize group-hover:text-blue-700 transition-colors text-center truncate w-full">
                                             {{ $social['platform'] }}
                                         </span>
                                     </a>
@@ -316,7 +307,7 @@
                 {{-- Documents --}}
                 @if (!empty($aboutApp->documents))
                     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center gap-3">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center gap-3">
                             <div class="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -326,28 +317,41 @@
                             <h2 class="text-base font-semibold text-gray-900">Documents</h2>
                             <span class="ml-auto text-xs text-gray-400">{{ count($aboutApp->documents) }} file(s)</span>
                         </div>
-                        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             @foreach ($aboutApp->documents as $doc)
+                                @php
+                                    $ext = strtolower($doc['file_type'] ?? '');
+                                    $extColor = match(true) {
+                                        in_array($ext, ['pdf']) => ['ring' => 'bg-red-50 text-red-600 border-red-100', 'pill' => 'bg-red-100 text-red-700'],
+                                        in_array($ext, ['doc', 'docx']) => ['ring' => 'bg-blue-50 text-blue-600 border-blue-100', 'pill' => 'bg-blue-100 text-blue-700'],
+                                        default => ['ring' => 'bg-cyan-50 text-cyan-600 border-cyan-100', 'pill' => 'bg-cyan-100 text-cyan-700'],
+                                    };
+                                @endphp
                                 <a href="{{ $doc['file_path'] ?? '#' }}" target="_blank" rel="noopener noreferrer"
-                                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-300 hover:shadow-md transition-all group">
-                                    <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    class="group block p-4 bg-gray-50 rounded-2xl border border-gray-200 hover:border-cyan-300 hover:bg-white hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-12 h-12 rounded-xl {{ $extColor['ring'] }} border flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 3v6h6" />
+                                            </svg>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 truncate group-hover:text-cyan-700">{{ $doc['title'] ?? 'Document' }}</p>
+                                            <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase rounded {{ $extColor['pill'] }}">
+                                                    {{ $doc['file_type'] ?? 'FILE' }}
+                                                </span>
+                                                @if (!empty($doc['file_size']))
+                                                    <span class="text-xs text-gray-400">{{ number_format($doc['file_size'] / 1024, 0) }} KB</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <svg class="w-4 h-4 text-gray-300 group-hover:text-cyan-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                         </svg>
                                     </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-semibold text-gray-800 truncate group-hover:text-cyan-700">{{ $doc['title'] ?? 'Document' }}</p>
-                                        <p class="text-xs text-gray-400">
-                                            <span class="uppercase font-medium">{{ $doc['file_type'] ?? 'FILE' }}</span>
-                                            @if (!empty($doc['file_size']))
-                                                · {{ number_format($doc['file_size'] / 1024, 0) }} KB
-                                            @endif
-                                        </p>
-                                    </div>
-                                    <svg class="w-4 h-4 text-gray-400 group-hover:text-cyan-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
                                 </a>
                             @endforeach
                         </div>
@@ -365,7 +369,7 @@
             {{-- Basic Information --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div
-                    class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50
+                    class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50
                             flex items-center gap-3">
                     <div class="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +379,7 @@
                     </div>
                     <h2 class="text-base font-semibold text-gray-900">Basic Information</h2>
                 </div>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Heading *</label>
                         <input type="text" wire:model.defer="heading" placeholder="App name or heading"
@@ -421,7 +425,7 @@
             {{-- Content Sections --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div
-                    class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50
+                    class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50
                             flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center shadow-sm">
@@ -446,7 +450,7 @@
                         Add Section
                     </button>
                 </div>
-                <div class="p-6 space-y-4">
+                <div class="p-4 sm:p-6 space-y-4">
                     @foreach ($content as $index => $section)
                         <div class="border border-gray-200 rounded-xl p-4 hover:border-purple-200 transition-colors">
                             <div class="flex items-center justify-between mb-3">
@@ -492,7 +496,7 @@
             {{-- Contact Details --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div
-                    class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
+                    class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
                             flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
@@ -514,7 +518,7 @@
                         Add Contact
                     </button>
                 </div>
-                <div class="p-6 space-y-2">
+                <div class="p-4 sm:p-6 space-y-2">
                     @forelse ($contact_details as $index => $contact)
                         <div
                             class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200
@@ -552,7 +556,7 @@
             {{-- Core Team --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div
-                    class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50
+                    class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50
                             flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
@@ -577,9 +581,9 @@
                         Add Member
                     </button>
                 </div>
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     @if (count($core_team))
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                             @foreach ($core_team as $index => $member)
                                 <div
                                     class="border border-gray-200 rounded-xl p-4 hover:border-amber-200 transition-colors">
@@ -642,7 +646,7 @@
             {{-- Social Media --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div
-                    class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
+                    class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-sky-50
                             flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
@@ -664,78 +668,69 @@
                         Add Social
                     </button>
                 </div>
-                <div class="p-6 space-y-2">
-                    @forelse ($social_media as $index => $social)
-                        @php
-                            $colors = [
-                                'facebook' => 'bg-blue-600',
-                                'twitter' => 'bg-sky-400',
-                                'instagram' => 'bg-pink-500',
-                                'linkedin' => 'bg-blue-700',
-                                'youtube' => 'bg-red-600',
-                                'github' => 'bg-gray-800',
-                                'whatsapp' => 'bg-green-500',
-                            ];
-                            $abbrs = [
-                                'facebook' => 'FB',
-                                'twitter' => 'TW',
-                                'instagram' => 'IG',
-                                'linkedin' => 'IN',
-                                'youtube' => 'YT',
-                                'github' => 'GH',
-                                'whatsapp' => 'WA',
-                            ];
-                            $p = strtolower($social['platform'] ?? '');
-                            $bg = $colors[$p] ?? 'bg-gray-400';
-                            $abbr = $abbrs[$p] ?? strtoupper(substr($p, 0, 2));
-                        @endphp
-                        <div
-                            class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200
-                                    hover:border-blue-200 transition-colors">
-                            <div class="flex items-center gap-3 min-w-0">
-                                @if (!empty($social['icon']))
-                                    <img src="{{ $social['icon'] }}"
-                                        class="w-7 h-7 object-contain rounded-lg flex-shrink-0">
-                                @else
-                                    <div
-                                        class="w-7 h-7 {{ $bg }} rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white text-xs font-bold">{{ $abbr }}</span>
+                <div class="p-4 sm:p-6">
+                    @if (count($social_media))
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach ($social_media as $index => $social)
+                                <div class="group relative bg-white border border-gray-200 rounded-2xl p-4 hover:border-blue-300 hover:shadow-md transition-all">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 p-2 flex items-center justify-center flex-shrink-0">
+                                            @if (!empty($social['icon']))
+                                                <img src="{{ $social['icon'] }}" class="w-full h-full object-contain">
+                                            @else
+                                                <x-social-platform-icon :platform="$social['platform'] ?? ''" class="w-full h-full block" />
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 capitalize truncate">
+                                                {{ $social['platform'] ?? 'Link' }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 truncate" title="{{ $social['url'] ?? '' }}">
+                                                {{ $social['url'] ?? '' }}
+                                            </p>
+                                        </div>
                                     </div>
-                                @endif
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 capitalize">
-                                        {{ $social['platform'] }}</p>
-                                    <p class="text-xs text-gray-400 truncate">{{ $social['url'] }}</p>
+                                    <div class="mt-3 flex items-center gap-1.5">
+                                        @if (!empty($social['url']))
+                                            <a href="{{ $social['url'] }}" target="_blank" rel="noopener noreferrer"
+                                                class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                                       text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                </svg>
+                                                Open
+                                            </a>
+                                        @endif
+                                        <button wire:click="openSocialModal({{ $index }})"
+                                            class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                                   text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 rounded-lg transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Edit
+                                        </button>
+                                        <button wire:click="removeSocialMedia({{ $index }})"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors"
+                                            title="Remove">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-1 flex-shrink-0 ml-3">
-                                <button wire:click="openSocialModal({{ $index }})"
-                                    class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                    title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                                <button wire:click="removeSocialMedia({{ $index }})"
-                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Remove">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
+                            @endforeach
                         </div>
-                    @empty
-                        <p class="text-sm text-gray-400 text-center py-4">No social media links added yet.</p>
-                    @endforelse
+                    @else
+                        <p class="text-sm text-gray-400 text-center py-6">No social media links added yet.</p>
+                    @endif
                 </div>
             </div>
 
             {{-- Documents --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center justify-between">
+                <div class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-blue-50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -757,53 +752,74 @@
                         Add Document
                     </button>
                 </div>
-                <div class="p-6 space-y-3">
-                    @forelse ($documents as $index => $doc)
-                        <div class="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-cyan-200 transition-colors">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ $doc['title'] ?? 'Document' }}</p>
-                                    <p class="text-xs text-gray-400">
-                                        <span class="uppercase font-medium">{{ $doc['file_type'] ?? 'FILE' }}</span>
-                                        @if (!empty($doc['file_size']))
-                                            · {{ number_format($doc['file_size'] / 1024, 0) }} KB
+                <div class="p-4 sm:p-6">
+                    @if (count($documents))
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                            @foreach ($documents as $index => $doc)
+                                @php
+                                    $ext = strtolower($doc['file_type'] ?? '');
+                                    $extColor = match(true) {
+                                        in_array($ext, ['pdf']) => ['ring' => 'bg-red-50 text-red-600 border-red-100', 'pill' => 'bg-red-100 text-red-700'],
+                                        in_array($ext, ['doc', 'docx']) => ['ring' => 'bg-blue-50 text-blue-600 border-blue-100', 'pill' => 'bg-blue-100 text-blue-700'],
+                                        default => ['ring' => 'bg-cyan-50 text-cyan-600 border-cyan-100', 'pill' => 'bg-cyan-100 text-cyan-700'],
+                                    };
+                                @endphp
+                                <div class="group bg-white border border-gray-200 rounded-2xl p-4 hover:border-cyan-300 hover:shadow-md transition-all">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-12 h-12 rounded-xl {{ $extColor['ring'] }} border flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 3v6h6" />
+                                            </svg>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 truncate" title="{{ $doc['title'] ?? '' }}">
+                                                {{ $doc['title'] ?? 'Document' }}
+                                            </p>
+                                            <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase rounded {{ $extColor['pill'] }}">
+                                                    {{ $doc['file_type'] ?? 'FILE' }}
+                                                </span>
+                                                @if (!empty($doc['file_size']))
+                                                    <span class="text-xs text-gray-400">{{ number_format($doc['file_size'] / 1024, 0) }} KB</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center gap-1.5">
+                                        @if (!empty($doc['file_path']))
+                                            <a href="{{ $doc['file_path'] }}" target="_blank" rel="noopener noreferrer"
+                                                class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                                       text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-100 rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                View
+                                            </a>
                                         @endif
-                                    </p>
+                                        <button wire:click="openDocumentModal({{ $index }})"
+                                            class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold
+                                                   text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 rounded-lg transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Edit
+                                        </button>
+                                        <button wire:click="removeDocument({{ $index }})"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors"
+                                            title="Delete">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                                @if (!empty($doc['file_path']))
-                                    <a href="{{ $doc['file_path'] }}" target="_blank" rel="noopener noreferrer"
-                                        class="p-1.5 rounded-lg border border-cyan-200 text-cyan-600 hover:bg-cyan-50 transition-colors" title="View">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                    </a>
-                                @endif
-                                <button wire:click="openDocumentModal({{ $index }})"
-                                    class="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition-colors" title="Edit">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                                <button wire:click="removeDocument({{ $index }})"
-                                    class="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Delete">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
+                            @endforeach
                         </div>
-                    @empty
+                    @else
                         <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
                             <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -812,14 +828,14 @@
                             <p class="text-sm text-gray-400">No documents uploaded.</p>
                             <p class="text-xs text-gray-300 mt-1">PDF, DOC, DOCX up to 2MB.</p>
                         </div>
-                    @endforelse
+                    @endif
                 </div>
             </div>
 
             {{-- Save Button --}}
-            <div class="flex justify-end pb-6">
+            <div class="flex justify-stretch sm:justify-end pb-6">
                 <button wire:click="save"
-                    class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600
                            hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl
                            shadow-md hover:shadow-lg transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -920,7 +936,7 @@
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Panel Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">
                             {{ $editContactIndex !== null ? 'Edit Contact' : 'Add Contact' }}
@@ -935,7 +951,7 @@
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Type <span class="text-red-500">*</span></label>
@@ -953,7 +969,7 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                <div class="px-4 sm:px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button wire:click="closeContactModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="saveContact"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">
@@ -971,7 +987,7 @@
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Panel Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">
                             {{ $editTeamIndex !== null ? 'Edit Team Member' : 'Add Team Member' }}
@@ -987,44 +1003,39 @@
                 </div>
 
                 {{-- Form Body (scrollable) --}}
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
 
-                    {{-- Profile Photo --}}
-                    <div class="bg-gray-50 rounded-xl p-4">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Photo</p>
-                        <div class="flex items-center gap-4">
-                            @if ($editTeamIndex !== null && !empty($core_team[$editTeamIndex]['image']))
-                                <img src="{{ $core_team[$editTeamIndex]['image'] }}"
-                                    class="w-16 h-16 rounded-full object-cover border-2 border-white shadow flex-shrink-0">
-                            @else
-                                <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center border-2 border-white shadow flex-shrink-0">
-                                    <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                            @endif
-                            <div class="flex-1">
-                                <input type="file" wire:model="newTeamMemberImage" accept="image/*"
-                                    class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3
-                                           file:rounded-lg file:border-0 file:text-xs file:font-semibold
-                                           file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
-                                <p class="text-xs text-gray-400 mt-1">
-                                    {{ $editTeamIndex !== null ? 'Leave empty to keep current photo' : 'JPG, PNG up to 2MB' }}
-                                </p>
-                                <div wire:loading wire:target="newTeamMemberImage"
-                                    class="flex items-center gap-1.5 text-xs text-amber-600 mt-1">
-                                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                    </svg>
-                                    Uploading…
-                                </div>
-                                @error('newTeamMemberImage')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
+                    {{-- Profile Photo — simple file picker --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Profile Photo</label>
+                        <input type="file" wire:model="newTeamMemberImage" accept="image/*"
+                            class="block w-full text-sm text-gray-600
+                                   file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0
+                                   file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700
+                                   hover:file:bg-amber-100 border border-gray-300 rounded-md">
+                        <p class="text-xs text-gray-400 mt-1">
+                            JPG / PNG up to 2MB{{ $editTeamIndex !== null ? ' · Leave empty to keep current photo' : '' }}
+                        </p>
+                        <div wire:loading wire:target="newTeamMemberImage"
+                            class="flex items-center gap-1.5 text-xs text-amber-600 mt-1">
+                            <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Uploading…
                         </div>
+                        @error('newTeamMemberImage')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+
+                        {{-- Current photo preview (compact) --}}
+                        @if ($editTeamIndex !== null && !empty($core_team[$editTeamIndex]['image']) && !$newTeamMemberImage)
+                            <div class="mt-2 flex items-center gap-2">
+                                <img src="{{ $core_team[$editTeamIndex]['image'] }}"
+                                    class="w-10 h-10 rounded-full object-cover border border-gray-200">
+                                <span class="text-xs text-gray-400">Current photo</span>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Basic Info --}}
@@ -1059,17 +1070,16 @@
                         </div>
                     </div>
 
-                    {{-- Social / Link --}}
-                    <div class="bg-gray-50 rounded-xl p-4">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Profile Link</p>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Profile / Social URL</label>
-                            <input type="url" wire:model="newTeamMember.link" placeholder="https://instagram.com/..."
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                            @error('newTeamMember.link')
-                                <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    {{-- Social / Profile Link --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Profile / Social URL</label>
+                        <input type="text" wire:model="newTeamMember.link"
+                            placeholder="instagram.com/username  ·  linkedin.com/in/...  ·  https://..."
+                            class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+                        <p class="text-xs text-gray-400 mt-1">You can paste a full URL or just <code class="text-[11px] bg-gray-50 px-1 py-0.5 rounded">domain.com/path</code> — we'll add <code class="text-[11px] bg-gray-50 px-1 py-0.5 rounded">https://</code> for you.</p>
+                        @error('newTeamMember.link')
+                            <p class="text-xs text-red-500 mt-0.5">{{ $message }}</p>
+                        @enderror
                     </div>
 
                 </div>
@@ -1103,29 +1113,21 @@
     {{-- ══════════ SOCIAL SLIDE-IN PANEL ══════════ --}}
     @if ($showSocialModal)
         @php
-            $platformIcons = [
-                'facebook'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12S0 5.446 0 12.073C0 18.062 4.388 23.027 10.125 23.927v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
-                'twitter'   => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#1DA1F2"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>',
-                'instagram' => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#E4405F"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
-                'linkedin'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
-                'youtube'   => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
-                'github'    => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#181717"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>',
-                'whatsapp'  => '<svg class="w-full h-full" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>',
-            ];
-            $currentPlatform = $newSocialMedia['platform'] ?? '';
-            $autoIcon = $platformIcons[$currentPlatform] ?? null;
+            $currentPlatform = strtolower(trim($newSocialMedia['platform'] ?? ''));
+            $knownPlatforms = ['facebook', 'twitter', 'x', 'instagram', 'linkedin', 'youtube', 'github', 'whatsapp', 'telegram', 'discord', 'tiktok', 'pinterest', 'snapchat', 'reddit'];
+            $hasKnownIcon = in_array($currentPlatform, $knownPlatforms, true);
         @endphp
         <div class="fixed inset-0 z-50 overflow-hidden">
             <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeSocialModal"></div>
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Panel Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">
                             {{ $editSocialIndex !== null ? 'Edit Social Media' : 'Add Social Media' }}
                         </h2>
-                        <p class="text-xs text-gray-500 mt-0.5">Select platform to auto-fill logo</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Any platform · any URL works</p>
                     </div>
                     <button wire:click="closeSocialModal"
                         class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0">
@@ -1135,38 +1137,44 @@
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Platform <span class="text-red-500">*</span></label>
-                        <select wire:model.live="newSocialMedia.platform"
+                        <input type="text" list="known-social-platforms" wire:model.live.debounce.300ms="newSocialMedia.platform"
+                            placeholder="Type any platform name (Facebook, Behance, Dribbble, etc.)"
                             class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm bg-white
                                    focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Select Platform</option>
-                            @foreach (['facebook', 'twitter', 'instagram', 'linkedin', 'youtube', 'github', 'whatsapp'] as $p)
-                                <option value="{{ $p }}">{{ ucfirst($p) }}</option>
+                        <datalist id="known-social-platforms">
+                            @foreach ($knownPlatforms as $p)
+                                <option value="{{ ucfirst($p) }}"></option>
                             @endforeach
-                        </select>
+                        </datalist>
+                        <p class="text-xs text-gray-400 mt-1">Suggested platforms have built-in logos. Pick anything you like.</p>
                         @error('newSocialMedia.platform')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    @if ($autoIcon)
+                    @if ($currentPlatform !== '')
                         <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 flex items-center gap-3">
-                            <div class="w-10 h-10 bg-white rounded-lg p-2 flex items-center justify-center shadow-sm">
-                                {!! $autoIcon !!}
+                            <div class="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center shadow-sm">
+                                <x-social-platform-icon :platform="$currentPlatform" class="w-full h-full block" />
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide">Auto-selected Logo</p>
-                                <p class="text-sm text-gray-700 capitalize">{{ $currentPlatform }} logo will be used by default.</p>
+                                <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide">Logo Preview</p>
+                                <p class="text-sm text-gray-700 capitalize">
+                                    {{ $hasKnownIcon ? ucfirst($currentPlatform) . ' logo will be used.' : 'Custom platform — upload an icon below to override the default.' }}
+                                </p>
                             </div>
                         </div>
                     @endif
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">URL <span class="text-red-500">*</span></label>
-                        <input type="url" wire:model.defer="newSocialMedia.url" placeholder="https://..."
+                        <input type="text" wire:model.defer="newSocialMedia.url"
+                            placeholder="instagram.com/username  ·  https://..."
                             class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm
                                    focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-xs text-gray-400 mt-1">You can paste a full URL or just <code class="text-[11px] bg-gray-50 px-1 py-0.5 rounded">domain.com/path</code> — we'll add <code class="text-[11px] bg-gray-50 px-1 py-0.5 rounded">https://</code> for you.</p>
                         @error('newSocialMedia.url')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -1190,7 +1198,7 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                <div class="px-4 sm:px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button wire:click="closeSocialModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="saveSocialMedia"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">
@@ -1208,7 +1216,7 @@
             <div class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
 
                 {{-- Panel Header --}}
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">
                             {{ $editDocumentIndex !== null ? 'Edit Document' : 'Add Document' }}
@@ -1223,7 +1231,7 @@
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
 
                     @if ($editDocumentIndex !== null && !empty($documents[$editDocumentIndex]['file_path']))
                         <div class="bg-cyan-50 border border-cyan-100 rounded-lg px-4 py-3 flex items-center gap-3">
@@ -1276,7 +1284,7 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                <div class="px-4 sm:px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                     <button wire:click="closeDocumentModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                     <button wire:click="saveDocument" wire:loading.attr="disabled"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md disabled:opacity-60 flex items-center gap-1.5">
