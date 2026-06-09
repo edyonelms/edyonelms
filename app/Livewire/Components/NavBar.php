@@ -125,6 +125,18 @@ class NavBar extends Component
         }
     }
 
+    #[On('open-notifications')]
+    public function openNotifications(): void
+    {
+        $this->showNotifications = true;
+    }
+
+    #[On('open-logout-confirm')]
+    public function openLogoutConfirm(): void
+    {
+        $this->confirmLogout();
+    }
+
     public function superAdminLogout(): mixed
     {
         Auth::logout();
