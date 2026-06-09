@@ -4,14 +4,14 @@
          STICKY HEADER
     ══════════════════════════════════════════════════════════ --}}
     <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
-                <p class="text-sm text-gray-500 mt-0.5">{{ now()->format('l, d M Y') }} · Platform overview</p>
+        <div class="px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="min-w-0">
+                <h1 class="text-lg sm:text-2xl font-bold text-gray-900 truncate">Super Admin Dashboard</h1>
+                <p class="text-xs sm:text-sm text-gray-500 mt-0.5 truncate">{{ now()->format('l, d M Y') }} · Platform overview</p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <a href="{{ route('super-admin.schools') }}"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors">
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4v16m8-8H4" />
@@ -19,7 +19,7 @@
                     Add School
                 </a>
                 <button wire:click="refreshData"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-lg transition-colors">
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-lg transition-colors">
                     <svg class="w-4 h-4" wire:loading.class="animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -30,7 +30,7 @@
         </div>
     </div>
 
-    <div class="p-4 sm:p-6 space-y-6">
+    <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
 
         {{-- ══════════════════════════════════════════════════════════
              TOP ANALYTICS STRIP
@@ -38,7 +38,7 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
             {{-- Total Schools --}}
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@
                     </div>
                     <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Schools</span>
                 </div>
-                <p class="text-3xl font-bold text-gray-900">{{ number_format($totalSchools) }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ number_format($totalSchools) }}</p>
                 <p class="text-xs text-gray-500 mt-1">Total registered schools</p>
             </div>
 
@@ -63,7 +63,7 @@
                     </div>
                     <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Students</span>
                 </div>
-                <p class="text-3xl font-bold text-gray-900">{{ number_format($totalStudents) }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ number_format($totalStudents) }}</p>
                 <p class="text-xs text-gray-500 mt-1">Total students enrolled</p>
             </div>
 
@@ -78,7 +78,7 @@
                     </div>
                     <span class="text-xs font-medium text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">Teachers</span>
                 </div>
-                <p class="text-3xl font-bold text-gray-900">{{ number_format($totalTeachers) }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ number_format($totalTeachers) }}</p>
                 <p class="text-xs text-gray-500 mt-1">Total teachers across schools</p>
             </div>
 
@@ -93,7 +93,7 @@
                     </div>
                     <span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Average</span>
                 </div>
-                <p class="text-3xl font-bold text-gray-900">{{ number_format($avgStudentsPerSchool) }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ number_format($avgStudentsPerSchool) }}</p>
                 <p class="text-xs text-gray-500 mt-1">Avg students per school</p>
             </div>
         </div>
