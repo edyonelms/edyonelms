@@ -538,6 +538,21 @@
                 <form id="student-form" wire:submit.prevent="onSave" class="flex-1 overflow-y-auto">
                     <div class="px-6 py-6 space-y-5">
 
+                        {{-- Inline save-error banner. The WireUI toast at top-right is
+                             easy to miss with the slide-in modal taking up most of the
+                             screen, so we surface the same error here too. --}}
+                        @if ($saveError)
+                            <div class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A8.25 8.25 0 1112 20.25a8.25 8.25 0 010-16.536zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-red-800">Could not save this student</p>
+                                    <p class="text-xs text-red-700 mt-0.5 break-words">{{ $saveError }}</p>
+                                </div>
+                            </div>
+                        @endif
+
                         {{-- Profile image (single inline row, teacher style) --}}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">
@@ -785,7 +800,13 @@
                         Cancel
                     </button>
 
-                    <button type="submit" form="student-form" wire:loading.attr="disabled" wire:target="onSave"
+                    {{-- Use wire:click instead of the HTML5 form="…" + type=submit trick.
+                         The external-button trick depends on the browser firing the form's
+                         submit event for a button outside the form — which is fragile across
+                         Livewire morph cycles and some browser/extension combinations. A
+                         plain wire:click is bulletproof. The form's wire:submit.prevent
+                         still handles Enter-key submission from any input. --}}
+                    <button type="button" wire:click="onSave" wire:loading.attr="disabled" wire:target="onSave"
                         class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md
                                flex items-center gap-1.5 disabled:opacity-60">
                         <span wire:loading.remove wire:target="onSave">

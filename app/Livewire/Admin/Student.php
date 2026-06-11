@@ -92,6 +92,12 @@ class Student extends Component
     public bool $showDeleteConfirm = false;
     public $deleteTargetId         = null;
 
+    // ─── Inline save-error banner ───────────────────────────────────────
+    // Shown at the top of the form when onSave throws. The WireUI toast is
+    // easy to miss with the slide-in modal open, so we duplicate the error
+    // here so it cannot be overlooked.
+    public string $saveError = '';
+
     public string $search         = '';
     public string $filterClass    = '';
     public string $filterSection  = '';
@@ -286,17 +292,8 @@ class Student extends Component
 
     public function onSave(): void
     {
-        // ─── Hard caps ────────────────────────────────────────────────────
-        // 1. PHP-side cap: fail in ≤20s so nginx (60s proxy_read_timeout)
-        //    never sees a 504. The error will bubble through our \Throwable
-        //    catch as a clean notification instead.
-        // 2. MySQL-side cap: if a previous worker died holding row locks
-        //    (e.g. a 504-killed request earlier in this debugging session),
-        //    a fresh save would normally wait innodb_lock_wait_timeout
-        //    (default 50s) on those locks → 504. Drop to 5s for this
-        //    session so we surface "Lock wait timeout" fast.
-        @set_time_limit(20);
-        try { DB::statement('SET SESSION innodb_lock_wait_timeout = 5'); } catch (\Throwable $e) { /* not all drivers support this; safe to ignore */ }
+        // Clear any save error banner from a previous attempt.
+        $this->saveError = '';
 
         $stepStart = microtime(true);
         $stepLog = function (string $step) use (&$stepStart) {
@@ -341,46 +338,55 @@ class Student extends Component
             'selectedRoute.required'   => 'Please select a transport route.',
         ];
 
-        // Email uniqueness — only collide with a *real* student in the *same
-        // org*. "Real" means a User row that ALSO has a StudentDetail row.
+        // Email uniqueness — must catch EVERY collision before we hit the
+        // DB-level unique constraint on users.email. Otherwise the INSERT
+        // crashes with a raw "SQLSTATE 1062 Duplicate entry" that the user
+        // can't action.
         //
-        // Why: previous failed saves used to leave orphan User rows (User
-        // created, StudentDetail creation then failed mid-flow). That bricked
-        // the form — the validation said "exists in this school" but the
-        // listing (which joins through StudentDetail) showed nothing, so
-        // there was no way to fix it from the UI.
-        //
-        // Strategy: if we find an orphan User (User with no StudentDetail),
-        // DELETE it before creating the new one. Trying to UPDATE the orphan
-        // proved risky — any stale state on the row (triggers, FK rows in
-        // password_resets, sanctum tokens, etc.) can slow or block the
-        // update and we hit a 504. A clean DELETE + INSERT is bulletproof.
+        // The users table has ONE unique constraint: email (no role/org
+        // partial). So we look for any user with this email, then decide:
+        //   - same org + role=user + has StudentDetail → real student, block
+        //   - same org + role=user + no StudentDetail → orphan from a prior
+        //     failed save, delete and recreate
+        //   - any other case (different role, different org) → block with a
+        //     clear message
         $orgId = Auth::user()->organization_id ?? null;
 
         // Holds an orphan User id queued for deletion inside the transaction.
         $orphanUserIdToDelete = null;
 
         if (empty($this->studentData['id'])) {
-            $existingStudentUser = User::where('email', $this->studentsEmail)
-                ->where('role', 'user')
-                ->when($orgId, fn($q, $org) => $q->where('organization_id', $org))
-                ->first(['id', 'email']);
+            $existingUser = User::where('email', $this->studentsEmail)
+                ->first(['id', 'email', 'role', 'organization_id']);
 
-            if ($existingStudentUser) {
-                $hasDetail = StudentDetail::where('user_id', $existingStudentUser->id)->exists();
+            if ($existingUser) {
+                $sameOrgStudent = $existingUser->role === 'user'
+                    && (int) $existingUser->organization_id === (int) $orgId;
 
-                if ($hasDetail) {
-                    // Real existing student — block.
-                    $this->addError('studentsEmail', 'A student with this email already exists in this school.');
+                if ($sameOrgStudent) {
+                    $hasDetail = StudentDetail::where('user_id', $existingUser->id)->exists();
+
+                    if ($hasDetail) {
+                        // Real existing student in this school — block.
+                        $this->addError('studentsEmail', 'A student with this email already exists in this school.');
+                        return;
+                    }
+
+                    // Orphan User from a previous failed save — queue for deletion.
+                    logger()->info('Found orphan student User row, queueing for delete-then-recreate', [
+                        'user_id' => $existingUser->id,
+                        'email'   => $existingUser->email,
+                    ]);
+                    $orphanUserIdToDelete = $existingUser->id;
+                } else {
+                    // Email is taken by some other user (different role, or
+                    // a student in another school). The unique constraint on
+                    // users.email is global, so we MUST block here — otherwise
+                    // the INSERT crashes with SQLSTATE 1062 and the user only
+                    // sees a cryptic toast.
+                    $this->addError('studentsEmail', 'This email is already used by another account. Please use a different email.');
                     return;
                 }
-
-                // Orphan User from a previous failed save — queue for deletion.
-                logger()->info('Found orphan student User row, queueing for delete-then-recreate', [
-                    'user_id' => $existingStudentUser->id,
-                    'email'   => $existingStudentUser->email,
-                ]);
-                $orphanUserIdToDelete = $existingStudentUser->id;
             }
         } else {
             // On edit, just make sure no OTHER student row in this org owns it
@@ -577,7 +583,20 @@ class Student extends Component
             // \Throwable catches both \Exception and \Error (TypeError etc.) —
             // ensures the UI never stays stuck on "Saving…" because the
             // request returned 500 from an uncaught Error.
-            $this->notification()->error('Error Saving Student', $e->getMessage() ?: 'Unknown error');
+            $msg = $e->getMessage() ?: 'Unknown error';
+
+            // Translate the common SQLSTATE 1062 duplicate-email error to a
+            // user-friendly message. The broader pre-check above should catch
+            // this, but keep the safety net for race conditions / column
+            // collisions we haven't anticipated.
+            if (str_contains($msg, '1062') && str_contains($msg, 'email')) {
+                $msg = 'This email is already used by another account. Please use a different email.';
+            }
+
+            // Set BOTH the toast and the inline banner — the slide-in modal
+            // covers most of the screen and toasts at top-end are easy to miss.
+            $this->saveError = $msg;
+            $this->notification()->error('Error Saving Student', $msg);
             logger()->error('Student save error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
         }
     }
@@ -873,6 +892,7 @@ class Student extends Component
             'apparId',
             'registrationNumber',
             'studentsActive',
+            'saveError',
         ]);
         $this->open     = false;
         $this->sections = [];
