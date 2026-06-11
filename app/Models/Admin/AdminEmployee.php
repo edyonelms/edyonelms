@@ -47,6 +47,16 @@ class AdminEmployee extends Model
         return $this->belongsTo(TeacherDetail::class);
     }
 
+    public function idCard()
+    {
+        return $this->hasOne(EmployeeIdCard::class, 'admin_employee_id');
+    }
+
+    public function idCards()
+    {
+        return $this->hasMany(EmployeeIdCard::class, 'admin_employee_id');
+    }
+
     public const TEACHER_STATUS_MAP = [
         'present'  => 1,
         'absent'   => 0,

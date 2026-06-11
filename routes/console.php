@@ -14,3 +14,10 @@ Artisan::command('inspire', function () {
 Schedule::command('announcements:purge-old')
     ->dailyAt('03:15')
     ->withoutOverlapping();
+
+// Every midnight: for any organization + person-type that already had a card
+// batch issued, generate ID cards for newly-added students / teachers /
+// employees that don't have one yet. See App\Console\Commands\GenerateMissingIdCards.
+Schedule::command('id-cards:generate-missing')
+    ->dailyAt('00:00')
+    ->withoutOverlapping();
