@@ -9,6 +9,7 @@
             'enquiry'        => 'bg-cyan-100 text-cyan-600',
             'support'        => 'bg-rose-100 text-rose-600',
             'credit'         => 'bg-emerald-100 text-emerald-600',
+            'activity'       => 'bg-blue-100 text-blue-600',
         ];
     @endphp
 

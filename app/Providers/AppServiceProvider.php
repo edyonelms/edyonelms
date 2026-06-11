@@ -18,6 +18,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // In-app activity feed: notify school admins about every meaningful
+        // create/update/delete across the app — including actions taken by
+        // accountants, teachers and student/user accounts — with who did what.
+        \App\Support\ActivityNotifier::boot();
+
         // Record last login timestamp on every successful authentication
         Event::listen(Login::class, function (Login $event) {
             $user = $event->user;
