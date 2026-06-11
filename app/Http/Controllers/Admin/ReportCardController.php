@@ -76,6 +76,50 @@ class ReportCardController extends Controller
             ->orderBy('start_date')
             ->get();
 
+        // ─── Split exams into Term 1 and Term 2 ──────────────────────────
+        // The Shreeji-style template groups marks under Term-1 and Term-2
+        // column groups, each with its own Total. We split by exam_name
+        // first (preferred — schools usually name exams "Term 1 …" / "Term
+        // 2 …" / "Mid Term" / "End Term"), then fall back to a midpoint
+        // chronological split so the template still renders cleanly when
+        // exams aren't explicitly named.
+        $term1Exams = collect();
+        $term2Exams = collect();
+        foreach ($exams as $exam) {
+            $name = strtolower((string) $exam->exam_name);
+            if (str_contains($name, 'term 2')
+                || str_contains($name, 'term-2')
+                || str_contains($name, 'term2')
+                || str_contains($name, 'end term')
+                || str_contains($name, 'end-term')
+                || str_contains($name, 'final')
+                || str_contains($name, 'annual')
+            ) {
+                $term2Exams->push($exam);
+            } elseif (str_contains($name, 'term 1')
+                || str_contains($name, 'term-1')
+                || str_contains($name, 'term1')
+                || str_contains($name, 'mid term')
+                || str_contains($name, 'mid-term')
+                || str_contains($name, 'half yearly')
+                || str_contains($name, 'half-yearly')
+                || str_contains($name, 'unit test')
+            ) {
+                $term1Exams->push($exam);
+            } else {
+                // Unclassifiable — defer to midpoint split below.
+                $term1Exams->push($exam);
+            }
+        }
+        // If the name-based split produced an empty Term 2 (common when
+        // every exam is named "Unit Test N"), fall back to a chronological
+        // midpoint split so the template still has two balanced groups.
+        if ($term2Exams->isEmpty() && $term1Exams->count() > 1) {
+            $mid = (int) ceil($term1Exams->count() / 2);
+            $term2Exams = $term1Exams->slice($mid)->values();
+            $term1Exams = $term1Exams->slice(0, $mid)->values();
+        }
+
         // Get section subjects
         $subjectIds = SectionSubject::where('section_id', $sectionId)
             ->where('standard_id', $standardId)
@@ -127,6 +171,8 @@ class ReportCardController extends Controller
             'student'      => $reportCard->studentDetail,
             'organization' => $reportCard->organization ?? Auth::user()->organization,
             'exams'        => $exams,
+            'term1Exams'   => $term1Exams,
+            'term2Exams'   => $term2Exams,
             'subjects'     => $subjects,
             'examCopies'   => $examCopies,
             'attendance'   => [
