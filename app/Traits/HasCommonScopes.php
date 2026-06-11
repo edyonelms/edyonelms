@@ -254,21 +254,15 @@ trait HasCommonScopes
         return $query->paginate($perPage);
     }
 
-    /**
-     * Scope: Where column is null
-     */
-    public function scopeWhereNull(Builder $query, $column): Builder
-    {
-        return $query->whereNull($column);
-    }
-
-    /**
-     * Scope: Where column is not null
-     */
-    public function scopeWhereNotNull(Builder $query, $column): Builder
-    {
-        return $query->whereNotNull($column);
-    }
+    // NOTE: scopeWhereNull / scopeWhereNotNull were removed on purpose.
+    // A scope named after a real builder method shadows it: Eloquent's
+    // __call resolves named scopes BEFORE forwarding to the query builder,
+    // so `$query->whereNotNull()` inside the scope re-invoked the scope
+    // itself — infinite recursion → memory exhaustion → 500 on every code
+    // path touching it (student save died in generateRollNumber, plus admit
+    // cards, seating plans, exam copies…). The built-in whereNull /
+    // whereNotNull do exactly what the wrappers did, so call sites work
+    // unchanged. Never add a scope whose name matches a builder method.
 
     /**
      * Scope: Filter by type
