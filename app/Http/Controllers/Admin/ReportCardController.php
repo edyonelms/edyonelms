@@ -86,6 +86,17 @@ class ReportCardController extends Controller
         $term1Exams = collect();
         $term2Exams = collect();
         foreach ($exams as $exam) {
+            // Prefer the explicit term chosen when the exam was created. Only
+            // fall back to name-based guessing when the term wasn't set.
+            if (($exam->term ?? null) === 'Term-2') {
+                $term2Exams->push($exam);
+                continue;
+            }
+            if (($exam->term ?? null) === 'Term-1') {
+                $term1Exams->push($exam);
+                continue;
+            }
+
             $name = strtolower((string) $exam->exam_name);
             if (str_contains($name, 'term 2')
                 || str_contains($name, 'term-2')

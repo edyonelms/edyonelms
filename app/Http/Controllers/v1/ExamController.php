@@ -28,6 +28,7 @@ class ExamController extends ApiController
             ->where('is_published', true)
             ->when($request->filled('academic_year'), fn($q) => $q->where('academic_year', $request->academic_year))
             ->when($request->filled('exam_type'),     fn($q) => $q->where('exam_type', $request->exam_type))
+            ->when($request->filled('term'),          fn($q) => $q->where('term', $request->term))
             ->when($request->filled('search'),        fn($q) => $q->where('exam_name', 'like', '%' . $request->search . '%'))
             ->latest('start_date');
 
@@ -160,6 +161,7 @@ class ExamController extends ApiController
         $data = [
             'id'            => $e->id,
             'exam_name'     => $e->exam_name,
+            'term'          => $e->term,
             'exam_type'     => $e->exam_type,
             'academic_year' => $e->academic_year,
             'start_date'    => $e->start_date?->format('Y-m-d'),

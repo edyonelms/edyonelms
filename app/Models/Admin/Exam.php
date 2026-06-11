@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Exam extends Model
 {
-    protected $fillable = ['organization_id', 'exam_name', 'academic_year', 'start_date', 'end_date', 'description', 'is_published', 'exam_type', 'total_marks', 'passing_marks', 'created_by', 'updated_by', 'status'];
+    protected $fillable = ['organization_id', 'exam_name', 'term', 'academic_year', 'start_date', 'end_date', 'description', 'is_published', 'exam_type', 'total_marks', 'passing_marks', 'created_by', 'updated_by', 'status'];
     
     protected $casts = [
         'start_date' => 'date',

@@ -11,6 +11,7 @@ use App\Models\Admin\SchoolInfo;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -288,24 +289,32 @@ class Teacher extends Component
                 $teacher->gender = $this->teacherGender;
             }
 
-            $teacher->save();
+            // Atomic save — User row + TeacherDetail go together or not at all.
+            // Wrapping them in one transaction means a mid-flow failure can't
+            // leave an orphan User without its detail row, and lets several
+            // admins on different devices create teachers concurrently without
+            // half-written records. updateOrCreate is keyed on user_id so a
+            // retried/concurrent save is idempotent rather than erroring.
+            DB::transaction(function () use ($teacher) {
+                $teacher->save();
 
-            // TeacherDetail upsert
-            TeacherDetail::updateOrCreate(
-                ['user_id' => $teacher->id],
-                [
-                    'organization_id'   => Auth::user()->organization_id,
-                    'employee_id'       => $this->employeeId,
-                    'date_of_joining'   => $this->dateOfJoining,
-                    'qualification'     => $this->qualification,
-                    'phone'             => $this->teacherMobile,
-                    'address'           => $this->address,
-                    'city'              => $this->selectedCity ?: null,
-                    'state'             => $this->selectedState ?: null,
-                    'pincode'           => $this->pincode,
-                    'emergency_contact' => $this->emergencyContact,
-                ]
-            );
+                // TeacherDetail upsert
+                TeacherDetail::updateOrCreate(
+                    ['user_id' => $teacher->id],
+                    [
+                        'organization_id'   => Auth::user()->organization_id,
+                        'employee_id'       => $this->employeeId,
+                        'date_of_joining'   => $this->dateOfJoining,
+                        'qualification'     => $this->qualification,
+                        'phone'             => $this->teacherMobile,
+                        'address'           => $this->address,
+                        'city'              => $this->selectedCity ?: null,
+                        'state'             => $this->selectedState ?: null,
+                        'pincode'           => $this->pincode,
+                        'emergency_contact' => $this->emergencyContact,
+                    ]
+                );
+            });
 
             // Send welcome email on creation only — dispatched after-response so
             // a slow ZeptoMail can never block the user's "Saving…" spinner.

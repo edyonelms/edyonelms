@@ -24,6 +24,7 @@ class AddExam extends Component
 
     // ─── Exam form ──────────────────────────────────────────────────────────
     public $examName       = '';
+    public $term           = ''; // 'Term-1' | 'Term-2'
     public $academicYear   = '';
     public $startDate      = '';
     public $endDate        = '';
@@ -51,6 +52,7 @@ class AddExam extends Component
     public $perPage            = 10;
     public $filterAcademicYear = '';
     public $filterExamType     = '';
+    public $filterTerm         = '';
     public $filterStatus       = '';
 
     // ─── Syllabus filters (Exam → Class → Section → Subject) ────────────────
@@ -81,6 +83,11 @@ class AddExam extends Component
         'pre_board'  => 'Pre Board',
     ];
 
+    public $termOptions = [
+        'Term-1' => 'Term-1',
+        'Term-2' => 'Term-2',
+    ];
+
     public $allStandards = [];
     public $allSubjects  = [];
     public $allExams     = [];
@@ -97,6 +104,7 @@ class AddExam extends Component
         'search'                   => ['except' => ''],
         'filterAcademicYear'       => ['except' => ''],
         'filterExamType'           => ['except' => ''],
+        'filterTerm'               => ['except' => ''],
         'filterStatus'             => ['except' => ''],
         'syllabusFilterExam'       => ['except' => ''],
         'syllabusFilterStandard'   => ['except' => ''],
@@ -179,12 +187,13 @@ class AddExam extends Component
     public function updatedSearch(): void             { $this->resetPage(); $this->loadStatistics(); }
     public function updatedFilterAcademicYear(): void { $this->resetPage(); $this->loadStatistics(); }
     public function updatedFilterExamType(): void     { $this->resetPage(); $this->loadStatistics(); }
+    public function updatedFilterTerm(): void          { $this->resetPage(); $this->loadStatistics(); }
     public function updatedFilterStatus(): void       { $this->resetPage(); $this->loadStatistics(); }
     public function updatedPerPage(): void            { $this->resetPage(); }
 
     public function clearExamFilters(): void
     {
-        $this->reset(['search', 'filterAcademicYear', 'filterExamType', 'filterStatus']);
+        $this->reset(['search', 'filterAcademicYear', 'filterExamType', 'filterTerm', 'filterStatus']);
         $this->resetPage();
     }
 
@@ -227,6 +236,7 @@ class AddExam extends Component
     {
         $rules = [
             'examName'      => 'required|string|max:255',
+            'term'          => 'required|in:Term-1,Term-2',
             'academicYear'  => 'required|string|max:9',
             'startDate'     => 'required|date',
             'endDate'       => 'required|date|after_or_equal:startDate',
@@ -245,6 +255,7 @@ class AddExam extends Component
             $examData = [
                 'organization_id'      => Auth::user()->organization_id,
                 'exam_name'            => $this->examName,
+                'term'                 => $this->term,
                 'academic_year'        => $this->academicYear,
                 'start_date'           => $this->startDate,
                 'end_date'             => $this->endDate,
@@ -283,6 +294,7 @@ class AddExam extends Component
 
         $this->editId          = $exam->id;
         $this->examName        = $exam->exam_name;
+        $this->term            = $exam->term ?? '';
         $this->academicYear    = $exam->academic_year;
         $this->startDate       = $exam->start_date ? \Carbon\Carbon::parse($exam->start_date)->format('Y-m-d') : '';
         $this->endDate         = $exam->end_date ? \Carbon\Carbon::parse($exam->end_date)->format('Y-m-d') : '';
@@ -298,7 +310,7 @@ class AddExam extends Component
     public function resetExamForm(): void
     {
         $this->reset([
-            'examName', 'academicYear', 'startDate', 'endDate', 'description',
+            'examName', 'term', 'academicYear', 'startDate', 'endDate', 'description',
             'isPublished', 'examType', 'totalMarks', 'passingMarks',
             'usesGradingSystem', 'editId',
         ]);
@@ -321,6 +333,7 @@ class AddExam extends Component
             'exam'    => $exam,
             'details' => [
                 'Exam Name'     => $exam->exam_name,
+                'Term'          => $exam->term ?? 'N/A',
                 'Academic Year' => $exam->academic_year,
                 'Start Date'    => $exam->start_date->format('d M Y'),
                 'End Date'      => $exam->end_date->format('d M Y'),
@@ -751,6 +764,9 @@ class AddExam extends Component
         }
         if ($this->filterExamType) {
             $query->where('exam_type', $this->filterExamType);
+        }
+        if ($this->filterTerm) {
+            $query->where('term', $this->filterTerm);
         }
         if ($this->filterStatus) {
             match ($this->filterStatus) {

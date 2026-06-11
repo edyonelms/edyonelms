@@ -80,6 +80,8 @@ Route::middleware(['auth:web', 'admin', 'module'])->group(function () {
         Route::get('/fee-structure', FeeStructure::class)->name('admin.fee-structure');
         Route::get('/ledger', Ledger::class)->name('admin.ledger');
         Route::get('/more', More::class)->name('admin.more');
+        Route::get('/ledger/statement', [\App\Http\Controllers\Admin\LedgerStatementController::class, 'download'])
+            ->name('admin.ledger.statement');
         Route::get('/fee/receipt/{id}', [FeeReceiptController::class, 'show'])->name('admin.fee.receipt');
         Route::get('/homework', Homework::class)->name('admin.homework');
         Route::get('/attendance', Attendance::class)->name('admin.attendance');

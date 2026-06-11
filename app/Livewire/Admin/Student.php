@@ -455,6 +455,18 @@ class Student extends Component
             // rolls back — no more orphan User rows from previous saves
             // dying mid-flow. THIS is the structural fix; the orphan-reuse
             // logic above is the self-heal for orphans that already exist.
+            //
+            // Concurrency: admission_no and roll_no are minted by reading the
+            // current max for the org/class — a classic read-then-write race.
+            // Two admins saving from different devices at the same instant would
+            // otherwise read the same max and produce DUPLICATE numbers. We
+            // serialise the whole create per-organisation with a MySQL named
+            // lock so only one student-create runs at a time for a school; the
+            // next one waits, then reads the freshly-committed max. The lock is
+            // released in `finally` no matter what.
+            $createLock = $isNew ? "student_create_{$orgId}" : null;
+            $this->acquireCreationLock($createLock);
+            try {
             [$detail, $admissionNo] = DB::transaction(function () use ($student, $studentData, $isNew, $org, $orgId, $orphanUserIdToDelete) {
                 // Wipe any orphan User row holding the same email — cleans
                 // the slate so the new User save can't trip a unique conflict
@@ -519,6 +531,9 @@ class Student extends Component
 
                 return [$detail, $admissionNo];
             });
+            } finally {
+                $this->releaseCreationLock($createLock);
+            }
 
             $stepLog('db-saved');
 
@@ -795,6 +810,36 @@ class Student extends Component
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="students_' . now()->format('Y-m-d_H-i-s') . '.csv"',
         ]);
+    }
+
+    /**
+     * Serialise concurrent student creation per-organisation using a MySQL
+     * application lock. Two admins on different devices hitting "Save" at the
+     * same instant would otherwise read the same admission_no/roll_no max and
+     * produce duplicates. GET_LOCK blocks the second caller until the first
+     * commits and releases — guaranteeing unique, gap-free serials.
+     *
+     * Degrades gracefully: any failure (non-MySQL driver, lock timeout) is
+     * logged and the save proceeds, so we never block a legitimate create.
+     */
+    protected function acquireCreationLock(?string $name): void
+    {
+        if (!$name) return;
+        try {
+            DB::selectOne('SELECT GET_LOCK(?, 15) AS got', [$name]);
+        } catch (\Throwable $e) {
+            logger()->warning('acquireCreationLock failed: ' . $e->getMessage());
+        }
+    }
+
+    protected function releaseCreationLock(?string $name): void
+    {
+        if (!$name) return;
+        try {
+            DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$name]);
+        } catch (\Throwable $e) {
+            logger()->warning('releaseCreationLock failed: ' . $e->getMessage());
+        }
     }
 
     /**
