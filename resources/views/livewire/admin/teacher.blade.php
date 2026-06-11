@@ -150,9 +150,6 @@
                                 Email</th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Qualification</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Joining Date</th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -198,10 +195,6 @@
                                 <td class="px-4 py-3">
                                     <span class="text-sm text-gray-600 truncate block"
                                         title="{{ $teacher->user?->email ?? '' }}">{{ $teacher->user?->email ?? '—' }}</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-700 truncate block"
-                                        title="{{ $teacher->qualification ?? '' }}">{{ $teacher->qualification ?? '—' }}</span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span
@@ -254,7 +247,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-16 text-center">
+                                <td colspan="7" class="px-6 py-16 text-center">
                                     <div
                                         class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
@@ -360,11 +353,6 @@
                                 <p class="text-gray-700 font-medium truncate">
                                     {{ $teacher->date_of_joining ? \Carbon\Carbon::parse($teacher->date_of_joining)->format('d M Y') : '—' }}
                                 </p>
-                            </div>
-                            <div class="col-span-2 min-w-0">
-                                <p class="text-xs text-gray-400">Qualification</p>
-                                <p class="text-gray-700 font-medium truncate"
-                                    title="{{ $teacher->qualification ?? '' }}">{{ $teacher->qualification ?? '—' }}</p>
                             </div>
                         </div>
                     </div>

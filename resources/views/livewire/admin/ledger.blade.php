@@ -5,19 +5,13 @@
     ══════════════════════════════════════════════════ --}}
     <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div class="px-4 sm:px-6 py-4 sm:py-5">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
+            {{-- Title row: buttons stay pinned to the right and never wrap below --}}
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Ledger</h1>
-                    <p class="text-sm text-gray-500 mt-0.5">Track every credit and expense — fees in, salaries out</p>
+                    <p class="text-sm text-gray-500 mt-0.5 truncate">Track every credit and expense — fees in, salaries out</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-3 divide-x divide-gray-200">
-                        <span class="pr-4">Net: <strong class="{{ $netBalance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">₹{{ number_format($netBalance, 2) }}</strong></span>
-                        <span class="px-4">Credit: <strong class="text-emerald-600">₹{{ number_format($periodCredit, 2) }}</strong></span>
-                        <span class="px-4">Expense: <strong class="text-red-600">₹{{ number_format($periodExpense, 2) }}</strong></span>
-                        <span class="pl-4">Closing: <strong class="text-blue-600">₹{{ number_format($closingBalance, 2) }}</strong></span>
-                    </div>
-
+                <div class="flex items-center gap-2 flex-shrink-0">
                     <button wire:click="openCredit"
                         class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,12 +31,12 @@
                 </div>
             </div>
 
-            {{-- Mobile/Tablet stats --}}
-            <div class="flex lg:hidden items-center gap-3 sm:gap-4 text-xs text-gray-500 mt-3 flex-wrap">
-                <span>Net: <strong class="{{ $netBalance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">₹{{ number_format($netBalance, 2) }}</strong></span>
-                <span>Credit: <strong class="text-emerald-600">₹{{ number_format($periodCredit, 2) }}</strong></span>
-                <span>Expense: <strong class="text-red-600">₹{{ number_format($periodExpense, 2) }}</strong></span>
-                <span>Closing: <strong class="text-blue-600">₹{{ number_format($closingBalance, 2) }}</strong></span>
+            {{-- Stats strip on its own row so it can never push the buttons down --}}
+            <div class="flex items-center gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-500 mt-3 flex-wrap sm:divide-x sm:divide-gray-200">
+                <span class="sm:pr-4">Net: <strong class="{{ $netBalance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">₹{{ number_format($netBalance, 2) }}</strong></span>
+                <span class="sm:px-4">Credit: <strong class="text-emerald-600">₹{{ number_format($periodCredit, 2) }}</strong></span>
+                <span class="sm:px-4">Expense: <strong class="text-red-600">₹{{ number_format($periodExpense, 2) }}</strong></span>
+                <span class="sm:pl-4">Closing: <strong class="text-blue-600">₹{{ number_format($closingBalance, 2) }}</strong></span>
             </div>
         </div>
 
