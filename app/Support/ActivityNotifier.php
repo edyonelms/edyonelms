@@ -174,11 +174,14 @@ class ActivityNotifier
                 return;
             }
 
-            // Recipients: the school's admins, minus the actor (no self-pings).
+            // Recipients: ALL of the school's admins — including the actor when
+            // the actor is an admin. The requirement is that admins see EVERY
+            // activity, their own included (a single-admin school must still
+            // get a feed of what it does), as well as everything accountants,
+            // teachers and student/user accounts do.
             $admins = User::query()
                 ->whereIn('role', ['admin', 'sub-admin'])
                 ->where('organization_id', $orgId)
-                ->where('id', '!=', $actor->id)
                 ->get();
 
             if ($admins->isEmpty()) {

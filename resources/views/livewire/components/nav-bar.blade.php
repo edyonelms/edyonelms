@@ -187,7 +187,7 @@
 
             {{-- ── RIGHT — Actions ── --}}
             <div class="flex items-center gap-1.5 flex-shrink-0">
-                <div class="relative inline-flex">
+                <div class="relative inline-flex" wire:poll.60s>
                     <x-button rounded class="h-9 w-9 bg-white" icon="bell-alert" outline
                         wire:click="$toggle('showNotifications')" />
                     @if (($unreadNotifications ?? 0) > 0)
