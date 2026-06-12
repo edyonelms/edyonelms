@@ -1,66 +1,210 @@
 <div class="min-h-screen bg-gray-50">
 
-    {{-- ══════════ HEADER (per-tab analytics + action button) ══════════ --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Fees</h1>
-                <p class="text-sm text-gray-500 mt-0.5">Manage fee structures, submissions and analytics</p>
-            </div>
+    {{-- ══════════════════════════════════════════════════
+         HEADER (sticky: title + contextual stats + dynamic Add + tabs + filter bar)
+    ══════════════════════════════════════════════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Fees</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Manage fee structures, submissions, cycles and analytics</p>
+                </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-                {{-- Contextual analytics chips per tab --}}
-                @if ($activeTab === 'fee_submission' && $selectedStudentId)
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-medium text-blue-600">
-                        Net Payable ₹<strong>{{ number_format($netPayable, 0) }}</strong>
-                    </span>
-                @elseif ($activeTab === 'concession')
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-600">
-                        Concessions <strong>{{ \App\Models\Admin\Fee\FeeConcession::where('organization_id', auth()->user()->organization_id)->count() }}</strong>
-                    </span>
-                @endif
+                <div class="flex flex-wrap items-center gap-2">
+                    {{-- Contextual stat (inline, exam-style) --}}
+                    @if ($activeTab === 'fee_submission' && $selectedStudentId)
+                        <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-1">
+                            <span>Net Payable: <strong class="text-blue-600">₹{{ number_format($netPayable, 0) }}</strong></span>
+                        </div>
+                    @elseif ($activeTab === 'payments')
+                        <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-1">
+                            <span>Filtered Total: <strong class="text-emerald-600">₹{{ number_format($paymentFilteredTotal ?? 0, 0) }}</strong></span>
+                        </div>
+                    @elseif ($activeTab === 'penalties' && $penaltyStudentId)
+                        <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-1 divide-x divide-gray-200">
+                            <span class="pr-4">Penalty: <strong class="text-red-600">₹{{ number_format($penaltyGross, 0) }}</strong></span>
+                            <span class="pl-4">Net Due: <strong class="text-gray-800">₹{{ number_format($penaltyNet, 0) }}</strong></span>
+                        </div>
+                    @elseif ($activeTab === 'concession')
+                        <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-1">
+                            <span>Concessions: <strong class="text-emerald-600">{{ \App\Models\Admin\Fee\FeeConcession::where('organization_id', auth()->user()->organization_id)->count() }}</strong></span>
+                        </div>
+                    @endif
 
-                {{-- Per-tab primary button --}}
-                @if ($activeTab === 'fee_submission')
-                    <button wire:click="openSubmitPanel" @disabled(!$selectedStudentId)
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        Update Fee
-                    </button>
-                @elseif ($activeTab === 'concession')
-                    <button wire:click="openConcessionModal()"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        Add Concession
-                    </button>
-                @endif
+                    {{-- Per-tab primary button --}}
+                    @if ($activeTab === 'fee_submission')
+                        <button wire:click="openSubmitPanel" @disabled(!$selectedStudentId)
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            <span class="hidden sm:inline">Update Fee</span>
+                            <span class="sm:hidden">Update</span>
+                        </button>
+                    @elseif ($activeTab === 'concession')
+                        <button wire:click="openConcessionModal()"
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            <span class="hidden sm:inline">Add Concession</span>
+                            <span class="sm:hidden">New</span>
+                        </button>
+                    @elseif ($activeTab === 'cycle')
+                        <button wire:click="openCycleModal()"
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            <span class="hidden sm:inline">Add Installment</span>
+                            <span class="sm:hidden">New</span>
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
-    </div>
 
-    {{-- ══════════ TABS ══════════ --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6">
-        <nav class="flex gap-1 overflow-x-auto">
-            @foreach ([
-                'fee_structure'  => 'Fee Structure',
-                'fee_submission' => 'Fee Submission',
-                'view_fee'       => 'View Fee',
-                'analytics'      => 'Analytics',
-                'payments'       => 'Payments',
-                'penalties'      => 'Penalties',
-                'cycle'          => 'Fee Cycle',
-                'concession'     => 'Concession',
-                'account_users'  => 'Account Users',
-            ] as $tab => $label)
-                <button wire:click="showTab('{{ $tab }}')"
-                    class="py-3 px-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-                        {{ $activeTab === $tab
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-                    {{ $label }}
-                </button>
-            @endforeach
-        </nav>
+        {{-- Tabs (with icons, exam-style) --}}
+        @php
+            $feeTabs = [
+                'fee_structure'  => ['Fee Structure',  'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'],
+                'fee_submission' => ['Fee Submission', 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'],
+                'view_fee'       => ['View Fee',        'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+                'analytics'      => ['Analytics',       'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'],
+                'payments'       => ['Payments',        'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z'],
+                'penalties'      => ['Penalties',       'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
+                'cycle'          => ['Fee Cycle',       'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'],
+                'concession'     => ['Concession',      'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'],
+                'account_users'  => ['Account Users',   'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'],
+            ];
+        @endphp
+        <div class="border-t border-gray-200 px-4 sm:px-6">
+            <div class="flex gap-1 overflow-x-auto">
+                @foreach ($feeTabs as $tab => [$label, $icon])
+                    <button wire:click="showTab('{{ $tab }}')"
+                        class="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
+                            {{ $activeTab === $tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}" /></svg>
+                            {{ $label }}
+                        </span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ══════════ PER-TAB FILTER BAR (gray-50, exam-style) ══════════ --}}
+        @if ($activeTab === 'fee_submission')
+            <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                        Filter by:
+                    </div>
+                    <select wire:model.live="submissionStandardId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">Select Class</option>
+                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
+                    </select>
+                    <select wire:model.live="submissionSectionId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Sections</option>
+                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                    </select>
+                    <select wire:model.live="selectedStudentId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 min-w-[200px]">
+                        <option value="">Select Student</option>
+                        @foreach ($students as $stu)
+                            <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}@if ($stu->father_name) — {{ $stu->father_name }}@endif</option>
+                        @endforeach
+                    </select>
+                    <input type="text" wire:model="submissionSearch" wire:keydown.enter="searchSubmissionStudents" placeholder="Search student / father name…"
+                        class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-56 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <button wire:click="searchSubmissionStudents"
+                        class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Search
+                    </button>
+                </div>
+            </div>
+        @elseif ($activeTab === 'payments')
+            <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                        Filter by:
+                    </div>
+                    <select wire:model.live="paymentStandardId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Classes</option>
+                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
+                    </select>
+                    <select wire:model.live="paymentSectionId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Sections</option>
+                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                    </select>
+                    <select wire:model.live="paymentStudentId" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 min-w-[160px]">
+                        <option value="">All Students</option>
+                        @foreach ($paymentStudents as $stu)<option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}</option>@endforeach
+                    </select>
+                    <input type="date" wire:model.live="paymentDateFrom" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700" title="From date" />
+                    <span class="text-gray-300">→</span>
+                    <input type="date" wire:model.live="paymentDateTo" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700" title="To date" />
+                    <select wire:model.live="paymentModeFilter" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Modes</option>
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                    </select>
+                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search student name…"
+                        class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-44 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    @if ($paymentStandardId || $paymentSectionId || $paymentStudentId || $paymentModeFilter || $paymentDateFrom || $paymentDateTo || $search)
+                        <button wire:click="clearPaymentFilters"
+                            class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            Clear
+                        </button>
+                    @endif
+                </div>
+            </div>
+        @elseif ($activeTab === 'penalties')
+            <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                        Filter by:
+                    </div>
+                    <select wire:model.live="penaltyFilterStandard" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">Select Class</option>
+                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
+                    </select>
+                    <span class="text-gray-300">→</span>
+                    <select wire:model.live="penaltyFilterSection" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Sections</option>
+                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                    </select>
+                    <span class="text-gray-300">→</span>
+                    <select wire:model.live="penaltyStudentId" @disabled(!$penaltyFilterStandard)
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 disabled:opacity-50 min-w-[200px]">
+                        <option value="">Select Student</option>
+                        @foreach ($penaltyStudents as $stu)
+                            <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}@if ($stu->father_name) — {{ $stu->father_name }}@endif</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        @elseif ($activeTab === 'concession')
+            <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                        Filter by:
+                    </div>
+                    <select wire:model.live="concFilterStandard" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Classes</option>
+                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
+                    </select>
+                    <select wire:model.live="concFilterSection" class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700">
+                        <option value="">All Sections</option>
+                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
+                    </select>
+                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search student / father…"
+                        class="text-xs bg-white border border-gray-200 rounded-md px-3 py-1.5 text-gray-700 w-56 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="p-4 sm:p-6 space-y-5">
@@ -78,46 +222,17 @@
     {{-- TAB 2: FEE SUBMISSION                                           --}}
     {{-- ════════════════════════════════════════════════════════════════ --}}
     @if ($activeTab === 'fee_submission')
-        {{-- Filter / search bar --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <div class="flex flex-wrap items-end gap-3">
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Class</label>
-                    <select wire:model.live="submissionStandardId" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">Select Class</option>
-                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Section</label>
-                    <select wire:model.live="submissionSectionId" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Sections</option>
-                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Student</label>
-                    <select wire:model.live="selectedStudentId" class="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[220px]">
-                        <option value="">Select Student</option>
-                        @foreach ($students as $stu)
-                            <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}@if ($stu->father_name) — {{ $stu->father_name }}@endif</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex-1 min-w-[180px]">
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Search (student / father name)</label>
-                    <div class="flex gap-2">
-                        <input type="text" wire:model="submissionSearch" wire:keydown.enter="searchSubmissionStudents" placeholder="Type name…"
-                            class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300">
-                        <button wire:click="searchSubmissionStudents"
-                            class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-md text-sm font-medium inline-flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            Search
-                        </button>
+        @if (!$selectedStudentId || empty($selectedStudentInfo))
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="text-center py-16 px-4">
+                    <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                     </div>
+                    <p class="text-sm font-semibold text-gray-800">Select a student</p>
+                    <p class="text-xs text-gray-400 mt-1">Use the filters above (Class → Section → Student) or search by name to view fee details.</p>
                 </div>
             </div>
-        </div>
+        @endif
 
         @if ($selectedStudentId && !empty($selectedStudentInfo))
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -188,6 +303,7 @@
         @endif
 
         {{-- Payments (admin / accounts / app) --}}
+        @if ($selectedStudentId && !empty($selectedStudentInfo))
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 class="text-base font-semibold text-gray-800 mb-4">Payment History</h3>
             <div class="overflow-x-auto">
@@ -233,44 +349,45 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="px-3 py-8 text-center text-gray-400 text-sm">@if ($selectedStudentId) No payments yet for this student. @else Select a student to view payments. @endif</td></tr>
+                            <tr><td colspan="9" class="px-3 py-8 text-center text-gray-400 text-sm">No payments yet for this student.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+        @endif
 
         {{-- ── Update / Collect Fee slide-in panel ── --}}
         @if ($showSubmitPanel)
-            <div class="fixed inset-0 z-[60] overflow-hidden">
-                <div class="absolute inset-0 bg-black/[0.06] backdrop-blur-[1.5px]" wire:click="closeSubmitPanel"></div>
+            <div class="fixed inset-0 z-50 overflow-hidden">
+                <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeSubmitPanel"></div>
                 <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Collect Fee</h2>
                             <p class="text-xs text-gray-500 mt-0.5">{{ $selectedStudentInfo['name'] ?? '' }} · Net ₹{{ number_format($netPayable, 0) }}</p>
                         </div>
-                        <button wire:click="closeSubmitPanel" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100">
+                        <button wire:click="closeSubmitPanel" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹) <span class="text-red-500">*</span></label>
-                            <input type="number" step="0.01" min="1" wire:model="submitAmount" placeholder="Enter amount" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
-                            @error('submitAmount')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            <input type="number" step="0.01" min="1" wire:model="submitAmount" placeholder="Enter amount" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            @error('submitAmount')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Fee Type</label>
-                                <select wire:model="submitFeeType" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
+                                <select wire:model="submitFeeType" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="academic">Academic</option>
                                     <option value="transport">Transport</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Payment Mode</label>
-                                <select wire:model="submitPaymentMode" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
+                                <select wire:model="submitPaymentMode" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="cash">Cash</option>
                                     <option value="online">Online</option>
                                     <option value="cheque">Cheque</option>
@@ -280,23 +397,23 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Date <span class="text-red-500">*</span></label>
-                            <input type="date" wire:model="submitDate" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
-                            @error('submitDate')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            <input type="date" wire:model="submitDate" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            @error('submitDate')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Collected By <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model="submittedBy" placeholder="Staff name" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
-                            @error('submittedBy')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            <input type="text" wire:model="submittedBy" placeholder="Staff name" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            @error('submittedBy')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Remark</label>
-                            <input type="text" wire:model="submitRemark" placeholder="Optional" class="w-full border border-gray-300 rounded-md px-3.5 py-2.5 text-sm">
+                            <input type="text" wire:model="submitRemark" placeholder="Optional" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2">
+                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                         <button wire:click="closeSubmitPanel" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                         <button wire:click="submitFeePayment" wire:loading.attr="disabled" wire:target="submitFeePayment"
-                            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-md">
+                            class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
                             <span wire:loading.remove wire:target="submitFeePayment">Submit Payment</span>
                             <span wire:loading wire:target="submitFeePayment">Saving…</span>
                         </button>
@@ -646,108 +763,61 @@
             </div>
         @endif
 
-        {{-- Filters: class / section / student-wise + date-wise --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Class</label>
-                    <select wire:model.live="paymentStandardId" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Classes</option>
-                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Section</label>
-                    <select wire:model.live="paymentSectionId" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Sections</option>
-                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Student</label>
-                    <select wire:model.live="paymentStudentId" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Students</option>
-                        @foreach ($paymentStudents as $stu)
-                            <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">From Date</label>
-                    <input type="date" wire:model.live="paymentDateFrom" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">To Date</label>
-                    <input type="date" wire:model.live="paymentDateTo" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Mode</label>
-                    <select wire:model.live="paymentModeFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Modes</option>
-                        <option value="cash">Cash</option>
-                        <option value="online">Online</option>
-                        <option value="cheque">Cheque</option>
-                        <option value="bank_transfer">Bank Transfer</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 mt-3">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search student name..."
-                    class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm">
-                <button wire:click="clearPaymentFilters"
-                    class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 whitespace-nowrap">
-                    Clear Filters
-                </button>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">#</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Receipt</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Student</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Class/Sec</th>
-                            <th class="px-4 py-3 text-right text-xs text-gray-500 uppercase">Amount</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Fee Type</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Mode</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Date</th>
-                            <th class="px-4 py-3 text-left text-xs text-gray-500 uppercase">Submitted By</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Receipt</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class/Sec</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee Type</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Mode</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Submitted By</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse ($payments as $p)
-                            <tr class="hover:bg-gray-50/50 transition-colors">
-                                <td class="px-4 py-3">{{ $loop->iteration }}</td>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $loop->iteration }}</td>
                                 <td class="px-4 py-3 font-mono text-xs text-blue-700">{{ $p->receipt_number }}</td>
                                 <td class="px-4 py-3">
-                                    <p class="font-medium text-gray-800">{{ $p->studentDetail->user->name ?? '-' }}</p>
-                                    <p class="text-xs text-gray-500">{{ $p->studentDetail->admission_no ?? '-' }}</p>
+                                    <p class="text-sm font-semibold text-gray-900">{{ $p->studentDetail->user->name ?? '-' }}</p>
+                                    <p class="text-xs text-gray-400">{{ $p->studentDetail->admission_no ?? '-' }}</p>
                                 </td>
                                 <td class="px-4 py-3 text-gray-600 text-xs">
                                     {{ $p->standard->name ?? '-' }} {{ $p->section ? '/ ' . $p->section->name : '' }}
                                 </td>
-                                <td class="px-4 py-3 text-right font-semibold">₹{{ number_format($p->amount, 2) }}</td>
+                                <td class="px-4 py-3 text-right text-sm font-semibold text-gray-800">₹{{ number_format($p->amount, 2) }}</td>
                                 <td class="px-4 py-3">
-                                    <span class="px-2 py-0.5 rounded text-xs {{ $p->fee_type === 'academic' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600' }}">
+                                    <span class="text-xs font-medium px-2 py-0.5 rounded {{ $p->fee_type === 'academic' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600' }}">
                                         {{ ucfirst($p->fee_type) }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 capitalize text-xs">{{ str_replace('_', ' ', $p->payment_mode) }}</td>
+                                <td class="px-4 py-3 capitalize text-xs text-gray-600">{{ str_replace('_', ' ', $p->payment_mode) }}</td>
                                 <td class="px-4 py-3 text-xs text-gray-600">{{ $p->payment_date->format('d M Y') }}</td>
                                 <td class="px-4 py-3 text-xs text-gray-600">{{ $p->submitted_by }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-gray-400">No payments found.</td>
+                                <td colspan="9" class="px-4 py-16 text-center">
+                                    <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" /></svg>
+                                    </div>
+                                    <p class="text-sm font-semibold text-gray-800">No payments found</p>
+                                    <p class="text-xs text-gray-400 mt-1">Adjust the filters above to see results.</p>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="mt-4">{{ $payments->links() }}</div>
+            @if ($payments->hasPages())
+                <div class="px-4 py-3 border-t border-gray-100">{{ $payments->links() }}</div>
+            @endif
         </div>
     @endif
 
@@ -782,35 +852,6 @@
                     Save
                 </button>
                 <p class="text-xs text-gray-400 flex-1 min-w-[200px]">Penalty = overdue days × per-day rate when no payment is made in the current cycle.</p>
-            </div>
-        </div>
-
-        {{-- Student filter --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Class</label>
-                    <select wire:model.live="penaltyFilterStandard" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">Select Class</option>
-                        @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Section</label>
-                    <select wire:model.live="penaltyFilterSection" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">All Sections</option>
-                        @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Student</label>
-                    <select wire:model.live="penaltyStudentId" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        <option value="">Select Student</option>
-                        @foreach ($penaltyStudents as $stu)
-                            <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}@if ($stu->father_name) — {{ $stu->father_name }}@endif</option>
-                        @endforeach
-                    </select>
-                </div>
             </div>
         </div>
 
@@ -927,8 +968,14 @@
                 </div>
             </div>
         @else
-            <div class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
-                <p class="text-gray-400 text-sm">Select a class and student to view their fee structure, penalties and payments.</p>
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="text-center py-16 px-4">
+                    <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800">Select a student</p>
+                    <p class="text-xs text-gray-400 mt-1">Use the filters above (Class → Section → Student) to view their fee structure, penalties and payments.</p>
+                </div>
             </div>
         @endif
     @endif
@@ -942,25 +989,20 @@
                 <h3 class="text-base font-semibold text-gray-800">Fee Cycle — Installments</h3>
                 <p class="text-sm text-gray-500">Define each installment’s dates and the % of the fee to collect. The amount is computed automatically.</p>
             </div>
-            <button wire:click="openCycleModal()"
-                class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                Add Installment
-            </button>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wide">
+                <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-4 py-3 text-left">Installment</th>
-                        <th class="px-4 py-3 text-left">Fee Type</th>
-                        <th class="px-4 py-3 text-left">Start Date</th>
-                        <th class="px-4 py-3 text-left">End Date</th>
-                        <th class="px-4 py-3 text-right">Fee %</th>
-                        <th class="px-4 py-3 text-right">Amount</th>
-                        <th class="px-4 py-3 text-center">Year</th>
-                        <th class="px-4 py-3 text-center w-28">Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Installment</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee %</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Year</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -985,7 +1027,15 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">No installments yet. Click “Add Installment” to define the fee cycle.</td></tr>
+                        <tr>
+                            <td colspan="8" class="px-4 py-16 text-center">
+                                <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-800">No installments yet</p>
+                                <p class="text-xs text-gray-400 mt-1">Click “Add Installment” to define the fee cycle.</p>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -993,27 +1043,30 @@
 
         {{-- Add / Edit installment slide-in --}}
         @if ($cycleModalOpen)
-            <div class="fixed inset-0 z-[60] overflow-hidden">
-                <div class="absolute inset-0 bg-black/[0.06] backdrop-blur-[1.5px]" wire:click="closeCycleModal"></div>
+            <div class="fixed inset-0 z-50 overflow-hidden">
+                <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeCycleModal"></div>
                 <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">{{ $editCycleId ? 'Edit Installment' : 'Add Installment' }}</h2>
-                        <button wire:click="closeCycleModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">{{ $editCycleId ? 'Edit Installment' : 'Add Installment' }}</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">Set dates and % of fee — amount auto-computes</p>
+                        </div>
+                        <button wire:click="closeCycleModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Installment No. <span class="text-red-500">*</span></label>
-                                <select wire:model="cycleSerial" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model="cycleSerial" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     @for ($i = 1; $i <= 8; $i++)<option value="{{ $i }}">Installment {{ $i }}</option>@endfor
                                 </select>
-                                @error('cycleSerial')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                @error('cycleSerial')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Fee Type</label>
-                                <select wire:model="cycleFeeType" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model="cycleFeeType" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="academic">Academic</option>
                                     <option value="transport">Transport</option>
                                 </select>
@@ -1022,37 +1075,37 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Start Date <span class="text-red-500">*</span></label>
-                                <input type="date" wire:model="cycleStartDate" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
-                                @error('cycleStartDate')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                <input type="date" wire:model="cycleStartDate" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                @error('cycleStartDate')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">End Date <span class="text-red-500">*</span></label>
-                                <input type="date" wire:model="cycleEndDate" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
-                                @error('cycleEndDate')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                <input type="date" wire:model="cycleEndDate" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                @error('cycleEndDate')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
-                                <input type="date" wire:model="cycleDueDate" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
-                                <p class="text-[11px] text-gray-400 mt-1">Defaults to end date if blank.</p>
+                                <input type="date" wire:model="cycleDueDate" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="mt-1 text-[11px] text-gray-400">Defaults to end date if blank.</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Penalty / Day (₹)</label>
-                                <input type="number" step="0.01" min="0" wire:model="cyclePenaltyPerDay" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <input type="number" step="0.01" min="0" wire:model="cyclePenaltyPerDay" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
-                        <div class="border-t border-dashed border-gray-200 pt-4">
+                        <div class="border-t border-gray-100 pt-4">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Total / Annual Fee (₹) <span class="text-red-500">*</span></label>
-                                    <input type="number" step="0.01" min="0" wire:model.live.debounce.400ms="cycleBaseAmount" placeholder="e.g. 50000" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
-                                    @error('cycleBaseAmount')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                    <input type="number" step="0.01" min="0" wire:model.live.debounce.400ms="cycleBaseAmount" placeholder="e.g. 50000" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    @error('cycleBaseAmount')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Fee % to Collect <span class="text-red-500">*</span></label>
-                                    <input type="number" step="0.01" min="0" max="100" wire:model.live.debounce.400ms="cycleFeePercent" placeholder="e.g. 25" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
-                                    @error('cycleFeePercent')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                    <input type="number" step="0.01" min="0" max="100" wire:model.live.debounce.400ms="cycleFeePercent" placeholder="e.g. 25" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                    @error('cycleFeePercent')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
                                 </div>
                             </div>
                             <div class="mt-3 flex justify-between items-center bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
@@ -1062,12 +1115,16 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Academic Year</label>
-                            <input type="text" wire:model="cycleYear" placeholder="2026-27" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                            <input type="text" wire:model="cycleYear" placeholder="2026-27" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2">
+                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                         <button wire:click="closeCycleModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                        <button wire:click="saveCycle" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-md">{{ $editCycleId ? 'Update' : 'Add' }}</button>
+                        <button wire:click="saveCycle" wire:loading.attr="disabled"
+                            class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md flex items-center gap-1.5 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="saveCycle">{{ $editCycleId ? 'Update Installment' : 'Add Installment' }}</span>
+                            <span wire:loading wire:target="saveCycle">Saving…</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1075,11 +1132,18 @@
 
         {{-- Delete confirm --}}
         @if ($pendingDeleteCycleId !== null)
-            <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteCycle"></div>
                 <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-                    <h3 class="text-base font-semibold text-gray-900 mb-1">Delete installment?</h3>
-                    <p class="text-sm text-gray-500">This removes the installment from the fee cycle. This cannot be undone.</p>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-semibold text-gray-900 mb-1">Delete installment?</h3>
+                            <p class="text-sm text-gray-500">This removes the installment from the fee cycle. This cannot be undone.</p>
+                        </div>
+                    </div>
                     <div class="flex items-center justify-end gap-2 mt-5">
                         <button wire:click="cancelDeleteCycle" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                         <button wire:click="doDeleteCycle" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
@@ -1093,35 +1157,17 @@
     {{-- TAB: CONCESSION (per-student fee discount)                      --}}
     {{-- ════════════════════════════════════════════════════════════════ --}}
     @if ($activeTab === 'concession')
-        {{-- Filter --}}
-        <div class="flex flex-wrap items-center gap-2">
-            <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
-                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-                Filter:
-            </div>
-            <select wire:model.live="concFilterStandard" class="text-sm bg-white border border-gray-200 rounded-md px-2.5 py-2 text-gray-700">
-                <option value="">All Classes</option>
-                @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
-            </select>
-            <select wire:model.live="concFilterSection" class="text-sm bg-white border border-gray-200 rounded-md px-2.5 py-2 text-gray-700">
-                <option value="">All Sections</option>
-                @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
-            </select>
-            <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search student / father…"
-                class="text-sm bg-white border border-gray-200 rounded-md px-3 py-2 text-gray-700 w-56 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wide">
+                <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-4 py-3 text-left">Student</th>
-                        <th class="px-4 py-3 text-left">Class / Section</th>
-                        <th class="px-4 py-3 text-left">Applies To</th>
-                        <th class="px-4 py-3 text-right">Concession</th>
-                        <th class="px-4 py-3 text-left">Reason</th>
-                        <th class="px-4 py-3 text-center">Year</th>
-                        <th class="px-4 py-3 text-center w-28">Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class / Section</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applies To</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Concession</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Year</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -1148,7 +1194,15 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">No concessions yet. Click “Add Concession” to grant a student a fee discount.</td></tr>
+                        <tr>
+                            <td colspan="7" class="px-4 py-16 text-center">
+                                <div class="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-800">No concessions yet</p>
+                                <p class="text-xs text-gray-400 mt-1">Click “Add Concession” to grant a student a fee discount.</p>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -1159,27 +1213,30 @@
 
         {{-- Add / Edit concession slide-in --}}
         @if ($concModalOpen)
-            <div class="fixed inset-0 z-[60] overflow-hidden">
-                <div class="absolute inset-0 bg-black/[0.06] backdrop-blur-[1.5px]" wire:click="closeConcessionModal"></div>
+            <div class="fixed inset-0 z-50 overflow-hidden">
+                <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeConcessionModal"></div>
                 <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">{{ $editConcessionId ? 'Edit Concession' : 'Add Concession' }}</h2>
-                        <button wire:click="closeConcessionModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">{{ $editConcessionId ? 'Edit Concession' : 'Add Concession' }}</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">Grant a student a fee discount</p>
+                        </div>
+                        <button wire:click="closeConcessionModal" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Class <span class="text-red-500">*</span></label>
-                                <select wire:model.live="concFilterStandard" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model.live="concFilterStandard" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Select…</option>
                                     @foreach ($standards as $std)<option value="{{ $std->id }}">{{ $std->name }}</option>@endforeach
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Section</label>
-                                <select wire:model.live="concFilterSection" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model.live="concFilterSection" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">All</option>
                                     @foreach ($sections as $sec)<option value="{{ $sec->id }}">{{ $sec->name }}</option>@endforeach
                                 </select>
@@ -1187,7 +1244,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Student <span class="text-red-500">*</span></label>
-                            <select wire:model="concStudentId" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                            <select wire:model="concStudentId" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select student…</option>
                                 @foreach ($concStudents as $stu)
                                     <option value="{{ $stu->id }}">{{ $stu->full_name ?? ($stu->user->name ?? 'Unknown') }}@if ($stu->father_name) — {{ $stu->father_name }}@endif</option>
@@ -1198,21 +1255,21 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
-                                <select wire:model.live="concType" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model.live="concType" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="amount">Flat Amount (₹)</option>
                                     <option value="percent">Percentage (%)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Value <span class="text-red-500">*</span></label>
-                                <input type="number" step="0.01" min="0" wire:model="concValue" placeholder="{{ $concType === 'percent' ? 'e.g. 25' : 'e.g. 2000' }}" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <input type="number" step="0.01" min="0" wire:model="concValue" placeholder="{{ $concType === 'percent' ? 'e.g. 25' : 'e.g. 2000' }}" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                 @error('concValue')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Applies To</label>
-                                <select wire:model="concFeeType" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <select wire:model="concFeeType" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="all">All Fees</option>
                                     <option value="academic">Academic</option>
                                     <option value="transport">Transport</option>
@@ -1220,17 +1277,17 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Academic Year</label>
-                                <input type="text" wire:model="concYear" placeholder="2026-27" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                                <input type="text" wire:model="concYear" placeholder="2026-27" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Reason</label>
-                            <input type="text" wire:model="concReason" placeholder="e.g. Staff ward, Sibling, Merit" class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm">
+                            <input type="text" wire:model="concReason" placeholder="e.g. Staff ward, Sibling, Merit" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2">
+                    <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
                         <button wire:click="closeConcessionModal" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                        <button wire:click="saveConcession" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">{{ $editConcessionId ? 'Update' : 'Add' }}</button>
+                        <button wire:click="saveConcession" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">{{ $editConcessionId ? 'Update Concession' : 'Add Concession' }}</button>
                     </div>
                 </div>
             </div>
@@ -1238,11 +1295,18 @@
 
         {{-- Delete confirm --}}
         @if ($pendingDeleteConcessionId !== null)
-            <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-black/40 backdrop-blur-[1.5px]" wire:click="cancelDeleteConcession"></div>
                 <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-                    <h3 class="text-base font-semibold text-gray-900 mb-1">Delete concession?</h3>
-                    <p class="text-sm text-gray-500">This removes the student's fee discount. This cannot be undone.</p>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-semibold text-gray-900 mb-1">Delete concession?</h3>
+                            <p class="text-sm text-gray-500">This removes the student's fee discount. This cannot be undone.</p>
+                        </div>
+                    </div>
                     <div class="flex items-center justify-end gap-2 mt-5">
                         <button wire:click="cancelDeleteConcession" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                         <button wire:click="doDeleteConcession" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
