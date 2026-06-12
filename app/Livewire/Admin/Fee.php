@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Admin\Fee\FeeConcession;
 use App\Models\Admin\Fee\FeePayment;
 use App\Models\Admin\Fee\FeeSettings;
 use App\Models\Admin\Fee\FeeStructure;
@@ -49,6 +50,27 @@ class Fee extends Component
     public $submitDate        = '';
     public $submitRemark      = '';
     public $submittedBy       = '';
+
+    // Submission search + slide-in update panel
+    public $submissionSearch  = '';
+    public bool $showSubmitPanel = false;
+    public array $selectedStudentInfo = [];
+    public $studentConcessions = [];
+    public float $netPayable    = 0.0;
+
+    // ─── Concession (per-student fee discount) ──────────────────────────────────
+    public $concFilterStandard = '';
+    public $concFilterSection  = '';
+    public $concStudentId      = '';
+    public $concType           = 'amount'; // amount | percent
+    public $concValue          = '';
+    public $concFeeType        = 'all';    // academic | transport | all
+    public $concReason         = '';
+    public $concYear           = '2026-27';
+    public $editConcessionId   = null;
+    public bool $concModalOpen = false;
+    public ?int $pendingDeleteConcessionId = null;
+    public $concStudents       = [];
 
     // ─── View Fee ─────────────────────────────────────────────────────────────
     public string $viewSubTab          = 'by_student';
@@ -119,6 +141,121 @@ class Fee extends Component
             $this->loadPenaltySettings();
             $this->loadPenaltyAnalytics();
         }
+    }
+
+    // ─── Concession (per-student fee discount) ──────────────────────────────────
+
+    public function updatedConcFilterStandard(): void
+    {
+        $this->concFilterSection = '';
+        $this->concStudentId     = '';
+        $this->sections = $this->concFilterStandard
+            ? Section::where('standard_id', $this->concFilterStandard)->where('is_active', true)->get()
+            : [];
+        $this->loadConcessionStudents();
+    }
+
+    public function updatedConcFilterSection(): void
+    {
+        $this->concStudentId = '';
+        $this->loadConcessionStudents();
+    }
+
+    private function loadConcessionStudents(): void
+    {
+        if (!$this->concFilterStandard) {
+            $this->concStudents = [];
+            return;
+        }
+        $this->concStudents = StudentDetail::with('user')
+            ->where('organization_id', $this->orgId())
+            ->where('standard_id', $this->concFilterStandard)
+            ->when($this->concFilterSection, fn ($q) => $q->where('section_id', $this->concFilterSection))
+            ->orderBy('roll_no')->get();
+    }
+
+    public function openConcessionModal(?int $id = null): void
+    {
+        $this->resetConcessionForm();
+        $this->editConcessionId = $id;
+
+        if ($id) {
+            $c = FeeConcession::where('organization_id', $this->orgId())->find($id);
+            if (!$c) return;
+            $this->concFilterStandard = $c->standard_id;
+            $this->loadConcessionStudents();
+            $this->concFilterSection = $c->section_id;
+            $this->concStudentId     = $c->student_detail_id;
+            $this->concType          = $c->concession_type;
+            $this->concValue         = $c->value;
+            $this->concFeeType       = $c->fee_type;
+            $this->concReason        = $c->reason;
+            $this->concYear          = $c->academic_year;
+        }
+        $this->concModalOpen = true;
+    }
+
+    public function closeConcessionModal(): void
+    {
+        $this->concModalOpen = false;
+        $this->resetConcessionForm();
+    }
+
+    private function resetConcessionForm(): void
+    {
+        $this->reset(['editConcessionId', 'concStudentId', 'concType', 'concValue', 'concReason']);
+        $this->concType   = 'amount';
+        $this->concFeeType = 'all';
+        $this->concYear   = '2026-27';
+        $this->resetValidation();
+    }
+
+    public function saveConcession(): void
+    {
+        $this->validate([
+            'concStudentId' => 'required|exists:student_details,id',
+            'concType'      => 'required|in:amount,percent',
+            'concValue'     => 'required|numeric|min:0.01' . ($this->concType === 'percent' ? '|max:100' : ''),
+            'concFeeType'   => 'required|in:academic,transport,all',
+            'concReason'    => 'nullable|string|max:255',
+            'concYear'      => 'required|string|max:20',
+        ]);
+
+        $student = StudentDetail::find($this->concStudentId);
+
+        $payload = [
+            'organization_id'   => $this->orgId(),
+            'student_detail_id' => $this->concStudentId,
+            'standard_id'       => $student->standard_id,
+            'section_id'        => $student->section_id,
+            'concession_type'   => $this->concType,
+            'value'             => $this->concValue,
+            'fee_type'          => $this->concFeeType,
+            'reason'            => $this->concReason,
+            'academic_year'     => $this->concYear,
+            'created_by'        => Auth::id(),
+        ];
+
+        if ($this->editConcessionId) {
+            FeeConcession::where('organization_id', $this->orgId())
+                ->where('id', $this->editConcessionId)->update($payload);
+            $this->notification()->success('Concession updated successfully!');
+        } else {
+            FeeConcession::create($payload);
+            $this->notification()->success('Concession added successfully!');
+        }
+
+        $this->closeConcessionModal();
+    }
+
+    public function deleteConcession(int $id): void { $this->pendingDeleteConcessionId = $id; }
+    public function cancelDeleteConcession(): void { $this->pendingDeleteConcessionId = null; }
+    public function doDeleteConcession(): void
+    {
+        FeeConcession::where('organization_id', $this->orgId())
+            ->where('id', $this->pendingDeleteConcessionId)->delete();
+        $this->pendingDeleteConcessionId = null;
+        $this->notification()->success('Concession deleted!');
     }
 
     // ─── Fee Structure ─────────────────────────────────────────────────────────
@@ -237,16 +374,37 @@ class Fee extends Component
 
     private function loadSubmissionStudents(): void
     {
-        if (!$this->submissionStandardId) {
+        // Need either a class or a search term to list students.
+        if (!$this->submissionStandardId && !trim((string) $this->submissionSearch)) {
             $this->students = [];
             return;
         }
 
-        $this->students = StudentDetail::with('user')
+        $term = trim((string) $this->submissionSearch);
+
+        $this->students = StudentDetail::with(['user', 'standard', 'section'])
             ->where('organization_id', $this->orgId())
-            ->where('standard_id', $this->submissionStandardId)
+            ->when($this->submissionStandardId, fn($q) => $q->where('standard_id', $this->submissionStandardId))
             ->when($this->submissionSectionId, fn($q) => $q->where('section_id', $this->submissionSectionId))
+            ->when($term !== '', function ($q) use ($term) {
+                $q->where(function ($w) use ($term) {
+                    $w->where('full_name', 'like', "%{$term}%")
+                      ->orWhere('father_name', 'like', "%{$term}%")
+                      ->orWhereHas('user', fn($u) => $u->where('name', 'like', "%{$term}%"));
+                });
+            })
+            ->orderBy('roll_no')
+            ->limit(200)
             ->get();
+    }
+
+    /** Search button — list students by student/father name (class optional). */
+    public function searchSubmissionStudents(): void
+    {
+        $this->selectedStudentId   = '';
+        $this->classStructures     = [];
+        $this->studentTransactions = [];
+        $this->loadSubmissionStudents();
     }
 
     public function updatedSelectedStudentId(): void
@@ -254,11 +412,24 @@ class Fee extends Component
         if (!$this->selectedStudentId) {
             $this->classStructures     = [];
             $this->studentTransactions = [];
+            $this->selectedStudentInfo = [];
+            $this->studentConcessions  = [];
+            $this->netPayable          = 0.0;
             return;
         }
 
-        $student = StudentDetail::find($this->selectedStudentId);
+        $student = StudentDetail::with(['user', 'standard', 'section'])->find($this->selectedStudentId);
         if (!$student) return;
+
+        $this->selectedStudentInfo = [
+            'name'         => $student->full_name ?? ($student->user->name ?? '—'),
+            'father_name'  => $student->father_name ?? '—',
+            'admission_no' => $student->admission_no ?? '—',
+            'roll_no'      => $student->roll_no ?? '—',
+            'class'        => $student->standard->name ?? '—',
+            'section'      => $student->section->name ?? '—',
+            'phone'        => $student->phone ?? '—',
+        ];
 
         // Load fee structures for this student's class
         $this->classStructures = FeeStructure::where('organization_id', $this->orgId())
@@ -269,12 +440,50 @@ class Fee extends Component
             ->where('is_active', true)
             ->get()->toArray();
 
-        // Load payment history for this student
+        // Concessions for this student
+        $this->studentConcessions = FeeConcession::where('organization_id', $this->orgId())
+            ->where('student_detail_id', $this->selectedStudentId)
+            ->get()->toArray();
+
+        // Net payable = total structure − concessions − amount already paid
+        $totalStructure = collect($this->classStructures)->sum(fn ($s) => (float) $s['amount']);
+        $discount = 0.0;
+        foreach ($this->studentConcessions as $c) {
+            $discount += $c['concession_type'] === 'percent'
+                ? round($totalStructure * ((float) $c['value']) / 100, 2)
+                : min((float) $c['value'], $totalStructure);
+        }
+
+        // Load payment history for this student (admin/accounts + app payments)
         $this->studentTransactions = FeePayment::with(['standard', 'section'])
             ->where('organization_id', $this->orgId())
             ->where('student_detail_id', $this->selectedStudentId)
             ->orderByDesc('payment_date')
             ->get()->toArray();
+
+        $paid = collect($this->studentTransactions)->sum(fn ($t) => (float) $t['amount']);
+        $this->netPayable = max(0, round($totalStructure - $discount - $paid, 2));
+    }
+
+    public function openSubmitPanel(): void
+    {
+        if (!$this->selectedStudentId) {
+            $this->notification()->error('Select a student first.');
+            return;
+        }
+        $this->submitAmount      = '';
+        $this->submitFeeType     = 'academic';
+        $this->submitPaymentMode = 'cash';
+        $this->submitDate        = today()->toDateString();
+        $this->submitRemark      = '';
+        $this->submittedBy       = Auth::user()->name ?? '';
+        $this->resetValidation();
+        $this->showSubmitPanel   = true;
+    }
+
+    public function closeSubmitPanel(): void
+    {
+        $this->showSubmitPanel = false;
     }
 
     public function submitFeePayment(): void
@@ -307,8 +516,9 @@ class Fee extends Component
             $this->notification()->success('Fee submitted successfully!');
             $this->reset(['submitAmount', 'submitFeeType', 'submitPaymentMode', 'submitRemark', 'submittedBy']);
             $this->submitDate = today()->toDateString();
+            $this->showSubmitPanel = false;
 
-            // Refresh transactions
+            // Refresh transactions + net payable
             $this->updatedSelectedStudentId();
         } catch (\Exception $e) {
             $this->notification()->error('Error submitting fee', $e->getMessage());
@@ -681,6 +891,18 @@ class Fee extends Component
             $data['payments'] = $this->getPaymentsQuery()
                 ->orderByDesc('payment_date')
                 ->paginate($this->perPage);
+        }
+
+        if ($this->activeTab === 'concession') {
+            $data['concessions'] = FeeConcession::with(['studentDetail.user', 'standard', 'section'])
+                ->where('organization_id', $orgId)
+                ->when($this->concFilterStandard, fn($q) => $q->where('standard_id', $this->concFilterStandard))
+                ->when($this->concFilterSection, fn($q) => $q->where('section_id', $this->concFilterSection))
+                ->when($this->search, fn($q) => $q->whereHas('studentDetail', fn($s) =>
+                    $s->where('full_name', 'like', "%{$this->search}%")->orWhere('father_name', 'like', "%{$this->search}%")))
+                ->orderByDesc('created_at')
+                ->paginate($this->perPage);
+            $data['concStudents'] = $this->concStudents;
         }
 
         return view('livewire.admin.fee', $data);

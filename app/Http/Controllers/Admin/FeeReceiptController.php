@@ -12,10 +12,12 @@ class FeeReceiptController extends Controller
     public function show(Request $request, $organization, $id)
     {
         $orgId   = Auth::user()->organization_id;
-        $payment = FeePayment::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section', 'standard', 'section'])
+        $payment = FeePayment::with(['studentDetail.user', 'studentDetail.standard', 'studentDetail.section', 'standard', 'section', 'organization'])
             ->where('organization_id', $orgId)
             ->findOrFail($id);
 
-        return view('admin.fee-receipt', compact('payment'));
+        $org = $payment->organization;
+
+        return view('admin.fee-receipt', compact('payment', 'org'));
     }
 }
