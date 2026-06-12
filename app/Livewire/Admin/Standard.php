@@ -705,23 +705,29 @@ class Standard extends Component
             return;
         }
 
-        DB::transaction(function () use ($id, $standard) {
-            // Orphan students → inactive, null their class/section (req #6)
-            $studentDetails = StudentDetail::where('standard_id', $id)->get();
-            $userIds = $studentDetails->pluck('user_id')->filter()->all();
-            if ($userIds) {
-                User::whereIn('id', $userIds)->update(['is_active' => false]);
-            }
-            StudentDetail::where('standard_id', $id)->update([
-                'standard_id' => null,
-                'section_id'  => null,
-            ]);
+        try {
+            DB::transaction(function () use ($id, $standard) {
+                // Orphan students → inactive, null their class/section (req #6)
+                $studentDetails = StudentDetail::where('standard_id', $id)->get();
+                $userIds = $studentDetails->pluck('user_id')->filter()->all();
+                if ($userIds) {
+                    User::whereIn('id', $userIds)->update(['is_active' => false]);
+                }
+                StudentDetail::where('standard_id', $id)->update([
+                    'standard_id' => null,
+                    'section_id'  => null,
+                ]);
 
-            // Tidy up any standard-subject pivots (shouldn't have section-subject left at this point)
-            StandardSubject::where('standard_id', $id)->delete();
+                // Tidy up any standard-subject pivots (shouldn't have section-subject left at this point)
+                StandardSubject::where('standard_id', $id)->delete();
 
-            $standard->delete();
-        });
+                $standard->delete();
+            });
+        } catch (\Throwable $e) {
+            logger()->error('performDeleteStandard failed: ' . $e->getMessage());
+            $this->notification()->error('Could not delete class', $e->getMessage());
+            return;
+        }
 
         $this->notification()->success('Class deleted successfully!');
         $this->mount();
@@ -733,34 +739,54 @@ class Standard extends Component
         $section = Section::find($id);
         if (!$section) return;
 
-        DB::transaction(function () use ($id, $section) {
-            // Cascade subjects mapped to this section (req #5)
-            $subjectIds = SectionSubject::where('section_id', $id)->pluck('subject_id')->unique();
+        try {
+            DB::transaction(function () use ($id, $section) {
+                // Cascade subjects mapped to this section (req #5)
+                $subjectIds = SectionSubject::where('section_id', $id)->pluck('subject_id')->unique();
 
-            SectionSubject::where('section_id', $id)->delete();
+                SectionSubject::where('section_id', $id)->delete();
 
-            foreach ($subjectIds as $subjectId) {
-                $stillUsed = SectionSubject::where('subject_id', $subjectId)->exists();
-                if (!$stillUsed) {
-                    StandardSubject::where('subject_id', $subjectId)->delete();
-                    $subject = Subject::find($subjectId);
-                    if ($subject) {
-                        if ($subject->image) Storage::disk('s3')->delete(parse_url($subject->image, PHP_URL_PATH));
-                        if ($subject->detail_image) Storage::disk('s3')->delete(parse_url($subject->detail_image, PHP_URL_PATH));
-                        $subject->delete();
+                foreach ($subjectIds as $subjectId) {
+                    $stillUsed = SectionSubject::where('subject_id', $subjectId)->exists();
+                    if (!$stillUsed) {
+                        StandardSubject::where('subject_id', $subjectId)->delete();
+                        $subject = Subject::find($subjectId);
+                        if ($subject) {
+                            // S3 deletes are best-effort — a storage hiccup must
+                            // not roll back (or 500) the whole section deletion.
+                            $this->safeS3Delete($subject->image);
+                            $this->safeS3Delete($subject->detail_image);
+                            $subject->delete();
+                        }
                     }
                 }
-            }
 
-            // Detach students from this section (so the class can later be deleted)
-            StudentDetail::where('section_id', $id)->update(['section_id' => null]);
+                // Detach students from this section (so the class can later be
+                // deleted). section_id is nullable — students become section-less.
+                StudentDetail::where('section_id', $id)->update(['section_id' => null]);
 
-            $section->delete();
-        });
+                $section->delete();
+            });
+        } catch (\Throwable $e) {
+            logger()->error('performDeleteSection failed: ' . $e->getMessage());
+            $this->notification()->error('Could not delete section', $e->getMessage());
+            return;
+        }
 
         $this->notification()->success('Section and its subjects deleted successfully!');
         $this->mount();
         $this->dispatch('onStandardAddUpdate');
+    }
+
+    /** Delete an S3 object without ever throwing (missing creds / object). */
+    private function safeS3Delete(?string $url): void
+    {
+        if (!$url) return;
+        try {
+            Storage::disk('s3')->delete(parse_url($url, PHP_URL_PATH));
+        } catch (\Throwable $e) {
+            logger()->warning('safeS3Delete failed: ' . $e->getMessage());
+        }
     }
 
     public function performDeleteSubject(int $id): void
