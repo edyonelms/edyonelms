@@ -140,10 +140,8 @@ class AuthController extends Controller
             return $this->responseService->errorResponse('User not found.', 404);
         }
 
-        if (!OtpMailService::canResend($user)) {
-            $otpCreatedAt = \Carbon\Carbon::parse($user->otp_expires_at)->subMinutes(2);
-            $remaining    = max(0, 120 - (int) now()->diffInSeconds($otpCreatedAt));
-
+        $remaining = OtpMailService::resendAvailableIn($user);
+        if ($remaining > 0) {
             return $this->responseService->errorResponse(
                 "Please wait {$remaining} seconds before requesting a new OTP.",
                 429

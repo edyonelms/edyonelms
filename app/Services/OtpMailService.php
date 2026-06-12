@@ -68,16 +68,27 @@ class OtpMailService
     }
 
     /**
+     * Seconds left in the 120 second resend cooldown (0 = resend allowed).
+     */
+    public static function resendAvailableIn(User $user): int
+    {
+        if (empty($user->otp_expires_at)) {
+            return 0;
+        }
+
+        // Carbon 3's diffInSeconds is signed, so diff from the older date
+        // to now() to get positive elapsed seconds.
+        $otpCreatedAt = \Carbon\Carbon::parse($user->otp_expires_at)->subMinutes(2);
+        $elapsed      = (int) $otpCreatedAt->diffInSeconds(now());
+
+        return max(0, 120 - $elapsed);
+    }
+
+    /**
      * Check if resend is allowed (120 second cooldown).
      */
     public static function canResend(User $user): bool
     {
-        if (empty($user->otp_expires_at)) {
-            return true;
-        }
-
-        $otpCreatedAt = \Carbon\Carbon::parse($user->otp_expires_at)->subMinutes(2);
-
-        return now()->diffInSeconds($otpCreatedAt) >= 120;
+        return self::resendAvailableIn($user) === 0;
     }
 }
