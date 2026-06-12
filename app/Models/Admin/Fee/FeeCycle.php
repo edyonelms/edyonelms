@@ -12,17 +12,23 @@ class FeeCycle extends Model
         'organization_id',
         'fee_type',
         'payment_serial',
+        'start_date',
+        'end_date',
         'due_date',
         'penalty_per_day',
         'fee_percent',
+        'amount',
         'academic_year',
         'is_active',
     ];
 
     protected $casts = [
+        'start_date'      => 'date',
+        'end_date'        => 'date',
         'due_date'        => 'date',
         'penalty_per_day' => 'decimal:2',
         'fee_percent'     => 'decimal:2',
+        'amount'          => 'decimal:2',
         'is_active'       => 'boolean',
     ];
 

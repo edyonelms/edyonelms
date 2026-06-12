@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Admin\Fee\FeeConcession;
+use App\Models\Admin\Fee\FeeCycle;
 use App\Models\Admin\Fee\FeePayment;
 use App\Models\Admin\Fee\FeeSettings;
 use App\Models\Admin\Fee\FeeStructure;
@@ -93,13 +94,48 @@ class Fee extends Component
     public $paymentModeFilter    = '';
     public $paymentStandardId    = '';
     public $paymentSectionId     = '';
+    public $paymentStudentId     = '';
+    public $paymentDateFrom      = '';
+    public $paymentDateTo        = '';
+    public $paymentStudents      = [];
     public $paymentPeriodStats   = [];
+    public float $paymentFilteredTotal = 0.0;
 
-    // ─── Penalties ────────────────────────────────────────────────────────────
+    // ─── Penalties (per-student) ────────────────────────────────────────────────
     public $penaltyPerDay    = '0';
     public $cycleType        = 'monthly';
     public $dueDayOfMonth    = '10';
-    public $penaltyAnalytics = [];
+
+    public $penaltyFilterStandard = '';
+    public $penaltyFilterSection  = '';
+    public $penaltyStudentId      = '';
+    public $penaltyStudents       = [];
+    public array $penaltyStudentInfo  = [];
+    public array $penaltyStructures   = [];
+    public array $penaltyPayments     = [];
+    public array $penaltyWaivers      = [];
+    public float $penaltyGross        = 0.0;
+    public float $penaltyWaivedTotal  = 0.0;
+    public float $penaltyNet          = 0.0;
+    public int   $penaltyDaysOverdue  = 0;
+    // Waive-penalty form
+    public $waiveValue  = '';
+    public $waiveReason = '';
+
+    // ─── Fee Cycle (installments) ───────────────────────────────────────────────
+    public $cycleFeeType    = 'academic';
+    public $cycleSerial     = 1;        // installment no. 1–8
+    public $cycleStartDate  = '';
+    public $cycleEndDate    = '';
+    public $cycleDueDate     = '';
+    public $cyclePenaltyPerDay = '0';
+    public $cycleFeePercent  = '';
+    public $cycleBaseAmount  = '';      // annual/total fee used to compute the slice
+    public $cycleAmount      = 0;       // base × percent (auto-computed)
+    public $cycleYear        = '2026-27';
+    public $editCycleId      = null;
+    public bool $cycleModalOpen = false;
+    public ?int $pendingDeleteCycleId = null;
 
     // ─── Shared ───────────────────────────────────────────────────────────────
     public $search      = '';
@@ -139,7 +175,8 @@ class Fee extends Component
             $this->loadPaymentPeriodStats();
         } elseif ($tab === 'penalties') {
             $this->loadPenaltySettings();
-            $this->loadPenaltyAnalytics();
+        } elseif ($tab === 'cycle') {
+            $this->loadPenaltySettings();
         }
     }
 
@@ -745,14 +782,24 @@ class Fee extends Component
     public function updatedPaymentStandardId(): void
     {
         $this->paymentSectionId = '';
+        $this->paymentStudentId = '';
         $this->sections = $this->paymentStandardId
             ? Section::where('standard_id', $this->paymentStandardId)->where('is_active', true)->get()
             : [];
+        $this->loadPaymentStudents();
         $this->loadPaymentPeriodStats();
         $this->resetPage();
     }
 
     public function updatedPaymentSectionId(): void
+    {
+        $this->paymentStudentId = '';
+        $this->loadPaymentStudents();
+        $this->loadPaymentPeriodStats();
+        $this->resetPage();
+    }
+
+    public function updatedPaymentStudentId(): void
     {
         $this->loadPaymentPeriodStats();
         $this->resetPage();
@@ -760,7 +807,41 @@ class Fee extends Component
 
     public function updatedPaymentModeFilter(): void
     {
+        $this->loadPaymentPeriodStats();
         $this->resetPage();
+    }
+
+    public function updatedPaymentDateFrom(): void
+    {
+        $this->loadPaymentPeriodStats();
+        $this->resetPage();
+    }
+
+    public function updatedPaymentDateTo(): void
+    {
+        $this->loadPaymentPeriodStats();
+        $this->resetPage();
+    }
+
+    public function clearPaymentFilters(): void
+    {
+        $this->reset(['paymentStandardId', 'paymentSectionId', 'paymentStudentId', 'paymentModeFilter', 'paymentDateFrom', 'paymentDateTo', 'search']);
+        $this->paymentStudents = [];
+        $this->loadPaymentPeriodStats();
+        $this->resetPage();
+    }
+
+    private function loadPaymentStudents(): void
+    {
+        if (!$this->paymentStandardId) {
+            $this->paymentStudents = [];
+            return;
+        }
+        $this->paymentStudents = StudentDetail::with('user')
+            ->where('organization_id', $this->orgId())
+            ->where('standard_id', $this->paymentStandardId)
+            ->when($this->paymentSectionId, fn($q) => $q->where('section_id', $this->paymentSectionId))
+            ->orderBy('roll_no')->get();
     }
 
     public function loadPaymentPeriodStats(): void
@@ -780,6 +861,9 @@ class Fee extends Component
             'this_month' => (clone $base)->whereMonth('payment_date', $today->month)->whereYear('payment_date', $today->year)->sum('amount'),
             'last_month' => (clone $base)->whereMonth('payment_date', $today->copy()->subMonth()->month)->whereYear('payment_date', $today->copy()->subMonth()->year)->sum('amount'),
         ];
+
+        // Total matching the currently applied filters (student / date / mode / search).
+        $this->paymentFilteredTotal = (float) $this->getPaymentsQuery()->sum('amount');
     }
 
     private function getPaymentsQuery()
@@ -788,7 +872,10 @@ class Fee extends Component
             ->where('organization_id', $this->orgId())
             ->when($this->paymentStandardId, fn($q) => $q->where('standard_id', $this->paymentStandardId))
             ->when($this->paymentSectionId, fn($q) => $q->where('section_id', $this->paymentSectionId))
+            ->when($this->paymentStudentId, fn($q) => $q->where('student_detail_id', $this->paymentStudentId))
             ->when($this->paymentModeFilter, fn($q) => $q->where('payment_mode', $this->paymentModeFilter))
+            ->when($this->paymentDateFrom, fn($q) => $q->whereDate('payment_date', '>=', $this->paymentDateFrom))
+            ->when($this->paymentDateTo, fn($q) => $q->whereDate('payment_date', '<=', $this->paymentDateTo))
             ->when($this->search, fn($q) => $q->whereHas('studentDetail.user', fn($q) => $q->where('name', 'like', "%{$this->search}%")));
     }
 
@@ -821,47 +908,271 @@ class Fee extends Component
         );
 
         $this->notification()->success('Fee settings saved successfully!');
-        $this->loadPenaltyAnalytics();
+        if ($this->penaltyStudentId) {
+            $this->loadPenaltyForStudent();
+        }
     }
 
-    public function loadPenaltyAnalytics(): void
-    {
-        $orgId    = $this->orgId();
-        $settings = FeeSettings::getForOrg($orgId);
+    // ── Penalty: student filter & per-student view ──────────────────────────────
 
-        if ($settings->penalty_per_day <= 0) {
-            $this->penaltyAnalytics = ['total' => 0, 'students' => 0, 'avg_days_overdue' => 0];
+    public function updatedPenaltyFilterStandard(): void
+    {
+        $this->penaltyFilterSection = '';
+        $this->penaltyStudentId     = '';
+        $this->resetPenaltyView();
+        $this->sections = $this->penaltyFilterStandard
+            ? Section::where('standard_id', $this->penaltyFilterStandard)->where('is_active', true)->get()
+            : [];
+        $this->loadPenaltyStudents();
+    }
+
+    public function updatedPenaltyFilterSection(): void
+    {
+        $this->penaltyStudentId = '';
+        $this->resetPenaltyView();
+        $this->loadPenaltyStudents();
+    }
+
+    public function updatedPenaltyStudentId(): void
+    {
+        $this->resetPenaltyView();
+        if ($this->penaltyStudentId) {
+            $this->loadPenaltyForStudent();
+        }
+    }
+
+    private function loadPenaltyStudents(): void
+    {
+        if (!$this->penaltyFilterStandard) {
+            $this->penaltyStudents = [];
             return;
         }
+        $this->penaltyStudents = StudentDetail::with('user')
+            ->where('organization_id', $this->orgId())
+            ->where('standard_id', $this->penaltyFilterStandard)
+            ->when($this->penaltyFilterSection, fn($q) => $q->where('section_id', $this->penaltyFilterSection))
+            ->orderBy('roll_no')->get();
+    }
 
-        // Calculate penalty: students who haven't paid and are past due day of month
-        $dueDay  = $settings->due_day_of_month;
+    private function resetPenaltyView(): void
+    {
+        $this->penaltyStudentInfo = [];
+        $this->penaltyStructures  = [];
+        $this->penaltyPayments    = [];
+        $this->penaltyWaivers     = [];
+        $this->penaltyGross       = 0.0;
+        $this->penaltyWaivedTotal = 0.0;
+        $this->penaltyNet         = 0.0;
+        $this->penaltyDaysOverdue = 0;
+        $this->waiveValue         = '';
+        $this->waiveReason        = '';
+    }
+
+    public function loadPenaltyForStudent(): void
+    {
+        if (!$this->penaltyStudentId) return;
+
+        $orgId   = $this->orgId();
+        $student = StudentDetail::with(['user', 'standard', 'section'])->find($this->penaltyStudentId);
+        if (!$student) return;
+
+        $this->penaltyStudentInfo = [
+            'name'         => $student->full_name ?? ($student->user->name ?? '—'),
+            'father_name'  => $student->father_name ?? '—',
+            'admission_no' => $student->admission_no ?? '—',
+            'class'        => $student->standard->name ?? '—',
+            'section'      => $student->section->name ?? '—',
+        ];
+
+        // Fee structure for the student's class
+        $this->penaltyStructures = FeeStructure::where('organization_id', $orgId)
+            ->where('standard_id', $student->standard_id)
+            ->where(fn($q) => $q->where('section_id', $student->section_id)->orWhereNull('section_id'))
+            ->where('is_active', true)
+            ->get()->toArray();
+
+        // Payment history
+        $this->penaltyPayments = FeePayment::where('organization_id', $orgId)
+            ->where('student_detail_id', $this->penaltyStudentId)
+            ->orderByDesc('payment_date')
+            ->get()->toArray();
+
+        // Estimate penalty: overdue days × per-day rate when no payment was made this month
+        $settings = FeeSettings::getForOrg($orgId);
+        $perDay   = (float) $settings->penalty_per_day;
+        $dueDay   = (int) $settings->due_day_of_month;
+
         $today   = Carbon::today();
         $dueDate = Carbon::createFromDate($today->year, $today->month, min($dueDay, $today->daysInMonth));
-
         if ($today->day <= $dueDay) {
-            // Not yet past due date this month
             $dueDate = $dueDate->subMonth();
         }
 
-        // Students with any unpaid fee (simplified: those who haven't paid anything this month)
-        $studentCount = StudentDetail::where('organization_id', $orgId)->count();
         $paidThisMonth = FeePayment::where('organization_id', $orgId)
+            ->where('student_detail_id', $this->penaltyStudentId)
             ->whereMonth('payment_date', $today->month)
             ->whereYear('payment_date', $today->year)
-            ->distinct('student_detail_id')
-            ->count('student_detail_id');
+            ->exists();
 
-        $overdueStudents = max(0, $studentCount - $paidThisMonth);
-        $daysOverdue     = max(0, $today->diffInDays($dueDate));
-        $totalPenalty    = $overdueStudents * $daysOverdue * $settings->penalty_per_day;
+        $this->penaltyDaysOverdue = $paidThisMonth ? 0 : max(0, (int) $today->diffInDays($dueDate));
+        $this->penaltyGross       = round($this->penaltyDaysOverdue * $perDay, 2);
 
-        $this->penaltyAnalytics = [
-            'total'            => $totalPenalty,
-            'students'         => $overdueStudents,
-            'days_overdue'     => $daysOverdue,
-            'penalty_per_day'  => $settings->penalty_per_day,
+        // Penalty waivers = concessions scoped to fee_type = 'penalty'
+        $this->penaltyWaivers = FeeConcession::where('organization_id', $orgId)
+            ->where('student_detail_id', $this->penaltyStudentId)
+            ->where('fee_type', 'penalty')
+            ->orderByDesc('created_at')
+            ->get()->toArray();
+
+        $this->penaltyWaivedTotal = collect($this->penaltyWaivers)->sum(function ($w) {
+            return $w['concession_type'] === 'percent'
+                ? round($this->penaltyGross * ((float) $w['value']) / 100, 2)
+                : (float) $w['value'];
+        });
+
+        $this->penaltyNet = max(0, round($this->penaltyGross - $this->penaltyWaivedTotal, 2));
+    }
+
+    public function waivePenalty(): void
+    {
+        $this->validate([
+            'penaltyStudentId' => 'required|exists:student_details,id',
+            'waiveValue'       => 'required|numeric|min:0.01',
+            'waiveReason'      => 'nullable|string|max:255',
+        ]);
+
+        $student = StudentDetail::find($this->penaltyStudentId);
+
+        FeeConcession::create([
+            'organization_id'   => $this->orgId(),
+            'student_detail_id' => $this->penaltyStudentId,
+            'standard_id'       => $student->standard_id,
+            'section_id'        => $student->section_id,
+            'concession_type'   => 'amount',
+            'value'             => $this->waiveValue,
+            'fee_type'          => 'penalty',
+            'reason'            => $this->waiveReason ?: 'Penalty waiver',
+            'academic_year'     => '2026-27',
+            'created_by'        => Auth::id(),
+        ]);
+
+        $this->waiveValue  = '';
+        $this->waiveReason = '';
+        $this->notification()->success('Penalty waiver applied!');
+        $this->loadPenaltyForStudent();
+    }
+
+    public function removeWaiver(int $id): void
+    {
+        FeeConcession::where('organization_id', $this->orgId())
+            ->where('fee_type', 'penalty')
+            ->where('id', $id)->delete();
+        $this->notification()->success('Waiver removed.');
+        $this->loadPenaltyForStudent();
+    }
+
+    // ── Fee Cycle (installments) ────────────────────────────────────────────────
+
+    public function openCycleModal(?int $id = null): void
+    {
+        $this->resetCycleForm();
+        $this->editCycleId = $id;
+
+        if ($id) {
+            $c = FeeCycle::forOrg($this->orgId())->find($id);
+            if (!$c) return;
+            $this->cycleFeeType       = $c->fee_type;
+            $this->cycleSerial        = $c->payment_serial;
+            $this->cycleStartDate     = optional($c->start_date)->toDateString();
+            $this->cycleEndDate       = optional($c->end_date)->toDateString();
+            $this->cycleDueDate       = optional($c->due_date)->toDateString();
+            $this->cyclePenaltyPerDay = $c->penalty_per_day;
+            $this->cycleFeePercent    = $c->fee_percent;
+            $this->cycleAmount        = (float) $c->amount;
+            // Re-derive base from stored amount & percent so the % preview is live.
+            $this->cycleBaseAmount    = $c->fee_percent > 0 ? round($c->amount * 100 / $c->fee_percent, 2) : '';
+            $this->cycleYear          = $c->academic_year;
+        }
+        $this->cycleModalOpen = true;
+    }
+
+    public function closeCycleModal(): void
+    {
+        $this->cycleModalOpen = false;
+        $this->resetCycleForm();
+    }
+
+    private function resetCycleForm(): void
+    {
+        $this->reset([
+            'editCycleId', 'cycleSerial', 'cycleStartDate', 'cycleEndDate', 'cycleDueDate',
+            'cyclePenaltyPerDay', 'cycleFeePercent', 'cycleBaseAmount', 'cycleAmount',
+        ]);
+        $this->cycleFeeType = 'academic';
+        $this->cycleSerial  = 1;
+        $this->cyclePenaltyPerDay = '0';
+        $this->cycleAmount  = 0;
+        $this->cycleYear    = '2026-27';
+        $this->resetValidation();
+    }
+
+    /** Recompute amount = base × percent / 100 whenever either input changes. */
+    public function updatedCycleFeePercent(): void  { $this->recomputeCycleAmount(); }
+    public function updatedCycleBaseAmount(): void   { $this->recomputeCycleAmount(); }
+
+    private function recomputeCycleAmount(): void
+    {
+        $base    = (float) $this->cycleBaseAmount;
+        $percent = (float) $this->cycleFeePercent;
+        $this->cycleAmount = round($base * $percent / 100, 2);
+    }
+
+    public function saveCycle(): void
+    {
+        $this->validate([
+            'cycleFeeType'    => 'required|string|max:20',
+            'cycleSerial'     => 'required|integer|min:1|max:8',
+            'cycleStartDate'  => 'required|date',
+            'cycleEndDate'    => 'required|date|after_or_equal:cycleStartDate',
+            'cycleFeePercent' => 'required|numeric|min:0|max:100',
+            'cycleBaseAmount' => 'required|numeric|min:0',
+            'cycleYear'       => 'required|string|max:20',
+        ]);
+
+        $this->recomputeCycleAmount();
+
+        $payload = [
+            'organization_id' => $this->orgId(),
+            'fee_type'        => $this->cycleFeeType,
+            'payment_serial'  => $this->cycleSerial,
+            'start_date'      => $this->cycleStartDate,
+            'end_date'        => $this->cycleEndDate,
+            'due_date'        => $this->cycleDueDate ?: $this->cycleEndDate,
+            'penalty_per_day' => $this->cyclePenaltyPerDay ?: 0,
+            'fee_percent'     => $this->cycleFeePercent,
+            'amount'          => $this->cycleAmount,
+            'academic_year'   => $this->cycleYear,
+            'is_active'       => true,
         ];
+
+        if ($this->editCycleId) {
+            FeeCycle::forOrg($this->orgId())->where('id', $this->editCycleId)->update($payload);
+            $this->notification()->success('Installment updated!');
+        } else {
+            FeeCycle::create($payload);
+            $this->notification()->success('Installment added!');
+        }
+
+        $this->closeCycleModal();
+    }
+
+    public function deleteCycle(int $id): void { $this->pendingDeleteCycleId = $id; }
+    public function cancelDeleteCycle(): void  { $this->pendingDeleteCycleId = null; }
+    public function doDeleteCycle(): void
+    {
+        FeeCycle::forOrg($this->orgId())->where('id', $this->pendingDeleteCycleId)->delete();
+        $this->pendingDeleteCycleId = null;
+        $this->notification()->success('Installment deleted!');
     }
 
     // ─── Shared ───────────────────────────────────────────────────────────────
@@ -891,6 +1202,13 @@ class Fee extends Component
             $data['payments'] = $this->getPaymentsQuery()
                 ->orderByDesc('payment_date')
                 ->paginate($this->perPage);
+        }
+
+        if ($this->activeTab === 'cycle') {
+            $data['cycles'] = FeeCycle::forOrg($orgId)
+                ->orderBy('fee_type')
+                ->orderBy('payment_serial')
+                ->get();
         }
 
         if ($this->activeTab === 'concession') {
