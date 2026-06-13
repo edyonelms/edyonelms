@@ -11,7 +11,7 @@ class Subject extends Model
 {
     use HasCommonScopes;
 
-    protected $fillable = ['name', 'code', 'organization_id', 'description', 'is_active', 'image'];
+    protected $fillable = ['name', 'code', 'organization_id', 'description', 'is_active', 'image', 'detail_image'];
 
     public function teachers()
     {

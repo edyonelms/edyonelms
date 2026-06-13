@@ -60,7 +60,8 @@ class SubjectController extends Controller
                         return [
                             'id' => $sectionSubject->subject_id,
                             'name' => $sectionSubject->subject->name ?? null,
-                            'image' => $sectionSubject->image ?? null,
+                            'image' => $sectionSubject->subject->image ?? null,
+                            'detail_image' => $sectionSubject->subject->detail_image ?? null,
                             'is_mandatory' => true,
                             'type' => 'section_subject'
                         ];
@@ -79,7 +80,8 @@ class SubjectController extends Controller
                     return [
                         'id' => $standardSubject->subject_id,
                         'name' => $standardSubject->subject->name ?? null,
-                        'image' => $standardSubject->image ?? null,
+                        'image' => $standardSubject->subject->image ?? null,
+                        'detail_image' => $standardSubject->subject->detail_image ?? null,
                         'is_mandatory' => $standardSubject->is_mandatory,
                         'type' => 'standard_subject'
                     ];

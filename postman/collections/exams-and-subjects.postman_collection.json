@@ -73,7 +73,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "subject", "" ]
 				},
-				"description": "Subjects for the logged-in STUDENT, based on their class (standard) + section. Section-specific subjects are returned when present; otherwise the class's standard subjects."
+				"description": "Subjects for the logged-in STUDENT, based on their class (standard) + section. Section-specific subjects are returned when present; otherwise the class's standard subjects.\n\nEach item returns: `id`, `name`, `image` (subject icon — full S3 URL, may be null), `detail_image` (larger image for the detail screen — full S3 URL, may be null), `is_mandatory`, `type`. The app shows `image` as the subject card icon and falls back to a book SVG when it is null."
 			},
 			"response": []
 		},
