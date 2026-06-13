@@ -210,6 +210,16 @@ curl -s -X POST "$BASE/v1/content/get" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"subject_id":1}'
 
+# Create a single chapter (no topics required)
+curl -s -X POST "$BASE/v1/content/chapter" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"standard_id":1,"section_id":1,"subject_id":1,"name":"Thermodynamics","description":"Heat & energy"}'
+
+# Create a single topic under a chapter (content optional)
+curl -s -X POST "$BASE/v1/content/topic" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"chapter_id":1,"topic_name":"Newton'\''s Laws"}'
+
 curl -s -X POST "$BASE/v1/content/chapter/1" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"chapter_name":"New Name"}'

@@ -120,6 +120,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('content')->group(function () {
             Route::post('/upload', [ContentController::class, 'saveChapterTopic']);
             Route::post('/get', [ContentController::class, 'getChapterTopics']);
+            Route::post('/chapter', [ContentController::class, 'createChapter']);          // create single chapter
+            Route::post('/topic', [ContentController::class, 'createTopic']);              // create single topic
             Route::post('/chapter/{chapter_id}', [ContentController::class, 'updateChapterName']);
             Route::delete('/chapter-delete/{chapter_id}', [ContentController::class, 'deleteChapter']);
             Route::post('/topic/{topic_id}', [ContentController::class, 'updateTopic']);

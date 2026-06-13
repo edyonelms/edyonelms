@@ -137,6 +137,87 @@ class ContentController extends Controller
     }
 
     /**
+     * Create a single chapter (no topics required).
+     *
+     * Used by the teacher syllabus screen where chapters are added one at a time
+     * and may start empty. Idempotent on (org, standard, section, subject, name).
+     */
+    public function createChapter(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'standard_id' => 'required|exists:standards,id',
+                'section_id'  => 'required|exists:sections,id',
+                'subject_id'  => 'required|exists:subjects,id',
+                'name'        => 'required|string|max:255',
+                'description' => 'nullable|string',
+            ]);
+
+            $chapter = Chapter::updateOrCreate(
+                [
+                    'organization_id' => $user->organization_id,
+                    'standard_id'     => $request->standard_id,
+                    'section_id'      => $request->section_id,
+                    'subject_id'      => $request->subject_id,
+                    'name'            => $request->name,
+                ],
+                [
+                    'user_id'     => $user->id,
+                    'description' => $request->description,
+                ]
+            );
+
+            $chapter->load('topics');
+
+            return $this->responseService->success($chapter, 'Chapter created successfully');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->responseService->errorResponse('Validation error: ' . $e->getMessage(), 422, $e->errors());
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('Failed to create chapter: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Create a single topic under an existing chapter.
+     *
+     * Syllabus topics are just names, so topic_content is optional here (unlike
+     * the bulk content upload which expects full topic content).
+     */
+    public function createTopic(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'chapter_id'    => 'required|exists:chapters,id',
+                'topic_name'    => 'required|string|max:255',
+                'topic_content' => 'nullable|string',
+            ]);
+
+            // Ensure the chapter belongs to the caller's organization.
+            $chapter = Chapter::where('organization_id', $user->organization_id)
+                ->findOrFail($request->chapter_id);
+
+            $topic = Topic::create([
+                'organization_id' => $user->organization_id,
+                'chapter_id'      => $chapter->id,
+                'topic_name'      => $request->topic_name,
+                'topic_content'   => $request->topic_content,
+            ]);
+
+            return $this->responseService->success($topic, 'Topic created successfully');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->responseService->errorResponse('Chapter not found', 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->responseService->errorResponse('Validation error: ' . $e->getMessage(), 422, $e->errors());
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('Failed to create topic: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get all chapters with topics
      */
     public function getChapterTopics(Request $request)
@@ -147,22 +228,45 @@ class ContentController extends Controller
             $query = Chapter::with('topics')
                 ->where('organization_id', $user->organization_id);
 
-            // Apply filters if provided
-            if ($request->has('standard_id')) {
-                $query->where('standard_id', $request->standard_id);
-            }
+            if ($user->role === 'user') {
+                // Students only ever see chapters for their own class + section.
+                // Force the scope from their record and ignore any client-supplied
+                // standard/section so a student cannot read another class's syllabus.
+                $student = \App\Models\Student\StudentDetail::where('user_id', $user->id)
+                    ->first(['standard_id', 'section_id']);
 
-            if ($request->has('section_id')) {
-                $query->where('section_id', $request->section_id);
-            }
+                if (!$student) {
+                    return $this->responseService->errorResponse('Student record not found', 404);
+                }
 
-            if ($request->has('subject_id')) {
-                $query->where('subject_id', $request->subject_id);
+                $query->where('standard_id', $student->standard_id);
+                if ($student->section_id) {
+                    $query->where(function ($q) use ($student) {
+                        $q->where('section_id', $student->section_id)
+                          ->orWhere('section_id', 0)
+                          ->orWhereNull('section_id');
+                    });
+                }
+
+                if ($request->filled('subject_id')) {
+                    $query->where('subject_id', $request->subject_id);
+                }
+            } else {
+                // Teachers / admins filter explicitly by the class+section+subject.
+                if ($request->filled('standard_id')) {
+                    $query->where('standard_id', $request->standard_id);
+                }
+                if ($request->filled('section_id')) {
+                    $query->where('section_id', $request->section_id);
+                }
+                if ($request->filled('subject_id')) {
+                    $query->where('subject_id', $request->subject_id);
+                }
             }
 
             // Pagination
             $perPage = $request->per_page ?? 10;
-            $chapters = $query->paginate($perPage);
+            $chapters = $query->orderBy('order')->orderBy('id')->paginate($perPage);
 
             // Format response with pagination metadata
             $response = [
