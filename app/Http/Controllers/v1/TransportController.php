@@ -51,7 +51,15 @@ class TransportController extends ApiController
         }
 
         $data = $this->formatTransport($transport);
-        $data['fees'] = $this->buildFeeSchedule($student, $transport);
+
+        // Fee schedule is best-effort: never let a fee/data issue break the
+        // whole screen — the route card should still load.
+        try {
+            $data['fees'] = $this->buildFeeSchedule($student, $transport);
+        } catch (\Throwable $e) {
+            report($e);
+            $data['fees'] = null;
+        }
 
         return $this->success($data, 'Transport route fetched successfully.');
     }
