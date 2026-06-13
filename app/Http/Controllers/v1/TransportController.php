@@ -41,8 +41,13 @@ class TransportController extends ApiController
             return $this->error('Student profile not found.', 404);
         }
 
-        // Active transport assigned to this student
-        $transport = $student->activeTransportation()
+        // Active transport assigned to this student.
+        // NB: query the relationship directly — activeTransportation() returns a
+        // resolved model (or null), so chaining ->with() on it crashes (500) for
+        // students who have no transport. Going through transportations() keeps
+        // it a null-safe query builder.
+        $transport = $student->transportations()
+            ->where('is_active', true)
             ->with(['driver.user:id,name,email,image'])
             ->first();
 
