@@ -62,9 +62,12 @@ class AnnouncementController extends Controller
                     if ($announcement->user) {
                         $announcementData['creator_name'] = $announcement->user->name;
                         $announcementData['creator_email'] = $announcement->user->email;
+                        // `image` is stored as a full S3 URL when uploaded
+                        $announcementData['creator_avatar'] = $announcement->user->image ?: null;
                     } else {
                         $announcementData['creator_name'] = 'Unknown';
                         $announcementData['creator_email'] = null;
+                        $announcementData['creator_avatar'] = null;
                     }
 
                     // Add full URLs for files
@@ -129,9 +132,8 @@ class AnnouncementController extends Controller
             if ($announcement->user) {
                 $announcementData['creator_name'] = $announcement->user->name;
                 $announcementData['creator_email'] = $announcement->user->email;
-                $announcementData['creator_avatar'] = $announcement->user->avatar_url
-                    ? Storage::disk('s3')->url($announcement->user->avatar_url)
-                    : null;
+                // `image` is stored as a full S3 URL when uploaded
+                $announcementData['creator_avatar'] = $announcement->user->image ?: null;
             } else {
                 $announcementData['creator_name'] = 'Unknown';
                 $announcementData['creator_email'] = null;
