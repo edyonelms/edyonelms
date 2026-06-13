@@ -35,7 +35,7 @@ class BookController extends ApiController
         [$user, $err] = $this->authUser();
         if ($err) return $err;
 
-        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name'])
+        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name,image'])
             ->where('organization_id', $user->organization_id)
             ->where('is_active', true);
 
@@ -76,7 +76,7 @@ class BookController extends ApiController
         [$user, $err] = $this->authUser();
         if ($err) return $err;
 
-        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name'])
+        $query = Book::with(['standard:id,name', 'section:id,name', 'subject:id,name,image'])
             ->where('organization_id', $user->organization_id)
             ->where('is_active', true);
 
@@ -165,7 +165,12 @@ class BookController extends ApiController
             'logo_url'  => $cover, // alias — back-compat
             'standard'  => $book->standard ? ['id' => $book->standard->id, 'name' => $book->standard->name] : null,
             'section'   => $book->section  ? ['id' => $book->section->id,  'name' => $book->section->name]  : null,
-            'subject'   => $book->subject  ? ['id' => $book->subject->id,  'name' => $book->subject->name]  : null,
+            'subject'   => $book->subject  ? [
+                'id'    => $book->subject->id,
+                'name'  => $book->subject->name,
+                // Subject icon image (full S3 URL or null). Shown on the book card.
+                'image' => $book->subject->image ?? null,
+            ] : null,
         ];
 
         if ($withPdf) {
