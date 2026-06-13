@@ -10,6 +10,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class HomeWorkController extends Controller
 {
@@ -20,24 +22,51 @@ class HomeWorkController extends Controller
         $this->responseService = $responseService;
     }
 
-    // Create homework
+    // Create homework (teacher) — supports an optional file attachment.
     public function uploadHomeWork(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'standard_id' => 'required|integer',
+            'section_id'  => 'required|integer',
+            'subject_id'  => 'required|integer',
+            'title'       => 'required_without:name|nullable|string|max:255',
+            'name'        => 'required_without:title|nullable|string|max:255',
+            'description' => 'nullable|string',
+            'file'        => 'nullable|file|mimes:pdf,jpeg,jpg,png,doc,docx|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->responseService->errorResponse($validator->errors()->first(), 422);
+        }
+
         DB::beginTransaction();
         try {
+            $filePath = null;
+            if ($request->hasFile('file')) {
+                $filePath = $request->file('file')->store('admin/homework', 's3');
+                if ($filePath === false) {
+                    return $this->responseService->errorResponse('File upload failed.', 500);
+                }
+                Storage::disk('s3')->setVisibility($filePath, 'public');
+            }
+
             $homework = HomeWork::create([
                 'organization_id' => Auth::user()->organization_id,
-                'user_id' => Auth::id(),
-                'standard_id' => $request->standard_id,
-                'section_id' => $request->section_id,
-                'subject_id' => $request->subject_id,
-                'title' => $request->name,
-                'description' => $request->description
+                'user_id'         => Auth::id(),
+                'standard_id'     => $request->standard_id,
+                'section_id'      => $request->section_id,
+                'subject_id'      => $request->subject_id,
+                'title'           => $request->input('title', $request->name),
+                'description'     => $request->description,
+                'file'            => $filePath,
             ]);
 
             DB::commit();
+
+            $homework->load(['standard', 'section', 'subject', 'user']);
+
             return $this->responseService->success(
-                $homework,
+                $this->formatHomework($homework),
                 'Homework created successfully'
             );
         } catch (Exception $e) {
@@ -56,16 +85,27 @@ class HomeWorkController extends Controller
             $homework = HomeWork::where('organization_id', Auth::user()->organization_id)
                 ->findOrFail($chapterId);
 
-            $homework->update([
-                'standard_id' => $request->standard_id,
-                'section_id' => $request->section_id,
-                'subject_id' => $request->subject_id,
-                'title' => $request->name,
-                'description' => $request->description
-            ]);
+            $data = [
+                'standard_id' => $request->standard_id ?? $homework->standard_id,
+                'section_id'  => $request->section_id ?? $homework->section_id,
+                'subject_id'  => $request->subject_id ?? $homework->subject_id,
+                'title'       => $request->input('title', $request->input('name', $homework->title)),
+                'description' => $request->description ?? $homework->description,
+            ];
+
+            if ($request->hasFile('file')) {
+                $path = $request->file('file')->store('admin/homework', 's3');
+                if ($path !== false) {
+                    Storage::disk('s3')->setVisibility($path, 'public');
+                    $data['file'] = $path;
+                }
+            }
+
+            $homework->update($data);
+            $homework->load(['standard', 'section', 'subject', 'user']);
 
             return $this->responseService->success(
-                $homework,
+                $this->formatHomework($homework),
                 'Homework updated successfully'
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -89,10 +129,7 @@ class HomeWorkController extends Controller
             $homework->delete();
             DB::commit();
 
-            return $this->responseService->success(
-                [],
-                'Homework deleted successfully'
-            );
+            return $this->responseService->success([], 'Homework deleted successfully');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             DB::rollBack();
             return $this->responseService->errorResponse('homework not found', 404);
@@ -105,16 +142,16 @@ class HomeWorkController extends Controller
         }
     }
 
-    // Get Single homework
+    // Get single homework
     public function showSingleHomeWork($homeworkId)
     {
         try {
-            $homework = HomeWork::with(['standard', 'section', 'subject'])
+            $homework = HomeWork::with(['standard', 'section', 'subject', 'user'])
                 ->where('organization_id', Auth::user()->organization_id)
                 ->findOrFail($homeworkId);
 
             return $this->responseService->success(
-                $homework,
+                $this->formatHomework($homework),
                 'homework retrieved successfully'
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -127,58 +164,54 @@ class HomeWorkController extends Controller
         }
     }
 
-    // List All HomeWork with Pagination and Search
+    // List the authenticated TEACHER's own homework (defaults to the last 15 days).
     public function allHomeWork(Request $request)
     {
         try {
-            $query = HomeWork::with(['standard', 'section', 'subject'])
-                ->where('organization_id', Auth::user()->organization_id);
+            $user = Auth::user();
 
-            // Search functionality
-            if ($request->has('search')) {
+            $query = HomeWork::with(['standard', 'section', 'subject', 'user'])
+                ->where('organization_id', $user->organization_id)
+                ->where('user_id', $user->id);
+
+            if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . $search . '%')
                         ->orWhere('description', 'like', '%' . $search . '%')
-                        ->orWhereHas('standard', function ($q) use ($search) {
-                            $q->where('name', 'like', '%' . $search . '%');
-                        })
-                        ->orWhereHas('section', function ($q) use ($search) {
-                            $q->where('name', 'like', '%' . $search . '%');
-                        })
-                        ->orWhereHas('subject', function ($q) use ($search) {
-                            $q->where('name', 'like', '%' . $search . '%');
-                        });
+                        ->orWhereHas('standard', fn($q) => $q->where('name', 'like', '%' . $search . '%'))
+                        ->orWhereHas('section', fn($q) => $q->where('name', 'like', '%' . $search . '%'))
+                        ->orWhereHas('subject', fn($q) => $q->where('name', 'like', '%' . $search . '%'));
                 });
             }
 
-            // Filter by standard_id if provided
-            if ($request->has('standard_id')) {
-                $query->where('standard_id', $request->standard_id);
+            if ($request->filled('standard_id')) $query->where('standard_id', $request->standard_id);
+            if ($request->filled('section_id'))  $query->where('section_id', $request->section_id);
+            if ($request->filled('subject_id'))  $query->where('subject_id', $request->subject_id);
+
+            // Default window: last N days (15 unless overridden, or a specific date).
+            if ($request->filled('date')) {
+                $query->whereDate('created_at', $request->date);
+            } elseif (!$request->filled('search')) {
+                $days = (int) $request->get('days', 15);
+                $query->where('created_at', '>=', now()->subDays(max(1, $days)));
             }
 
-            // Filter by section_id if provided
-            if ($request->has('section_id')) {
-                $query->where('section_id', $request->section_id);
-            }
+            $query->orderBy('created_at', 'desc');
 
-            // Filter by subject_id if provided
-            if ($request->has('subject_id')) {
-                $query->where('subject_id', $request->subject_id);
-            }
-
-            // Sorting
-            $allowedSortFields = ['created_at', 'title', 'updated_at'];
-            $sortField = in_array($request->get('sort_field'), $allowedSortFields) ? $request->get('sort_field') : 'created_at';
-            $sortDirection = $request->get('sort_direction') === 'asc' ? 'asc' : 'desc';
-            $query->orderBy($sortField, $sortDirection);
-
-            // Pagination
-            $perPage = $request->get('per_page', 10);
+            $perPage   = (int) $request->get('per_page', 100);
             $homeworks = $query->paginate($perPage);
 
             return $this->responseService->success(
-                $homeworks,
+                [
+                    'homeworks'  => $homeworks->getCollection()->map(fn($h) => $this->formatHomework($h))->values(),
+                    'pagination' => [
+                        'current_page' => $homeworks->currentPage(),
+                        'last_page'    => $homeworks->lastPage(),
+                        'per_page'     => $homeworks->perPage(),
+                        'total'        => $homeworks->total(),
+                    ],
+                ],
                 'Homeworks retrieved successfully'
             );
         } catch (Exception $e) {
@@ -189,14 +222,15 @@ class HomeWorkController extends Controller
         }
     }
 
+    // Homework for the authenticated STUDENT's class (defaults to the last 15 days).
     public function studentHomeWork(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user           = Auth::user();
             $organizationId = $user->organization_id;
 
-            // Get student details
-            $studentDetail = StudentDetail::where('user_id', $user->id)
+            $studentDetail = StudentDetail::with(['standard', 'section'])
+                ->where('user_id', $user->id)
                 ->where('organization_id', $organizationId)
                 ->first();
 
@@ -204,99 +238,53 @@ class HomeWorkController extends Controller
                 return $this->responseService->errorResponse('Student details not found', 404);
             }
 
-            // Build query for student's homework
             $query = HomeWork::with(['standard', 'section', 'subject', 'user'])
                 ->where('organization_id', $organizationId)
                 ->where('standard_id', $studentDetail->standard_id)
                 ->where('section_id', $studentDetail->section_id);
 
-            // Search functionality
-            if ($request->has('search')) {
+            if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . $search . '%')
                         ->orWhere('description', 'like', '%' . $search . '%')
-                        ->orWhereHas('subject', function ($q) use ($search) {
-                            $q->where('name', 'like', '%' . $search . '%');
-                        });
+                        ->orWhereHas('subject', fn($q) => $q->where('name', 'like', '%' . $search . '%'));
                 });
             }
 
-            // Filter by subject if provided
-            if ($request->has('subject_id')) {
-                $query->where('subject_id', $request->subject_id);
-            }
+            if ($request->filled('subject_id')) $query->where('subject_id', $request->subject_id);
 
-            // Filter by date range
-            if ($request->has('from_date') && $request->has('to_date')) {
+            if ($request->filled('from_date') && $request->filled('to_date')) {
                 $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
-            } elseif ($request->has('from_date')) {
-                $query->where('created_at', '>=', $request->from_date);
-            } elseif ($request->has('to_date')) {
-                $query->where('created_at', '<=', $request->to_date);
+            } elseif (!$request->filled('search')) {
+                $days = (int) $request->get('days', 15);
+                $query->where('created_at', '>=', now()->subDays(max(1, $days)));
             }
 
-            // Show recent homework (last 7 days) by default
-            if (!$request->has('from_date') && !$request->has('to_date') && !$request->has('search')) {
-                $query->where('created_at', '>=', now()->subDays(7));
-            }
+            $query->orderBy('created_at', 'desc');
 
-            // Sorting
-            $allowedSortFields = ['created_at', 'title', 'updated_at'];
-            $sortField = in_array($request->get('sort_field'), $allowedSortFields) ? $request->get('sort_field') : 'created_at';
-            $sortDirection = $request->get('sort_direction') === 'asc' ? 'asc' : 'desc';
-            $query->orderBy($sortField, $sortDirection);
-
-            // Pagination
-            $perPage = $request->get('per_page', 10);
+            $perPage   = (int) $request->get('per_page', 100);
             $homeworks = $query->paginate($perPage);
-
-            // Transform the response
-            $transformedHomeworks = $homeworks->map(function ($homework) {
-                return [
-                    'id' => $homework->id,
-                    'title' => $homework->title,
-                    'description' => $homework->description,
-                    'subject' => $homework->subject ? [
-                        'id' => $homework->subject->id,
-                        'name' => $homework->subject->name,
-                        'code' => $homework->subject->code ?? null,
-                    ] : null,
-                    'assigned_by' => $homework->user ? $homework->user->name : 'Unknown',
-                    'assigned_date' => $homework->created_at->format('Y-m-d'),
-                    'assigned_time' => $homework->created_at->format('h:i A'),
-                    'days_ago' => $homework->created_at->diffForHumans(),
-                    'standard' => $homework->standard->name ?? null,
-                    'section' => $homework->section->name ?? null,
-                ];
-            });
 
             return $this->responseService->success(
                 [
                     'student_info' => [
-                        'id' => $studentDetail->id,
-                        'name' => $studentDetail->full_name ?? $user->name,
+                        'id'       => $studentDetail->id,
+                        'name'     => $studentDetail->full_name ?? $user->name,
                         'standard' => $studentDetail->standard->name ?? null,
-                        'section' => $studentDetail->section->name ?? null,
-                        'roll_no' => $studentDetail->roll_no,
+                        'section'  => $studentDetail->section->name ?? null,
+                        'roll_no'  => $studentDetail->roll_no,
                     ],
-                    'homeworks' => $transformedHomeworks,
+                    'homeworks'  => $homeworks->getCollection()->map(fn($h) => $this->formatHomework($h))->values(),
                     'pagination' => [
                         'current_page' => $homeworks->currentPage(),
-                        'last_page' => $homeworks->lastPage(),
-                        'per_page' => $homeworks->perPage(),
-                        'total' => $homeworks->total(),
+                        'last_page'    => $homeworks->lastPage(),
+                        'per_page'     => $homeworks->perPage(),
+                        'total'        => $homeworks->total(),
                     ],
                     'summary' => [
                         'total_homework' => $homeworks->total(),
-                        'this_week' => HomeWork::where('organization_id', $organizationId)
-                            ->where('standard_id', $studentDetail->standard_id)
-                            ->where('section_id', $studentDetail->section_id)
-                            ->where('created_at', '>=', now()->startOfWeek())
-                            ->count(),
-                        'pending_count' => 0, // You can add submission tracking later
-                        'submitted_count' => 0, // You can add submission tracking later
-                    ]
+                    ],
                 ],
                 'Student homework retrieved successfully'
             );
@@ -306,5 +294,38 @@ class HomeWorkController extends Controller
                 500
             );
         }
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private function formatHomework(HomeWork $h): array
+    {
+        $fileUrl  = $h->file ? Storage::disk('s3')->url($h->file) : null;
+        $fileType = null;
+        if ($fileUrl) {
+            $fileType = preg_match('/\.pdf(\?|$)/i', $fileUrl) ? 'pdf'
+                : (preg_match('/\.(jpe?g|png|gif|webp)(\?|$)/i', $fileUrl) ? 'image' : 'doc');
+        }
+
+        return [
+            'id'            => $h->id,
+            'title'         => $h->title,
+            'description'   => $h->description,
+            'subject'       => $h->subject ? [
+                'id'   => $h->subject->id,
+                'name' => $h->subject->name,
+                'code' => $h->subject->code ?? null,
+            ] : null,
+            'standard'      => $h->standard->name ?? null,
+            'standard_id'   => $h->standard_id,
+            'section'       => $h->section->name ?? null,
+            'section_id'    => $h->section_id,
+            'assigned_by'   => $h->user->name ?? 'Unknown',
+            'assigned_date' => $h->created_at?->format('Y-m-d'),
+            'assigned_time' => $h->created_at?->format('h:i A'),
+            'days_ago'      => $h->created_at?->diffForHumans(),
+            'file_url'      => $fileUrl,
+            'file_type'     => $fileType,
+        ];
     }
 }
