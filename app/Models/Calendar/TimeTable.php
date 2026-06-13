@@ -3,6 +3,7 @@
 namespace App\Models\Calendar;
 
 use App\Models\Organization;
+use App\Models\User;
 use App\Traits\HasCommonScopes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ class TimeTable extends Model
 
      protected $fillable = [
         'organization_id',
+        'created_by',
         'title',
         'description',
         'date',
@@ -40,6 +42,11 @@ class TimeTable extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function location()

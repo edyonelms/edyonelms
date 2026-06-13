@@ -153,6 +153,7 @@ class EventForm extends Component
             if ($this->mode === 'create') {
                 $event = TimeTable::create([
                     'organization_id' => $organizationId,
+                    'created_by' => Auth::id(),
                     'title' => $this->title,
                     'description' => $this->description,
                     'date' => $this->event_date,

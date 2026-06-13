@@ -65,7 +65,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "calendar", "events", "1" ]
 				},
-				"description": "Full details for a single event, scoped to the user's organization. Powers the app's **View Event** screen (opened by tapping an event in the calendar).\n\nReturns: `id`, `title`, `description`, `date`, `start_time`, `end_time`, `is_all_day`, `event_type`, `color`, `is_cancelled`, `cancellation_reason`, `timing_display`, `location { room_number, building, location, full_address }`, and `academic_details { standard, section, subject, teacher { id, name, email } }`.\n\n**404** if the event does not exist or belongs to another organization."
+				"description": "Full details for a single event, scoped to the user's organization. Powers the app's **View Event** screen (opened by tapping an event in the calendar).\n\nReturns: `id`, `title`, `description`, `date`, `start_time`, `end_time`, `is_all_day`, `event_type`, `color`, `is_cancelled`, `cancellation_reason`, `timing_display`, `location { room_number, building, location, full_address }`, and `academic_details { standard, section, subject, teacher { id, name, email } }`.\n\nPosted By: `creator_name`, `creator_email`, and `creator_avatar` (full URL of the creator's profile image, falling back to the school/organization logo, or `null` when neither is set).\n\n**404** if the event does not exist or belongs to another organization."
 			},
 			"response": []
 		}

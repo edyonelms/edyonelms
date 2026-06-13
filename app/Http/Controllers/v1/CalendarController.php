@@ -242,6 +242,8 @@ class CalendarController extends Controller
                 'academic.standard',
                 'academic.section',
                 'academic.subject',
+                'creator',
+                'organization',
             ])
                 ->where('organization_id', $organizationId)
                 ->find($id);
@@ -295,6 +297,13 @@ class CalendarController extends Controller
                 'timing_display' => $event->is_all_day ?
                     'All Day Event' : ($event->start_time ? $event->start_time->format('h:i A') : '') .
                     ($event->end_time ? ' to ' . $event->end_time->format('h:i A') : ''),
+                // Posted By — the user who created the event, with the
+                // organization logo as the avatar fallback. `image` and `logo`
+                // are stored as full S3 URLs.
+                'creator_name' => $event->creator->name ?? 'Unknown',
+                'creator_email' => $event->creator->email ?? null,
+                'creator_avatar' => ($event->creator->image ?? null)
+                    ?: ($event->organization->logo ?? null),
                 'created_at' => $event->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $event->updated_at->format('Y-m-d H:i:s'),
             ];
