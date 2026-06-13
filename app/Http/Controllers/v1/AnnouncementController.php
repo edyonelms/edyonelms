@@ -32,7 +32,8 @@ class AnnouncementController extends Controller
             }
 
             // Get announcements for the user's organization from last 30 days
-            $query = Announcement::where('organization_id', $user->organization_id)
+            $query = Announcement::with(['user', 'organization'])
+                ->where('organization_id', $user->organization_id)
                 ->where('created_at', '>=', now()->subDays(30))
                 ->orderBy('created_at', 'desc');
 
@@ -58,16 +59,18 @@ class AnnouncementController extends Controller
                 ->map(function ($announcement) {
                     $announcementData = $announcement->toArray();
 
-                    // Add creator details if user exists
+                    // Add creator details if user exists. Avatar falls back to
+                    // the organization logo when the user has no personal image.
+                    // Both `image` and `logo` are stored as full S3 URLs.
                     if ($announcement->user) {
                         $announcementData['creator_name'] = $announcement->user->name;
                         $announcementData['creator_email'] = $announcement->user->email;
-                        // `image` is stored as a full S3 URL when uploaded
-                        $announcementData['creator_avatar'] = $announcement->user->image ?: null;
+                        $announcementData['creator_avatar'] = $announcement->user->image
+                            ?: ($announcement->organization->logo ?? null);
                     } else {
                         $announcementData['creator_name'] = 'Unknown';
                         $announcementData['creator_email'] = null;
-                        $announcementData['creator_avatar'] = null;
+                        $announcementData['creator_avatar'] = $announcement->organization->logo ?? null;
                     }
 
                     // Add full URLs for files
@@ -129,15 +132,17 @@ class AnnouncementController extends Controller
             $announcementData = $announcement->toArray();
 
             // Add creator details
+            // Avatar falls back to the organization logo when the user has no
+            // personal image. Both `image` and `logo` are stored as full S3 URLs.
             if ($announcement->user) {
                 $announcementData['creator_name'] = $announcement->user->name;
                 $announcementData['creator_email'] = $announcement->user->email;
-                // `image` is stored as a full S3 URL when uploaded
-                $announcementData['creator_avatar'] = $announcement->user->image ?: null;
+                $announcementData['creator_avatar'] = $announcement->user->image
+                    ?: ($announcement->organization->logo ?? null);
             } else {
                 $announcementData['creator_name'] = 'Unknown';
                 $announcementData['creator_email'] = null;
-                $announcementData['creator_avatar'] = null;
+                $announcementData['creator_avatar'] = $announcement->organization->logo ?? null;
             }
 
             // Add full URLs for files
