@@ -99,33 +99,55 @@ class ExamController extends ApiController
     // ── Private ───────────────────────────────────────────────────────────────
 
     /**
-     * Exam IDs relevant to the caller, based on the syllabus assigned to them:
-     *   - Student → exams that have syllabus for their standard (+ section)
-     *   - Teacher → exams that have syllabus for their timetable / assigned (class, subject) pairs
+     * Exam IDs relevant to the caller.
      *
-     * Returns null for non student/teacher roles (no scoping → all exams), or an
-     * array of exam ids (possibly empty → the caller has no assigned exams).
+     * Scoping rule:
+     *   - An exam that has NO syllabus rows in this org is treated as
+     *     "school-wide" (admin hasn't added per-class syllabus yet) and is
+     *     visible to every student/teacher. This is critical because admins
+     *     usually publish the exam first and add syllabus later — otherwise
+     *     freshly-added exams would be invisible to everyone.
+     *   - An exam that HAS syllabus rows is filtered:
+     *       Student → must have syllabus for their standard (+ section)
+     *       Teacher → must have syllabus for one of their (class, subject)
+     *                 pairs (from timetable or directly-assigned subjects)
+     *
+     * Returns null for non student/teacher roles (no scoping → all exams), or
+     * an array of exam ids the caller is allowed to see.
      */
     private function scopedExamIds($user): ?array
     {
         $orgId = $user->organization_id;
-        $base  = ExamSyllabusChapter::where('organization_id', $orgId);
+
+        // Exams in this org that have at least one syllabus row. Exams NOT in
+        // this set are unscoped → visible to everyone.
+        $examsWithSyllabus = ExamSyllabusChapter::where('organization_id', $orgId)
+            ->distinct()
+            ->pluck('exam_id')
+            ->all();
+
+        $unboundExamIds = Exam::where('organization_id', $orgId)
+            ->whereNotIn('id', $examsWithSyllabus)
+            ->pluck('id')
+            ->all();
 
         if ($user->role === 'user') {
             $student = StudentDetail::where('user_id', $user->id)->first(['standard_id', 'section_id']);
-            if (!$student) return [];
+            if (!$student) return $unboundExamIds;
 
-            $base->where('standard_id', $student->standard_id);
+            $base = ExamSyllabusChapter::where('organization_id', $orgId)
+                ->where('standard_id', $student->standard_id);
             if ($student->section_id) {
                 $base->where(fn($q) => $q->where('section_id', $student->section_id)->orWhereNull('section_id'));
             }
 
-            return $base->distinct()->pluck('exam_id')->all();
+            $matching = $base->distinct()->pluck('exam_id')->all();
+            return array_values(array_unique(array_merge($matching, $unboundExamIds)));
         }
 
         if ($user->role === 'teacher') {
             $teacher = TeacherDetail::where('user_id', $user->id)->first(['id']);
-            if (!$teacher) return [];
+            if (!$teacher) return $unboundExamIds;
 
             $pairs = collect()
                 ->merge(TeacherTimeTable::where('teacher_detail_id', $teacher->id)->get(['standard_id', 'subject_id']))
@@ -138,12 +160,15 @@ class ExamController extends ApiController
                 ->values()
                 ->toArray();
 
-            if (empty($assignments)) return [];
+            if (empty($assignments)) return $unboundExamIds;
 
-            return $base->whereIn(\DB::raw('CONCAT(standard_id, "-", subject_id)'), $assignments)
+            $matching = ExamSyllabusChapter::where('organization_id', $orgId)
+                ->whereIn(\DB::raw('CONCAT(standard_id, "-", subject_id)'), $assignments)
                 ->distinct()
                 ->pluck('exam_id')
                 ->all();
+
+            return array_values(array_unique(array_merge($matching, $unboundExamIds)));
         }
 
         return null; // admin / accounts / other → no scoping
