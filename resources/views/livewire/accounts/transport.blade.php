@@ -127,7 +127,7 @@
                     <option value="">All Routes</option>
                     @foreach ($routeOptions as $r)<option value="{{ $r->id }}">{{ $r->route_name }}</option>@endforeach
                 </select>
-                <span class="ml-auto text-sm text-gray-500">{{ $txStudents->total() }} student(s) · Annual = monthly × 11 (June free)</span>
+                <span class="ml-auto text-sm text-gray-500">{{ $txStudents->total() }} student(s) · Annual = monthly × billable months</span>
             </div>
 
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -139,7 +139,7 @@
                             <th class="px-4 py-3 text-right w-28">Annual Fee</th>
                             <th class="px-4 py-3 text-right w-24">Paid</th>
                             <th class="px-4 py-3 text-right w-28">Remaining</th>
-                            <th class="px-4 py-3 text-center w-24">Action</th>
+                            <th class="px-4 py-3 text-center w-44">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -159,12 +159,21 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">{{ $s->_route->route_name ?? '—' }}</td>
-                                <td class="px-4 py-3 text-right text-gray-700">₹{{ number_format($s->_annual, 0) }}</td>
+                                <td class="px-4 py-3 text-right text-gray-700">
+                                    ₹{{ number_format($s->_annual, 0) }}
+                                    <span class="block text-[11px] text-gray-400">{{ $s->_monthsCount }}/12 mo</span>
+                                </td>
                                 <td class="px-4 py-3 text-right text-emerald-600">₹{{ number_format($s->_paid, 0) }}</td>
                                 <td class="px-4 py-3 text-right font-semibold {{ $s->_remaining > 0 ? 'text-red-600' : 'text-gray-400' }}">₹{{ number_format($s->_remaining, 0) }}</td>
-                                <td class="px-4 py-3 text-center">
-                                    <button wire:click="$set('activeTab','fees'); selectFeeStudent({{ $s->id }})"
-                                        class="text-xs font-medium px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50">Fees</button>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        @if ($s->_route)
+                                            <button wire:click="editTransportStudent({{ $s->id }}, {{ $s->_route->id }})"
+                                                class="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50">Months</button>
+                                        @endif
+                                        <button wire:click="$set('activeTab','fees'); selectFeeStudent({{ $s->id }})"
+                                            class="text-xs font-medium px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50">Fees</button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -459,6 +468,47 @@
             </div>
         @endif
     @endforeach
+
+    {{-- ══════════ TRANSPORT MONTHS SLIDE-IN PANEL ══════════ --}}
+    @if ($editTxStudentModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closeEditTransportStudent"></div>
+            <div class="absolute top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Monthly Schedule</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ $editTxStudentName }} — turn a month off when the student isn't using transport.</p>
+                    </div>
+                    <button wire:click="closeEditTransportStudent"
+                        class="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    @php $onCount = collect($editTxBillableMonths)->filter()->count(); @endphp
+                    <p class="text-sm text-gray-500 mb-4">
+                        <span class="font-semibold text-gray-700">{{ $onCount }}</span> billable month(s). Months turned
+                        <span class="font-medium text-gray-700">Off</span> show as <span class="font-medium text-gray-700">No Transport</span>
+                        in the student app and are not charged.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        @foreach ($monthsOrder as $key => $label)
+                            @php $on = $editTxBillableMonths[$key] ?? false; @endphp
+                            <button type="button" wire:click="toggleTxMonth('{{ $key }}')"
+                                class="flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm transition-colors {{ $on ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-gray-50 text-gray-400' }}">
+                                <span class="font-medium">{{ $label }}</span>
+                                <span class="text-xs font-semibold">{{ $on ? 'On' : 'Off' }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="px-6 py-3.5 border-t border-gray-200 flex items-center justify-end gap-2 flex-shrink-0">
+                    <button wire:click="closeEditTransportStudent" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+                    <button wire:click="saveTransportStudentMonths" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-md">Save Schedule</button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Transport fee payment panel + delete confirm (shared) --}}
     @include('livewire.partials.transport-payment-panel')
