@@ -53,6 +53,8 @@ class EventForm extends Component
         'event_date' => 'required|date',
         'start_time' => 'required_if:is_all_day,false',
         'end_time' => 'required_if:is_all_day,false',
+        // Must stay in sync with the time_tables.event_type enum.
+        'event_type' => 'required|in:class,lab,meeting,seminar,workshop,sports,exam,holiday,conference,event,other',
     ];
 
     public function mount($date = null, $event = null, $mode = 'create')
