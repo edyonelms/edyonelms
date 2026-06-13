@@ -217,6 +217,7 @@ Route::middleware('auth:sanctum')->group(function () {
         //TimeTable Routes All
         Route::prefix('time-table')->group(function () {
             Route::post('/', [TimeTableController::class, 'getTimeTable']);
+            Route::get('/student', [TimeTableController::class, 'studentTimeTable']); // student weekly view
         });
 
         // Calenders Api

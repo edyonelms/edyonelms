@@ -4,6 +4,7 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\TeacherTimeTable;
+use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
 use App\Services\ResponseService;
 use Carbon\Carbon;
@@ -93,6 +94,78 @@ class TimeTableController extends Controller
 
             // Default: get timetable for next 7 days
             return $this->getWeeklyTimetable($teacherDetail, $allTimeTables);
+        } catch (\Exception $e) {
+            return $this->responseService->errorResponse(
+                'Failed to retrieve timetable: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Get the weekly timetable for the authenticated STUDENT.
+     *
+     * Derives the schedule from the teacher timetables that target the
+     * student's class (standard + section), grouped by day of week.
+     */
+    public function studentTimeTable(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $student = StudentDetail::with(['standard', 'section'])
+                ->where('user_id', $user->id)
+                ->where('organization_id', $user->organization_id)
+                ->first();
+
+            if (!$student) {
+                return $this->responseService->errorResponse('Student profile not found', 404);
+            }
+
+            $rows = TeacherTimeTable::with([
+                'teacher.user',
+                'standard',
+                'section',
+                'subject',
+                'todaysArrangement.substituteTeacher.user',
+            ])
+                ->where('organization_id', $user->organization_id)
+                ->where('standard_id', $student->standard_id)
+                ->where('section_id', $student->section_id)
+                ->where('is_active', true)
+                ->orderBy('day_of_week')
+                ->orderBy('start_time')
+                ->get();
+
+            $groupedTimeTables = [];
+            for ($day = 1; $day <= 7; $day++) {
+                $dayRows = $rows->where('day_of_week', $day)->values();
+                if ($dayRows->isEmpty()) {
+                    continue;
+                }
+                $groupedTimeTables[] = [
+                    'day_of_week'   => $day,
+                    'day_name'      => $this->getDayName($day),
+                    'total_classes' => $dayRows->count(),
+                    'timetable'     => $dayRows->map(fn($t) => $this->formatTimeTable($t))->values(),
+                ];
+            }
+
+            $response = [
+                'student_id'       => $student->id,
+                'standard'         => $student->standard->name ?? 'N/A',
+                'standard_id'      => $student->standard_id,
+                'section'          => $student->section->name ?? 'N/A',
+                'section_id'       => $student->section_id,
+                'type'             => 'weekly',
+                'total_classes'    => $rows->count(),
+                'timetable_by_day' => $groupedTimeTables,
+            ];
+
+            return $this->responseService->success(
+                $response,
+                'Student timetable retrieved successfully'
+            );
         } catch (\Exception $e) {
             return $this->responseService->errorResponse(
                 'Failed to retrieve timetable: ' . $e->getMessage(),
@@ -294,6 +367,8 @@ class TimeTableController extends Controller
             'section_id' => $timetable->section_id,
             'subject' => $timetable->subject->name ?? 'N/A',
             'subject_id' => $timetable->subject_id,
+            'teacher' => $timetable->teacher->user->name ?? 'N/A',
+            'teacher_id' => $timetable->teacher_detail_id,
             'day_of_week' => $timetable->day_of_week,
             'day_name' => $this->getDayName($timetable->day_of_week),
             'start_time' => $timetable->start_time,
