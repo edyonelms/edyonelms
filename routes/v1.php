@@ -7,6 +7,7 @@ use App\Http\Controllers\v1\AuthController;
 use App\Http\Controllers\v1\BookController;
 use App\Http\Controllers\v1\CalendarController;
 use App\Http\Controllers\v1\ContentController;
+use App\Http\Controllers\v1\DashboardController;
 use App\Http\Controllers\v1\ExamController;
 use App\Http\Controllers\v1\FeeController;
 use App\Http\Controllers\v1\FilterController;
@@ -90,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('teacher')->group(function () {
             Route::get('/profile', [TeacherController::class, 'teacherProfile']);
             Route::get('/subject', [SubjectController::class, 'getTeacherSubject']);
+            Route::get('/dashboard', [DashboardController::class, 'teacherDashboard']); // home + analytics
 
             //Admin Api
             Route::prefix('admin')->group(function () {
@@ -204,6 +206,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // ─── Student: View own marks + own exam-copy PDFs ────────────────────
         // Read-only, always scoped to the authenticated student.
         Route::prefix('student')->group(function () {
+
+            // Aggregated home-screen + analytics data
+            Route::get('/dashboard', [DashboardController::class, 'studentDashboard']);
 
             Route::prefix('marks')->group(function () {
                 Route::get('/',                    [StudentMarksController::class, 'index']);

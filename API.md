@@ -22,6 +22,7 @@ This document contains a `curl` example for every endpoint, grouped by feature.
 - [1. Public Endpoints](#1-public-endpoints-no-auth)
 - [2. Authentication](#2-authentication--get-a-token)
 - [3. Authenticated Endpoints](#3-authenticated-endpoints)
+  - [Dashboard & Analytics](#dashboard--analytics)
   - [User / Profile](#user--profile)
   - [Contact (Student/Teacher ↔ Admin)](#contact-studentteacher--admin)
   - [Announcement / Library / Subject](#announcement--library--subject)
@@ -139,6 +140,16 @@ curl -s -X POST "$BASE/v1/change-password"  -H "Accept: application/json" -H "Co
 ## 3. Authenticated Endpoints
 
 > Every call below requires `-H "Authorization: Bearer $TOKEN"`.
+
+### Dashboard & Analytics
+
+Aggregated home-screen + analytics data in a single call (attendance, marks,
+exams, homework, announcements), scoped to the logged-in role.
+
+```bash
+curl -s "$BASE/v1/student/dashboard"       -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"
+curl -s "$BASE/v1/teacher/dashboard"       -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"
+```
 
 ### User / Profile
 
