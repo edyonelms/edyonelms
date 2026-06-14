@@ -103,7 +103,7 @@ class ExamCopyController extends ApiController
      *
      * Fields:
      *   exam_id, student_detail_id, standard_id, section_id, subject_id,
-     *   pdf       — file (required, .pdf only, max 10 MB)
+     *   pdf       — file (required, .pdf/.jpg/.jpeg/.png, max 2 MB)
      *   marks_obtained, max_marks, grade  — optional, set when marks are
      *                                       being uploaded together with the
      *                                       PDF in one go (otherwise leave
@@ -121,7 +121,7 @@ class ExamCopyController extends ApiController
             'standard_id'       => 'required|integer|exists:standards,id',
             'section_id'        => 'required|integer|exists:sections,id',
             'subject_id'        => 'required|integer|exists:subjects,id',
-            'pdf'               => 'required|file|mimes:pdf|max:10240',
+            'pdf'               => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048', // max 2 MB
             'marks_obtained'    => 'nullable|numeric|min:0',
             'max_marks'         => 'nullable|numeric|min:1',
             'grade'             => 'nullable|string|max:10',
@@ -207,7 +207,7 @@ class ExamCopyController extends ApiController
         }
 
         if ($err = $this->validateWith($request, [
-            'pdf'            => 'nullable|file|mimes:pdf|max:10240',
+            'pdf'            => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // max 2 MB
             'marks_obtained' => 'sometimes|numeric|min:0',
             'max_marks'      => 'sometimes|numeric|min:1',
             'grade'          => 'sometimes|nullable|string|max:10',
@@ -254,6 +254,17 @@ class ExamCopyController extends ApiController
         }
 
         $this->deleteOldPdf($copy->pdf_path);
+
+        // Marks and exam-copy PDFs share the same row. If marks are still
+        // recorded, only drop the PDF so the marks survive; otherwise remove
+        // the row entirely.
+        if ($copy->marks_obtained !== null) {
+            $copy->pdf_path = null;
+            $copy->save();
+
+            return $this->success(null, 'Exam copy deleted successfully.');
+        }
+
         \App\Models\Admin\ExamSubjectMark::where('exam_copy_id', $copy->id)->delete();
         $copy->delete();
 

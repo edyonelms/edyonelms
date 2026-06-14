@@ -340,6 +340,23 @@ class MarksController extends ApiController
             return $this->error('You do not teach this class+subject.', 403);
         }
 
+        // Marks and exam-copy PDFs share the same row. If a PDF is still
+        // attached, only clear the marks fields so the copy survives;
+        // otherwise remove the row entirely.
+        if (!empty($mark->pdf_path)) {
+            $mark->fill([
+                'marks_obtained' => null,
+                'max_marks'      => null,
+                'percentage'     => null,
+                'grade'          => null,
+                'remarks'        => null,
+                'is_absent'      => false,
+                'is_recheck'     => false,
+            ])->save();
+
+            return $this->success(null, 'Marks deleted successfully.');
+        }
+
         \App\Models\Admin\ExamSubjectMark::where('exam_copy_id', $mark->id)->delete();
         $mark->delete();
 

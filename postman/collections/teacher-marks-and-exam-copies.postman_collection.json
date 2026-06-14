@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a7e4-b5f1-marks-teacher-001",
 		"name": "LMS — Teacher: Marks & Exam Copies (v1)",
-		"description": "Teacher app APIs for managing student marks and uploading exam-copy PDFs.\n\n## Scope\n\nEvery endpoint is auto-scoped to the **(class, section, subject) triples the teacher actually teaches**, derived from `teacher_time_tables`. A teacher cannot list, create, edit, or delete marks/copies for a class+subject they don't teach — the server returns 403.\n\n## Dropdown source\n\nThe front-end needs a single dropdown showing every (class, section, subject) combination the teacher teaches. Use **GET `/teacher/classes-subjects`** — each item carries a ready-to-display `label` like `\"Class 8 · A · Mathematics\"` plus the three IDs needed for subsequent calls.\n\n## Marks vs exam-copy PDFs\n\n- **Marks** = numeric record (`marks_obtained`, `max_marks`, `grade`, etc.) — JSON requests.\n- **Exam copies** = PDF file of the actual answer sheet — `multipart/form-data` requests. PDF stored on S3 under `admin/exam-copies/`.\n\nBoth are backed by the same `exam_copies` table, so uploading a PDF on top of an existing marks row attaches the PDF to that row; uploading marks on top of a row that already has a PDF keeps the PDF intact.\n\n## Auth\n\nSanctum bearer token in `authToken`.",
+		"description": "Teacher app APIs for managing student marks and uploading exam-copy PDFs.\n\n## Scope\n\nEvery endpoint is auto-scoped to the **(class, section, subject) triples the teacher actually teaches**, derived from `teacher_time_tables`. A teacher cannot list, create, edit, or delete marks/copies for a class+subject they don't teach — the server returns 403.\n\n## Dropdown source\n\nThe front-end needs a single dropdown showing every (class, section, subject) combination the teacher teaches. Use **GET `/teacher/classes-subjects`** — each item carries a ready-to-display `label` like `\"Class 8 · A · Mathematics\"` plus the three IDs needed for subsequent calls.\n\n## Marks vs exam-copy PDFs\n\n- **Marks** = numeric record (`marks_obtained`, `max_marks`, `grade`, etc.) — JSON requests.\n- **Exam copies** = scanned file of the actual answer sheet (.pdf/.jpg/.jpeg/.png, max 2 MB) — `multipart/form-data` requests. File stored on S3 under `admin/exam-copies/`.\n\nBoth are backed by the same `exam_copies` table, so uploading a PDF on top of an existing marks row attaches the PDF to that row; uploading marks on top of a row that already has a PDF keeps the PDF intact.\n\n## Auth\n\nSanctum bearer token in `authToken`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -208,7 +208,7 @@
 						{ "key": "grade",             "value": "A",  "type": "text", "disabled": true }
 					]
 				},
-				"description": "**multipart/form-data**. `pdf` is required (.pdf only, max 10 MB). If marks fields are included, they're saved on the same row as the PDF."
+				"description": "**multipart/form-data**. `pdf` is required — accepts .pdf/.jpg/.jpeg/.png, **max 2 MB**. If marks fields are included, they're saved on the same row as the file."
 			},
 			"response": [
 				{
