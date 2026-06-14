@@ -139,12 +139,14 @@
         <table class="subject-table">
             <thead>
                 <tr>
-                    <th style="width:70px;">Subject Code</th>
+                    <th style="width:62px;">Subject Code</th>
                     <th>Course Name</th>
-                    <th style="width:90px;">Date</th>
-                    <th style="width:80px;">Day</th>
-                    <th style="width:100px;">Seating Plan</th>
-                    <th style="width:80px;">Status</th>
+                    <th style="width:52px;">Total<br>Marks</th>
+                    <th style="width:52px;">Pass<br>Marks</th>
+                    <th style="width:82px;">Date</th>
+                    <th style="width:70px;">Day</th>
+                    <th style="width:92px;">Seating Plan</th>
+                    <th style="width:74px;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -164,10 +166,14 @@
                         }
                     }
                     $subjectStatus = $subject['status'] ?? 'eligible';
+                    $totalMarks = $subject['total_marks'] ?? $subject['max_marks'] ?? $admitCard->exam?->total_marks;
+                    $passMarks  = $subject['passing_marks'] ?? $subject['pass_marks'] ?? $admitCard->exam?->passing_marks;
                 @endphp
                 <tr>
                     <td>{{ $code }}</td>
                     <td>{{ $subject['subject_name'] ?? '—' }}</td>
+                    <td>{{ $totalMarks !== null ? rtrim(rtrim(number_format($totalMarks, 2), '0'), '.') : '—' }}</td>
+                    <td>{{ $passMarks !== null ? rtrim(rtrim(number_format($passMarks, 2), '0'), '.') : '—' }}</td>
                     <td>{{ $examDate ? $examDate->format('d/m/Y') : '—' }}</td>
                     <td>{{ $examDate ? $examDate->format('l') : '—' }}</td>
                     <td>{{ $seatingPlan ?: '—' }}</td>

@@ -269,9 +269,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Exams Api
         Route::prefix('exams')->group(function () {
-            Route::get('/',              [ExamController::class, 'index']);
-            Route::get('/{id}',          [ExamController::class, 'show']);
-            Route::get('/{id}/syllabus', [ExamController::class, 'syllabus']);
+            Route::get('/',                    [ExamController::class, 'index']);
+            Route::get('/{id}',                [ExamController::class, 'show'])->whereNumber('id');
+            Route::get('/{id}/syllabus',       [ExamController::class, 'syllabus'])->whereNumber('id');
+            // Student admit card for a specific exam (issued check + streamed PDF)
+            Route::get('/{id}/admit-card',     [ExamController::class, 'admitCard'])->whereNumber('id');
+            Route::get('/{id}/admit-card/pdf', [ExamController::class, 'admitCardPdf'])->whereNumber('id');
         });
 
         // Filters Api (cascading dropdowns for app UI)

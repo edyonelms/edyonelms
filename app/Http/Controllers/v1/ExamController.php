@@ -4,12 +4,19 @@ namespace App\Http\Controllers\v1;
 
 use App\Models\Admin\Exam;
 use App\Models\Admin\ExamSyllabusChapter;
+use App\Models\Admin\Seating\SeatAssignment;
+use App\Models\Admin\Seating\SeatingPlan;
 use App\Models\Admin\TeacherTimeTable;
+use App\Models\Student\AdmitCard;
 use App\Models\Student\Chapter;
 use App\Models\Student\StudentDetail;
+use App\Models\Student\Subject;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\Teacher\TeacherSubject;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ExamController extends ApiController
 {
@@ -94,6 +101,116 @@ class ExamController extends ApiController
             $this->getExamSyllabusForUser($exam, $user, $request),
             'Exam syllabus fetched successfully.'
         );
+    }
+
+    /**
+     * GET /api/v1/exams/{id}/admit-card
+     *
+     * Student-only. Returns the admit card the admin has *issued* for this
+     * student + the selected exam — including the subject schedule (with each
+     * subject's total / passing marks), the exam-level total/passing marks and a
+     * `pdf_url` the app can preview (book-style) or download.
+     *
+     * 404 "Admit card has not been issued…" when no active card exists yet.
+     */
+    public function admitCard(int $id)
+    {
+        [$user, $err] = $this->authUser();
+        if ($err) return $err;
+
+        if ($user->role !== 'user') {
+            return $this->error('Only students can access admit cards.', 403);
+        }
+
+        $exam = Exam::where('organization_id', $user->organization_id)
+            ->where('is_published', true)
+            ->find($id);
+        if (!$exam) {
+            return $this->error('Exam not found.', 404);
+        }
+
+        $student = StudentDetail::with(['standard', 'section', 'organization', 'user'])
+            ->where('user_id', $user->id)
+            ->where('organization_id', $user->organization_id)
+            ->first();
+        if (!$student) {
+            return $this->error('Student details not found.', 404);
+        }
+
+        $admitCard = AdmitCard::with(['organization'])
+            ->where('student_detail_id', $student->id)
+            ->where('exam_id', $exam->id)
+            ->where('status', 'active')
+            ->latest()
+            ->first();
+        if (!$admitCard) {
+            return $this->error('Admit card has not been issued for this exam yet.', 404);
+        }
+
+        $admitCard->seating_label = $this->resolveSeating($admitCard);
+
+        return $this->success(
+            $this->formatAdmitCard($admitCard, $exam, $student),
+            'Admit card fetched successfully.'
+        );
+    }
+
+    /**
+     * GET /api/v1/exams/{id}/admit-card/pdf
+     *
+     * Student-only. Streams the issued admit card as a PDF (reuses the same
+     * dompdf layout the admin panel prints). The app opens this URL in its
+     * in-app PDF reader (with the Sanctum bearer header) for a full,
+     * book-style preview, and downloads the same bytes to the device.
+     */
+    public function admitCardPdf(int $id)
+    {
+        [$user, $err] = $this->authUser();
+        if ($err) return $err;
+
+        if ($user->role !== 'user') {
+            return $this->error('Only students can access admit cards.', 403);
+        }
+
+        $exam = Exam::where('organization_id', $user->organization_id)
+            ->where('is_published', true)
+            ->find($id);
+        if (!$exam) {
+            return $this->error('Exam not found.', 404);
+        }
+
+        $student = StudentDetail::where('user_id', $user->id)
+            ->where('organization_id', $user->organization_id)
+            ->first();
+        if (!$student) {
+            return $this->error('Student details not found.', 404);
+        }
+
+        $admitCard = AdmitCard::with([
+            'studentDetail.standard',
+            'studentDetail.section',
+            'organization',
+            'exam',
+        ])
+            ->where('student_detail_id', $student->id)
+            ->where('exam_id', $exam->id)
+            ->where('status', 'active')
+            ->latest()
+            ->first();
+        if (!$admitCard) {
+            return $this->error('Admit card has not been issued for this exam yet.', 404);
+        }
+
+        $admitCard->seating_label = $this->resolveSeating($admitCard);
+
+        $pdf = Pdf::loadView('admin.admit-card-pdf', [
+            'admitCard'    => $admitCard,
+            'organization' => $admitCard->organization,
+        ])->setPaper('a4', 'portrait');
+
+        $name = str_replace(' ', '_', $admitCard->student_name ?: ($student->full_name ?? 'admit_card'));
+
+        return $pdf->stream("Admit_Card_{$name}.pdf");
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
@@ -307,5 +424,153 @@ class ExamController extends ApiController
             })
             ->values()
             ->toArray();
+    }
+
+    /**
+     * Normalise an issued AdmitCard into the JSON the app renders: exam header,
+     * subject schedule (each with its total/passing marks), student + center
+     * details, and the PDF url. Marks fall back to the exam-level totals when a
+     * subject row doesn't carry its own.
+     */
+    private function formatAdmitCard(AdmitCard $admitCard, Exam $exam, StudentDetail $student): array
+    {
+        $now = now();
+        $examStatus = match (true) {
+            $exam->start_date > $now => 'upcoming',
+            $exam->end_date   < $now => 'completed',
+            default                  => 'ongoing',
+        };
+
+        $examTotal   = $exam->total_marks;
+        $examPassing = $exam->passing_marks;
+
+        $subjects = collect($admitCard->subjects ?? [])->map(function ($subject) use ($examTotal, $examPassing) {
+            $subjectId   = $subject['subject_id'] ?? null;
+            $subjectCode = $subject['subject_code'] ?? (Subject::find($subjectId)?->code);
+            $date = $subject['exam_date'] ?? null;
+            $time = $subject['exam_time'] ?? null;
+
+            $total   = $subject['total_marks']   ?? $subject['max_marks']  ?? $examTotal;
+            $passing = $subject['passing_marks'] ?? $subject['pass_marks'] ?? $examPassing;
+
+            return [
+                'subject_id'          => $subjectId,
+                'subject_name'        => $subject['subject_name'] ?? 'General',
+                'subject_code'        => $subjectCode,
+                'exam_date'           => $date,
+                'exam_date_formatted' => $date ? Carbon::parse($date)->format('d M, Y') : null,
+                'exam_day'            => $date ? Carbon::parse($date)->format('l') : null,
+                'exam_time'           => $time,
+                'exam_time_formatted' => $time ? Carbon::parse($time)->format('h:i A') : null,
+                'exam_duration'       => $subject['exam_duration'] ?? '3 Hours',
+                'total_marks'         => $total   !== null ? (float) $total   : null,
+                'passing_marks'       => $passing !== null ? (float) $passing : null,
+                'status'              => $subject['status'] ?? 'eligible',
+            ];
+        })->values();
+
+        $org = $admitCard->organization;
+
+        return [
+            'id'                   => $admitCard->id,
+            'issued'               => true,
+            'admit_card_number'    => $admitCard->admit_card_number,
+            'issue_date'           => $admitCard->issue_date?->format('Y-m-d'),
+            'issue_date_formatted' => $admitCard->issue_date?->format('d M, Y'),
+            'status'               => $admitCard->status,
+            'pdf_url'              => url("/api/v1/exams/{$exam->id}/admit-card/pdf"),
+
+            'exam' => [
+                'id'             => $exam->id,
+                'name'           => $exam->exam_name,
+                'academic_year'  => $exam->academic_year,
+                'exam_type'      => $exam->exam_type,
+                'term'           => $exam->term,
+                'start_date'     => $exam->start_date?->format('Y-m-d'),
+                'end_date'       => $exam->end_date?->format('Y-m-d'),
+                'status'         => $examStatus,
+                'total_marks'    => $examTotal,
+                'passing_marks'  => $examPassing,
+                'total_subjects' => $subjects->count(),
+            ],
+
+            'subjects' => $subjects,
+
+            'student' => [
+                'full_name'        => $student->full_name,
+                'admission_no'     => $student->admission_no,
+                'roll_no'          => $student->roll_no,
+                'roll_number'      => $admitCard->roll_number,
+                'exam_roll_number' => $admitCard->exam_roll_number,
+                'father_name'      => $admitCard->father_name ?: $student->father_name,
+                'mother_name'      => $admitCard->mother_name ?: $student->mother_name,
+                'image_url'        => $student->image ? Storage::url($student->image) : ($student->user->image ?? null),
+                'class'            => trim(($student->standard->name ?? '') . (($student->section->name ?? '') ? ' - ' . $student->section->name : '')),
+            ],
+
+            'exam_center' => [
+                'name'           => $admitCard->exam_center,
+                'address'        => $admitCard->exam_center_address,
+                'reporting_time' => $admitCard->reporting_time ? Carbon::parse($admitCard->reporting_time)->format('h:i A') : null,
+                'seat_number'    => $admitCard->seat_number,
+                'room_number'    => $admitCard->room_number,
+                'seating_label'  => $admitCard->seating_label ?? null,
+            ],
+
+            'organization' => [
+                'name'     => $org->name ?? null,
+                'address'  => $org->address ?? null,
+                'phone'    => $org->phone ?? ($org->mobile_number ?? null),
+                'email'    => $org->email ?? null,
+                'logo_url' => $org->logo ?? null,
+            ],
+
+            'exam_rules' => [
+                'allowed_items'        => $admitCard->allowed_items ?? [],
+                'prohibited_items'     => $admitCard->prohibited_items ?? [],
+                'general_instructions' => $admitCard->instructions,
+            ],
+        ];
+    }
+
+    /**
+     * Resolve "R(room)/ S(seat)" for the card's exam+student from the seating
+     * plan, falling back to the card's own room/seat. Mirrors the admin panel.
+     */
+    private function resolveSeating(AdmitCard $admitCard): ?string
+    {
+        $planIds = SeatingPlan::where('organization_id', $admitCard->organization_id)
+            ->where('exam_id', $admitCard->exam_id)
+            ->pluck('id');
+
+        if ($planIds->isNotEmpty()) {
+            $studentUserId = $admitCard->studentDetail?->user_id;
+
+            $assignment = SeatAssignment::with(['room', 'seat'])
+                ->whereIn('seating_plan_id', $planIds)
+                ->where(function ($q) use ($admitCard, $studentUserId) {
+                    $q->where('student_id', $admitCard->student_detail_id);
+                    if ($studentUserId) {
+                        $q->orWhere('student_id', $studentUserId);
+                    }
+                })
+                ->first();
+
+            if ($assignment) {
+                $room = $assignment->room?->room_name;
+                $seat = $assignment->seat?->seat_number;
+                if ($room && $seat) return 'R(' . $room . ')/ S(' . $seat . ')';
+                if ($seat) return 'S(' . $seat . ')';
+                if ($room) return 'R(' . $room . ')';
+            }
+        }
+
+        if ($admitCard->room_number && $admitCard->seat_number) {
+            return 'R(' . $admitCard->room_number . ')/ S(' . $admitCard->seat_number . ')';
+        }
+        if ($admitCard->seat_number) return 'S(' . $admitCard->seat_number . ')';
+        if ($admitCard->room_number) return 'R(' . $admitCard->room_number . ')';
+
+        return null;
     }
 }

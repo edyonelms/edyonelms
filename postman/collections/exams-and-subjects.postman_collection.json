@@ -64,6 +64,34 @@
 			"response": []
 		},
 		{
+			"name": "Student Admit Card (for exam)",
+			"request": {
+				"method": "GET",
+				"header": [ { "key": "Accept", "value": "application/json" } ],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/exams/1/admit-card",
+					"host": [ "{{baseUrl}}" ],
+					"path": [ "api", "v1", "exams", "1", "admit-card" ]
+				},
+				"description": "Student-only. Returns the admit card the school has ISSUED for the logged-in student + this exam: exam header, the subject schedule (each subject with its total/passing marks), the exam-level total/passing marks, student + exam-center details and a `pdf_url`. Returns 404 \"Admit card has not been issued for this exam yet.\" when no active card exists — the app shows a 'not issued' empty state for that."
+			},
+			"response": []
+		},
+		{
+			"name": "Student Admit Card — PDF",
+			"request": {
+				"method": "GET",
+				"header": [ { "key": "Accept", "value": "application/pdf" } ],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/exams/1/admit-card/pdf",
+					"host": [ "{{baseUrl}}" ],
+					"path": [ "api", "v1", "exams", "1", "admit-card", "pdf" ]
+				},
+				"description": "Student-only. Streams the issued admit card as a PDF (the same dompdf layout the admin panel prints, now including each subject's Total/Pass marks). The app previews this URL in its in-app PDF reader (book-style) using the Sanctum bearer header, and downloads the same bytes to the device. Returns 404 when the admit card is not issued."
+			},
+			"response": []
+		},
+		{
 			"name": "Student Subjects (class + section)",
 			"request": {
 				"method": "GET",
