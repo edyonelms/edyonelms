@@ -370,8 +370,37 @@ class AuthController extends Controller
                 );
             }
 
+            $data = $aboutInfo->toArray();
+
+            // Normalise core team: expose a consistent photo_url + url for each member.
+            $data['core_team'] = collect($aboutInfo->core_team ?? [])
+                ->map(function ($m, $i) {
+                    return [
+                        'id'          => $m['id'] ?? $i + 1,
+                        'name'        => $m['name'] ?? '',
+                        'designation' => $m['designation'] ?? '',
+                        'photo_url'   => $m['photo_url'] ?? $m['image'] ?? null,
+                        'url'         => $m['url'] ?? $m['link'] ?? null,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            // Normalise documents: consistent title + file_path + file_type.
+            $data['documents'] = collect($aboutInfo->documents ?? [])
+                ->map(function ($d, $i) {
+                    return [
+                        'id'        => $d['id'] ?? $i + 1,
+                        'title'     => $d['title'] ?? $d['name'] ?? ('Document ' . ($i + 1)),
+                        'file_path' => $d['file_path'] ?? $d['file_url'] ?? null,
+                        'file_type' => $d['file_type'] ?? null,
+                    ];
+                })
+                ->values()
+                ->all();
+
             return $this->responseService->success(
-                $aboutInfo,
+                $data,
                 'App information retrieved successfully'
             );
         } catch (Exception $e) {

@@ -380,7 +380,7 @@
                 "about-app"
               ]
             },
-            "description": "**Authenticated.** Returns app information: heading, sub-heading, logo, content sections, contact details, address, core team, social media links, and documents (PDF/DOC uploads on S3).\n\n**Headers:** `Authorization: Bearer {{token}}`"
+            "description": "**Authenticated.** Returns app information:\n- `heading`, `sub_heading`, `logo`, `address`\n- `content[] { title, description }`\n- `contact_details[] { type, value }`\n- `core_team[] { id, name, designation, photo_url, url }` — `photo_url` is the member image; tapping a member opens `url` (falls back to `photo_url`)\n- `social_media[] { platform, url, icon }`\n- `documents[] { id, title, file_path, file_type }` (PDF/DOC uploads on S3)\n\n**404** when no record exists yet — clients render a \"No Data found\" state instead of an error.\n\n**Headers:** `Authorization: Bearer {{token}}`"
           }
         },
         {
@@ -407,7 +407,7 @@
                 "school-info"
               ]
             },
-            "description": "**Authenticated.** Returns school information for the logged-in user's organization: about school, vision/mission/values/goals, mobile, email, address, website, management team (with photos), and documents.\n\n**Headers:** `Authorization: Bearer {{token}}`"
+            "description": "**Authenticated.** Returns school information for the logged-in user's organization:\n- `about_school`, `usm_vision`, `usm_mission`, `usm_values`, `usm_goals`, `website_info`, `website_url`\n- `school_mobile`, `school_email`, `school_address`\n- `management_team[] { id, name, designation, photo_url, sort_order }`\n- `documents[] { id, title, file_url, file_type, sort_order }`\n- `organization { logo_url, name }`\n\n**404** when no record exists — clients render a \"No Data found\" state.\n\n**Headers:** `Authorization: Bearer {{token}}`"
           }
         }
       ]
@@ -3348,7 +3348,7 @@
                 "terms-and-conditions"
               ]
             },
-            "description": "Public endpoint. Returns Terms and Conditions with platform info, company details, and structured metadata sections."
+            "description": "Public endpoint. Returns Terms and Conditions: `platform_logo`, `platform_name`, `company_name`, `company_cin`, `metadata { sections[] {head, desc}, files[] {title, file_path, file_type}, additional_info[] {key, value} }`, `last_updated`.\n\n**404** when not configured — clients render a \"No Data found\" state."
           }
         },
         {
@@ -3371,7 +3371,7 @@
                 "privacy-policy"
               ]
             },
-            "description": "Public endpoint. Returns Privacy Policy metadata and last updated date."
+            "description": "Public endpoint. Returns Privacy Policy: `metadata { sections[] {head, desc} }`, `last_updated`.\n\n**404** when not configured — clients render a \"No Data found\" state."
           }
         },
         {
@@ -3394,7 +3394,7 @@
                 "terms-of-use"
               ]
             },
-            "description": "Public endpoint. Returns Terms of Use metadata and last updated date."
+            "description": "Public endpoint. Returns Terms of Use: `metadata { sections[] {head, desc} }`, `last_updated`.\n\n**404** when not configured — clients render a \"No Data found\" state."
           }
         },
         {
@@ -3421,7 +3421,7 @@
                 "rules-and-regulation"
               ]
             },
-            "description": "**Authenticated.** Returns rules and regulations for the logged-in user's organization.\n\n**Headers:** `Authorization: Bearer {{token}}`\n\n**Response fields:**\n- `id` — record id\n- `organization_id` — org this belongs to\n- `sections[]` — array of rule sections (title, body, etc. as set by admin)\n- `additional_info[]` — extra metadata fields\n- `files[]` — uploaded documents `{ title, file_path (S3 URL), file_type, file_size (bytes) }`\n- `last_updated` — when admin last updated the content\n- `created_at`, `updated_at`"
+            "description": "**Authenticated.** Returns rules and regulations for the logged-in user's organization.\n\n**Headers:** `Authorization: Bearer {{token}}`\n\n**Response fields:**\n- `id` — record id\n- `organization_id` — org this belongs to\n- `sections[]` — array of rule sections (title, body, etc. as set by admin)\n- `additional_info[]` — extra metadata fields\n- `files[]` — uploaded documents `{ title, file_path (S3 URL), file_type, file_size (bytes) }`\n- `last_updated` — when admin last updated the content\n- `created_at`, `updated_at`\n\n**404** when not configured — clients render a \"No Data found\" state."
           }
         }
       ]
