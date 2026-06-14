@@ -293,8 +293,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Report Card Api  (student only)
         Route::prefix('report-card')->group(function () {
-            Route::get('/',    [ReportCardController::class, 'index']);
-            Route::get('/{id}', [ReportCardController::class, 'show']);
+            Route::get('/',         [ReportCardController::class, 'index']);
+            Route::get('/{id}',     [ReportCardController::class, 'show'])->whereNumber('id');
+            Route::get('/{id}/pdf', [ReportCardController::class, 'pdf'])->whereNumber('id');
         });
 
         // Switch Account Api
