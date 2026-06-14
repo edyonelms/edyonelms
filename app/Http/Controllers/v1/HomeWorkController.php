@@ -4,7 +4,9 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\HomeWork;
+use App\Models\Admin\TeacherTimeTable;
 use App\Models\Student\StudentDetail;
+use App\Models\Teacher\TeacherDetail;
 use App\Services\ResponseService;
 use Exception;
 use Illuminate\Http\Request;
@@ -37,6 +39,27 @@ class HomeWorkController extends Controller
 
         if ($validator->fails()) {
             return $this->responseService->errorResponse($validator->errors()->first(), 422);
+        }
+
+        $user = Auth::user();
+
+        // A teacher may only post homework for a (class, section, subject) that is
+        // assigned to them in the timetable.
+        if (($user->role ?? null) === 'teacher') {
+            $teacher = TeacherDetail::where('user_id', $user->id)->first(['id']);
+            $teaches = $teacher && TeacherTimeTable::where('teacher_detail_id', $teacher->id)
+                ->where('organization_id', $user->organization_id)
+                ->where('standard_id', $request->standard_id)
+                ->where('section_id', $request->section_id)
+                ->where('subject_id', $request->subject_id)
+                ->exists();
+
+            if (!$teaches) {
+                return $this->responseService->errorResponse(
+                    'You can only add homework for a class & subject assigned to you in the timetable.',
+                    403
+                );
+            }
         }
 
         DB::beginTransaction();

@@ -34,7 +34,7 @@
 							"host": [ "{{baseUrl}}" ],
 							"path": [ "api", "v1", "homework", "upload" ]
 						},
-						"description": "Create homework for one (class, section, subject). Required: `standard_id`, `section_id`, `subject_id`, `title` (or legacy `name`). Optional `description` and `file`.\n\nSend as `multipart/form-data` when attaching a file; a plain JSON body works when there's no file. **422** on validation failure."
+						"description": "Create homework for one (class, section, subject). Required: `standard_id`, `section_id`, `subject_id`, `title` (or legacy `name`). Optional `description` and `file`.\n\nA **teacher** may only post to a (class, section, subject) assigned to them in the **timetable** (the same triples returned by `GET /teacher/classes-subjects`) — otherwise **403**. The homework lands on its creation day and is visible to the teacher and to every student of that class+section.\n\nSend as `multipart/form-data` when attaching a file; a plain JSON body works when there's no file. **422** on validation failure."
 					},
 					"response": []
 				},
