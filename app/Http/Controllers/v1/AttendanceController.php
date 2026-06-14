@@ -19,8 +19,8 @@ class AttendanceController extends Controller
     protected $responseService;
     protected $attendanceService;
 
-    /** Teachers may mark/edit attendance for today and the previous 2 days only. */
-    private const EDIT_WINDOW_DAYS = 2;
+    /** Teachers may mark/edit attendance for the last 3 working days (Sundays excluded). */
+    private const MARKABLE_DAYS = 3;
 
     public function __construct(StudentAttendanceService $attendanceService, ResponseService $responseService)
     {
@@ -29,18 +29,37 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Validate that $date falls inside the markable window (today .. today-2).
-     * Returns an error string when out of range, or null when allowed.
+     * The dates a teacher may currently mark: the last MARKABLE_DAYS working days
+     * (Sundays are auto-holidays and excluded), most recent first.
+     */
+    private function markableDates(): array
+    {
+        $dates  = [];
+        $cursor = now()->startOfDay();
+        while (count($dates) < self::MARKABLE_DAYS) {
+            if ($cursor->dayOfWeek !== Carbon::SUNDAY) {
+                $dates[] = $cursor->toDateString();
+            }
+            $cursor->subDay();
+        }
+        return $dates;
+    }
+
+    /**
+     * Validate that $date is one of the markable working days.
+     * Returns an error string when not allowed, or null when allowed.
      */
     private function outsideEditWindow(string $date): ?string
     {
-        $target = Carbon::parse($date)->startOfDay();
-        $today  = now()->startOfDay();
-        if ($target->gt($today)) {
+        $target = Carbon::parse($date);
+        if ($target->dayOfWeek === Carbon::SUNDAY) {
+            return 'Sunday is a holiday — attendance cannot be marked.';
+        }
+        if ($target->isFuture() && !$target->isToday()) {
             return 'You cannot mark attendance for a future date.';
         }
-        if ($target->lt($today->copy()->subDays(self::EDIT_WINDOW_DAYS))) {
-            return 'Attendance can only be marked for today and the previous ' . self::EDIT_WINDOW_DAYS . ' days.';
+        if (!in_array($target->toDateString(), $this->markableDates(), true)) {
+            return 'Attendance can only be marked for the last ' . self::MARKABLE_DAYS . ' working days (Sundays excluded).';
         }
         return null;
     }
@@ -717,9 +736,14 @@ class AttendanceController extends Controller
             $days = [];
             $present = 0; $absent = 0; $working = 0; $holiday = 0; $notMarked = 0;
             for ($d = 1; $d <= $daysInMonth; $d++) {
-                $date = $start->copy()->day($d)->toDateString();
+                $dayCarbon = $start->copy()->day($d);
+                $date = $dayCarbon->toDateString();
 
-                if ($date > $today) {
+                if ($dayCarbon->dayOfWeek === \Carbon\Carbon::SUNDAY) {
+                    // Sundays are always holidays, regardless of any record.
+                    $status = 'holiday';
+                    $holiday++;
+                } elseif ($date > $today) {
                     // Future days in the (current) month — nothing to show yet.
                     $status = 'upcoming';
                 } elseif ($records->has($date)) {
