@@ -153,6 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Attendance All Routes
         Route::prefix('attendance')->group(function () {
             Route::post('/', [AttendanceController::class, 'bulkSubmitAttendance']);
+            Route::post('/mark-holiday', [AttendanceController::class, 'markHoliday']); // teacher marks a class holiday
             Route::post('/get-student-for-attendance', [AttendanceController::class, 'getStudentsForAttendance']);
             Route::post('/summary', [AttendanceController::class, 'getAttendanceSummary']);
             Route::post('/teacher', [AttendanceController::class, 'teacherAttendance']);

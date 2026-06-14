@@ -7,9 +7,11 @@ use App\Models\Student\{StudentAttendance, StudentDetail};
 use App\Models\Teacher\{AssignTeacherStandard, TeacherAttendance, TeacherDetail};
 use App\Services\ResponseService;
 use App\Services\StudentAttendanceService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
@@ -17,10 +19,30 @@ class AttendanceController extends Controller
     protected $responseService;
     protected $attendanceService;
 
+    /** Teachers may mark/edit attendance for today and the previous 2 days only. */
+    private const EDIT_WINDOW_DAYS = 2;
+
     public function __construct(StudentAttendanceService $attendanceService, ResponseService $responseService)
     {
         $this->responseService = $responseService;
         $this->attendanceService = $attendanceService;
+    }
+
+    /**
+     * Validate that $date falls inside the markable window (today .. today-2).
+     * Returns an error string when out of range, or null when allowed.
+     */
+    private function outsideEditWindow(string $date): ?string
+    {
+        $target = Carbon::parse($date)->startOfDay();
+        $today  = now()->startOfDay();
+        if ($target->gt($today)) {
+            return 'You cannot mark attendance for a future date.';
+        }
+        if ($target->lt($today->copy()->subDays(self::EDIT_WINDOW_DAYS))) {
+            return 'Attendance can only be marked for today and the previous ' . self::EDIT_WINDOW_DAYS . ' days.';
+        }
+        return null;
     }
 
     /**
@@ -178,6 +200,10 @@ class AttendanceController extends Controller
                 'attendances.*.remarks' => 'nullable|string'
             ]);
 
+            if ($windowError = $this->outsideEditWindow($validated['attendance_date'])) {
+                return $this->responseService->errorResponse($windowError, 403);
+            }
+
             $results = $this->attendanceService->bulkSubmitAttendance(
                 $validated,
                 $user->id,
@@ -203,6 +229,86 @@ class AttendanceController extends Controller
                 'An error occurred: ' . $e->getMessage(),
                 500
             );
+        }
+    }
+
+    /**
+     * Mark a whole class+section as holiday for a date.
+     * Holiday is stored as status code 4 on every student's attendance row.
+     */
+    public function markHoliday(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return $this->responseService->errorResponse('Authentication required', 401);
+            }
+
+            $validated = $request->validate([
+                'date'        => 'required|date',
+                'standard_id' => 'required|exists:standards,id',
+                'section_id'  => 'nullable|exists:sections,id',
+            ]);
+
+            if ($windowError = $this->outsideEditWindow($validated['date'])) {
+                return $this->responseService->errorResponse($windowError, 403);
+            }
+
+            $teacherDetail = TeacherDetail::where('user_id', $user->id)->first();
+            if (!$teacherDetail) {
+                return $this->responseService->errorResponse('Teacher profile not found', 404);
+            }
+
+            // Teacher must be assigned to this class/section.
+            $isAssigned = AssignTeacherStandard::where('teacher_detail_id', $teacherDetail->id)
+                ->where('organization_id', $user->organization_id)
+                ->where('standard_id', $validated['standard_id'])
+                ->when(!empty($validated['section_id']), fn($q) => $q->where('section_id', $validated['section_id']))
+                ->exists();
+
+            if (!$isAssigned) {
+                return $this->responseService->errorResponse('You are not assigned to this class', 403);
+            }
+
+            $students = StudentDetail::where('organization_id', $user->organization_id)
+                ->where('standard_id', $validated['standard_id'])
+                ->when(!empty($validated['section_id']), fn($q) => $q->where('section_id', $validated['section_id']))
+                ->get();
+
+            if ($students->isEmpty()) {
+                return $this->responseService->errorResponse('No students found for this class', 404);
+            }
+
+            $date  = Carbon::parse($validated['date'])->toDateString();
+            $count = 0;
+
+            DB::transaction(function () use ($students, $date, $user, &$count) {
+                foreach ($students as $student) {
+                    StudentAttendance::updateOrCreate(
+                        [
+                            'student_detail_id' => $student->id,
+                            'attendance_date'   => $date,
+                        ],
+                        [
+                            'user_id'         => $student->user_id,
+                            'organization_id' => $user->organization_id,
+                            'status'          => 4, // holiday
+                            'remarks'         => 'Holiday',
+                            'marked_by'       => $user->id,
+                        ]
+                    );
+                    $count++;
+                }
+            });
+
+            return $this->responseService->success([
+                'date'            => $date,
+                'standard_id'     => (int) $validated['standard_id'],
+                'section_id'      => isset($validated['section_id']) ? (int) $validated['section_id'] : null,
+                'marked_students' => $count,
+            ], 'Holiday marked successfully');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse('An error occurred: ' . $e->getMessage(), 500);
         }
     }
 
@@ -592,18 +698,36 @@ class AttendanceController extends Controller
                     ->mapWithKeys(fn($r) => [\Carbon\Carbon::parse($r->attendance_date)->toDateString() => (int) $r->status]);
             }
 
+            $today = now()->toDateString();
+
             $days = [];
-            $present = 0; $absent = 0; $working = 0;
+            $present = 0; $absent = 0; $working = 0; $holiday = 0; $notMarked = 0;
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $date = $start->copy()->day($d)->toDateString();
-                if ($records->has($date)) {
-                    $working++;
-                    $isPresent = $records->get($date) === 1;
-                    $isPresent ? $present++ : $absent++;
-                    $status = $isPresent ? 'present' : 'absent';
+
+                if ($date > $today) {
+                    // Future days in the (current) month — nothing to show yet.
+                    $status = 'upcoming';
+                } elseif ($records->has($date)) {
+                    $code = $records->get($date);
+                    if ($code === 4) {
+                        $status = 'holiday';
+                        $holiday++;
+                    } elseif ($code === 1) {
+                        $status = 'present';
+                        $present++;
+                        $working++;
+                    } else {
+                        $status = 'absent';
+                        $absent++;
+                        $working++;
+                    }
                 } else {
-                    $status = 'holiday';
+                    // Past/today date with no record — attendance was never taken.
+                    $status = 'not_marked';
+                    $notMarked++;
                 }
+
                 $days[] = ['date' => $date, 'day' => $d, 'status' => $status];
             }
 
@@ -612,10 +736,12 @@ class AttendanceController extends Controller
                 'role'    => $user->role,
                 'days'    => $days,
                 'summary' => [
-                    'total_days'   => $daysInMonth,
-                    'working_days' => $working,
-                    'present_days' => $present,
-                    'absent_days'  => $absent,
+                    'total_days'      => $daysInMonth,
+                    'working_days'    => $working,
+                    'present_days'    => $present,
+                    'absent_days'     => $absent,
+                    'holiday_days'    => $holiday,
+                    'not_marked_days' => $notMarked,
                     'present_percentage' => $working > 0 ? round($present / $working * 100, 2) : 0,
                 ],
             ], 'Attendance fetched successfully');
