@@ -196,9 +196,23 @@ class AttendanceController extends Controller
                 'attendance_date' => 'required|date',
                 'attendances' => 'required|array|min:1',
                 'attendances.*.student_detail_id' => 'required|exists:student_details,id',
-                'attendances.*.status' => 'required|boolean',
+                // Status code: 0=absent, 1=present, 2=late, 3=half_day, 4=holiday.
+                // Legacy booleans (true=present/false=absent) are also accepted.
+                'attendances.*.status' => 'required',
                 'attendances.*.remarks' => 'nullable|string'
             ]);
+
+            // Normalise each status into its tinyint code (handles bool / "true" / int).
+            foreach ($validated['attendances'] as $i => $a) {
+                $s = $a['status'];
+                $code = ($s === true || $s === 'true')
+                    ? 1
+                    : (($s === false || $s === 'false') ? 0 : (int) $s);
+                if (!in_array($code, [0, 1, 2, 3, 4], true)) {
+                    return $this->responseService->errorResponse('Invalid attendance status.', 422);
+                }
+                $validated['attendances'][$i]['status'] = $code;
+            }
 
             if ($windowError = $this->outsideEditWindow($validated['attendance_date'])) {
                 return $this->responseService->errorResponse($windowError, 403);

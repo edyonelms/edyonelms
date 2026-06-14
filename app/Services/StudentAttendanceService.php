@@ -188,7 +188,7 @@ class StudentAttendanceService
         return array_map(function ($record) use ($isUpdate) {
             return [
                 'student_detail_id' => $record['student_detail_id'] ?? null,
-                'status' => (bool)$record['status'],
+                'status' => (int)$record['status'], // 0=absent, 1=present, 4=holiday
                 'remarks' => $record['remarks'] ?? null,
                 'operation' => $isUpdate ? 'updated' : 'created'
             ];

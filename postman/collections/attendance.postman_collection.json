@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "c3e8f1a9-4b2d-4e7a-9c10-attendance0001",
 		"name": "LMS — Attendance (v1)",
-		"description": "Attendance APIs for the student/teacher app.\n\n- **Self view** (`/attendance/my`) is role-aware: a student sees their own day-wise attendance, a teacher sees theirs. Each day's `status` is one of `present` | `absent` | `holiday` | `not_marked` | `upcoming`. `not_marked` = a past/today date with no record; `upcoming` = a future date in the month (shown as a dash in the app).\n- **Marking** is for teachers and limited to **today + the previous 2 days** (3-day window). Out-of-window dates return **403**.\n- `get-student-for-attendance` returns the teacher's assigned classes with each student's current status for a date; `POST /attendance` bulk-submits; `POST /attendance/mark-holiday` marks a whole class+section as holiday.\n\nStudent attendance is stored as a tinyint (`status`: 0=absent, 1=present, 4=holiday). \"Leave\" is represented as `status=false` with `remarks: \"Leave\"`.\n\nAuth: Sanctum bearer token in `authToken`.",
+		"description": "Attendance APIs for the student/teacher app.\n\n- **Self view** (`/attendance/my`) is role-aware: a student sees their own day-wise attendance, a teacher sees theirs. Each day's `status` is one of `present` | `absent` | `holiday` | `not_marked` | `upcoming`. `not_marked` = a past/today date with no record; `upcoming` = a future date in the month (shown as a dash in the app).\n- **Marking** is for teachers and limited to **today + the previous 2 days** (3-day window). Out-of-window dates return **403**.\n- `get-student-for-attendance` returns the teacher's assigned classes with each student's current status for a date; `POST /attendance` bulk-submits; `POST /attendance/mark-holiday` marks a whole class+section as holiday.\n\nStudent attendance is stored as a tinyint (`status`: 0=absent, 1=present, 4=holiday). The teacher app marks per-student Present/Absent/Holiday and submits the codes via `POST /attendance`.\n\nAuth: Sanctum bearer token in `authToken`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -60,14 +60,14 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"attendance_date\": \"2026-06-13\",\n  \"attendances\": [\n    { \"student_detail_id\": 1, \"status\": true, \"remarks\": null },\n    { \"student_detail_id\": 2, \"status\": false, \"remarks\": \"Leave\" },\n    { \"student_detail_id\": 3, \"status\": false, \"remarks\": null }\n  ]\n}"
+					"raw": "{\n  \"attendance_date\": \"2026-06-13\",\n  \"attendances\": [\n    { \"student_detail_id\": 1, \"status\": 1, \"remarks\": null },\n    { \"student_detail_id\": 2, \"status\": 0, \"remarks\": null },\n    { \"student_detail_id\": 3, \"status\": 4, \"remarks\": \"Holiday\" }\n  ]\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/v1/attendance",
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "attendance" ]
 				},
-				"description": "Bulk insert/update student attendance for `attendance_date`.\n\nEach item: `student_detail_id` (required, must exist), `status` (required boolean — true=present, false=absent), `remarks` (optional; use `\"Leave\"` to flag a leave on the binary store).\n\n`attendance_date` must be within the **3-day window** (today + previous 2 days), else **403**.\n\nReturns `processed_count`, a daily `summary`, and per-record `details`."
+				"description": "Bulk insert/update student attendance for `attendance_date`.\n\nEach item: `student_detail_id` (required, must exist), `status` (required — tinyint code: `0`=absent, `1`=present, `4`=holiday; legacy booleans true/false are still accepted and normalised to 1/0), `remarks` (optional).\n\n`attendance_date` must be within the **3-day window** (today + previous 2 days), else **403**.\n\nReturns `processed_count`, a daily `summary`, and per-record `details` (with the stored integer `status`)."
 			},
 			"response": []
 		},
