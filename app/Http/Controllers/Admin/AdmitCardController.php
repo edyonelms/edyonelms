@@ -30,7 +30,8 @@ class AdmitCardController extends Controller
         $pdf = Pdf::loadView('admin.admit-card-pdf', [
             'admitCard'    => $admitCard,
             'organization' => $admitCard->organization,
-        ])->setPaper('a4', 'portrait');
+            'isPdf'        => true,
+        ])->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
 
         $name = str_replace(' ', '_', $admitCard->student_name ?? 'admit_card');
 
