@@ -215,6 +215,7 @@ class InstructorController extends ApiController
             'email'       => $t->user?->email,
             'avatar'      => $t->user?->image,
             'employee_id' => $t->employee_id,
+            'phone'       => $t->phone,
 
             // Subjects this instructor teaches *for the student's class* (via timetable)
             'subjects' => $timetables
@@ -251,6 +252,7 @@ class InstructorController extends ApiController
             'email'       => $t->user?->email,
             'avatar'      => $t->user?->image,
             'employee_id' => $t->employee_id,
+            'phone'       => $t->phone,
 
             // Unique subjects across all assignments
             'subjects' => $t->assignedSubjects

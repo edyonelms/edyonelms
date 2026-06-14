@@ -28,7 +28,7 @@
 						{ "key": "search", "value": "", "description": "Search by instructor name or email.", "disabled": true }
 					]
 				},
-				"description": "Paginated list of instructors.\n\n**Student request:** returns only instructors who appear in `teacher_time_tables` for the student's `(standard_id, section_id)`. Each item exposes `id, name, email, avatar, employee_id, subjects[]` (subjects scoped to the student's class).\n\n**Other roles:** returns all active instructors in the organization with `subjects`, `classes`, and `assigned_classes` collections.\n\nOptional filters: `subject_id`, `search`, `per_page`. `standard_id` is ignored for students."
+				"description": "Paginated list of instructors.\n\n**Student request:** returns only instructors who appear in `teacher_time_tables` for the student's `(standard_id, section_id)`. Each item exposes `id, name, email, avatar, employee_id, phone, subjects[]` (subjects scoped to the student's class). The app card shows the mobile number and offers View Profile + Chat Now.\n\n**Other roles:** returns all active instructors in the organization with `subjects`, `classes`, and `assigned_classes` collections.\n\nOptional filters: `subject_id`, `search`, `per_page`. `standard_id` is ignored for students."
 			},
 			"response": []
 		},
@@ -42,7 +42,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "instructors", "1" ]
 				},
-				"description": "Single instructor (role-scoped) including profile fields: `qualification`, `date_of_joining`, `phone`, `city`, `state`, `address`.\n\n**404** if the instructor is outside the caller's scope — e.g. a student requesting an instructor who does not teach their class via the timetable."
+				"description": "Single instructor (role-scoped) including profile fields: `qualification`, `date_of_joining`, `phone`, `city`, `state`, `address`, `subjects[]`, `classes[]`. Powers the app's announcement-style Instructor Profile screen, which intentionally hides `employee_id` and `date_of_joining`.\n\n**404** if the instructor is outside the caller's scope — e.g. a student requesting an instructor who does not teach their class via the timetable."
 			},
 			"response": []
 		}
