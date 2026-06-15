@@ -252,14 +252,23 @@ class Attendance extends Component
         $orgId = Auth::user()->organization_id;
         $markedBy = Auth::id();
 
-        DB::transaction(function () use ($orgId, $markedBy) {
+        $notifyRows = [];
+
+        DB::transaction(function () use ($orgId, $markedBy, &$notifyRows) {
             foreach ($this->studentMark as $studentId => $row) {
+                $status = $row['status'] === 'present' ? 1 : 0;
                 StudentAttendance::updateOrCreate(
                     ['student_detail_id' => $studentId, 'organization_id' => $orgId, 'attendance_date' => $this->sdDate],
-                    ['user_id' => $row['user_id'] ?? 0, 'status' => $row['status'] === 'present' ? 1 : 0, 'remarks' => $row['remark'] ?? '', 'marked_by' => $markedBy]
+                    ['user_id' => $row['user_id'] ?? 0, 'status' => $status, 'remarks' => $row['remark'] ?? '', 'marked_by' => $markedBy]
                 );
+                if (!empty($row['user_id'])) {
+                    $notifyRows[] = ['user_id' => $row['user_id'], 'status' => $status];
+                }
             }
         });
+
+        // Notify each student about their marked attendance (mobile app push).
+        app(\App\Services\AppPushNotifier::class)->attendanceMarked($notifyRows);
 
         $this->notification()->success('Student attendance saved for ' . Carbon::parse($this->sdDate)->format('d M Y'));
     }

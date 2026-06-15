@@ -68,7 +68,22 @@ class FirebaseNotificationService
      */
     public function notifyUsers(iterable $users, string $type, array $opts = []): bool
     {
-        $userIds = collect($users)->pluck('id')->filter()->unique()->all();
+        return $this->notifyUserIds(
+            collect($users)->pluck('id')->all(),
+            $type,
+            $opts
+        );
+    }
+
+    /**
+     * Send the same notification to many users given their ids (most efficient
+     * path — no User models loaded, tokens queried in one shot).
+     *
+     * @param  array<int>  $userIds
+     */
+    public function notifyUserIds(array $userIds, string $type, array $opts = []): bool
+    {
+        $userIds = array_values(array_unique(array_filter($userIds)));
 
         if (empty($userIds)) {
             return false;
@@ -115,15 +130,20 @@ class FirebaseNotificationService
                 'payload' => ['aps' => ['content-available' => 1]],
             ]);
 
-        try {
-            $report = $this->messaging->sendMulticast($message, $tokens);
-            $this->pruneInvalidTokens($report);
+        $anySuccess = false;
 
-            return $report->successes()->count() > 0;
-        } catch (\Throwable $e) {
-            report($e);
-            return false;
+        // FCM allows at most 500 tokens per multicast — chunk for large audiences.
+        foreach (array_chunk($tokens, 500) as $chunk) {
+            try {
+                $report = $this->messaging->sendMulticast($message, $chunk);
+                $this->pruneInvalidTokens($report);
+                $anySuccess = $anySuccess || $report->successes()->count() > 0;
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
+
+        return $anySuccess;
     }
 
     /**

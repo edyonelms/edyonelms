@@ -23,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
         // accountants, teachers and student/user accounts — with who did what.
         \App\Support\ActivityNotifier::boot();
 
+        // ── Mobile-app push notifications: domain event → student/teacher push ──
+        // (Attendance is wired in its controller/Livewire because the bulk path
+        //  uses raw inserts that don't fire model events.)
+        $this->bootAppPushNotifications();
+
         // Record last login timestamp on every successful authentication
         Event::listen(Login::class, function (Login $event) {
             $user = $event->user;
@@ -58,5 +63,46 @@ class AppServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+    }
+
+    /**
+     * Wire model events to mobile-app push notifications. Centralised here so the
+     * triggers stay in one place as the rule list grows.
+     */
+    private function bootAppPushNotifications(): void
+    {
+        $push = fn () => app(\App\Services\AppPushNotifier::class);
+
+        // New announcement → its audience (all / students / teachers) of the org.
+        \App\Models\Admin\Announcement::created(function ($announcement) use ($push) {
+            $push()->announcement($announcement);
+        });
+
+        // New homework → students of that class & section. Both the teacher API
+        // and the admin panel create via HomeWork::create(), so this covers both.
+        \App\Models\Admin\HomeWork::created(function ($homework) use ($push) {
+            $push()->homeworkAssigned($homework);
+        });
+
+        // Info / policy / legal pages changed → students + teachers, deep-linked
+        // to the matching "More" screen. `org` = per-school vs app-wide.
+        $settingPages = [
+            \App\Models\AboutApp::class                  => ['AboutAppMore',          'About App',          false],
+            \App\Models\PrivacyPolicy::class             => ['PrivacyPolicyMore',      'Privacy Policy',     false],
+            \App\Models\TermOfUse::class                 => ['TermsOfUseMore',         'Terms of Use',       false],
+            \App\Models\Admin\TermAndCondition::class    => ['TermsConditionsMore',    'Terms & Conditions', false],
+            \App\Models\Admin\RulesAndRegulation::class  => ['RulesRegulationsMore',   'Rules & Regulations', true],
+            \App\Models\Admin\SchoolInfo::class          => ['SchoolInfoMore',         'School Info',        true],
+        ];
+
+        foreach ($settingPages as $model => [$screen, $label, $orgScoped]) {
+            $model::saved(function ($row) use ($push, $screen, $label, $orgScoped) {
+                $push()->settingUpdated(
+                    $screen,
+                    $label,
+                    $orgScoped ? ($row->organization_id ?? null) : null
+                );
+            });
+        }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use App\Models\Student\{StudentAttendance, StudentDetail};
 use App\Models\Teacher\{AssignTeacherStandard, TeacherAttendance, TeacherDetail};
+use App\Services\AppPushNotifier;
 use App\Services\ResponseService;
 use App\Services\StudentAttendanceService;
 use Carbon\Carbon;
@@ -242,6 +243,21 @@ class AttendanceController extends Controller
                 $user->id,
                 $user->organization_id
             );
+
+            // Push a notification to each student whose attendance was marked.
+            $userIdByDetail = StudentDetail::whereIn(
+                'id',
+                collect($validated['attendances'])->pluck('student_detail_id')
+            )->pluck('user_id', 'id');
+
+            $notifyRows = [];
+            foreach ($validated['attendances'] as $a) {
+                $uid = $userIdByDetail[$a['student_detail_id']] ?? null;
+                if ($uid) {
+                    $notifyRows[] = ['user_id' => $uid, 'status' => $a['status']];
+                }
+            }
+            app(AppPushNotifier::class)->attendanceMarked($notifyRows);
 
             // Get summary for the day
             $firstStudent = StudentDetail::find($validated['attendances'][0]['student_detail_id']);

@@ -61,12 +61,25 @@ default template for that `type`. Invalid/expired tokens are auto-pruned.
 
 ## When each notification fires ("konsa notification kab, kisko")
 
-> TODO — fill in once the trigger list is finalised. Each row becomes a
-> `notifyUser()` / `notifyUsers()` call wired into the relevant controller/event.
+Implemented rules (dispatched via `App\Services\AppPushNotifier`, wired in
+`AppServiceProvider::bootAppPushNotifications()` + the attendance call sites):
 
 | Event | type | Recipients | Screen / params |
 | --- | --- | --- | --- |
-| _e.g. teacher uploads marks_ | `marks_uploaded` | the marked students | `Marks` / `{examId,...}` |
+| Admin posts an announcement (`Announcement` created) | `announcement` | org students + teachers, narrowed by the announcement's `type` (`all`/`user`/`teacher`) | `ViewAnnouncement` / `{item:{id}}` — body carries the content |
+| About App changed (`AboutApp` saved) | `general` | all students + teachers (global) | `AboutAppMore` |
+| Privacy Policy changed (`PrivacyPolicy` saved) | `general` | all students + teachers (global) | `PrivacyPolicyMore` |
+| Terms of Use changed (`TermOfUse` saved) | `general` | all students + teachers (global) | `TermsOfUseMore` |
+| Terms & Conditions changed (`TermAndCondition` saved) | `general` | all students + teachers (global) | `TermsConditionsMore` |
+| Rules & Regulations changed (`RulesAndRegulation` saved) | `general` | the org's students + teachers | `RulesRegulationsMore` |
+| School Info changed (`SchoolInfo` saved) | `general` | the org's students + teachers | `SchoolInfoMore` |
+| Teacher/Admin marks attendance (API bulk submit + admin Livewire) | `attendance_marked` | each marked student | `Attendance` — body carries the status |
+| Teacher/Admin adds homework (`HomeWork` created) | `homework_assigned` | students of that class + section | `Homework` / `{homeworkId}` |
+
+> Attendance is wired at its call sites (`AttendanceController::bulkSubmitAttendance`
+> + `Admin/Attendance::submitStudentAttendance`) because the bulk API path uses a
+> raw `insert()` that doesn't fire model events. Everything else hangs off model
+> `created`/`saved` events so it fires no matter who edits (API, admin, super-admin).
 
 ## One-time credentials setup
 
