@@ -54,7 +54,9 @@ class AppPushNotifier
                 'announcement',
                 [
                     'title'  => $a->announcement_name ?: 'New Announcement',
-                    'body'   => Str::limit(trim(strip_tags((string) $a->announcement_content)), 140),
+                    // Full content so it can be read on expand; capped well within
+                    // FCM's ~4KB message limit.
+                    'body'   => Str::limit(trim(strip_tags((string) $a->announcement_content)), 1500),
                     'screen' => 'ViewAnnouncement',
                     'params' => ['item' => ['id' => $a->id]],
                 ]
