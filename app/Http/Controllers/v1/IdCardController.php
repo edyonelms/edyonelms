@@ -5,18 +5,20 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use App\Models\Student\{AdmitCard, StudentDetail};
 use App\Models\Teacher\TeacherDetail;
+use App\Services\IdCardService;
 use App\Services\ResponseService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class IdCardController extends Controller
 {
     protected $responseService;
+    protected $idCardService;
 
-    public function __construct(ResponseService $responseService)
+    public function __construct(ResponseService $responseService, IdCardService $idCardService)
     {
         $this->responseService = $responseService;
+        $this->idCardService = $idCardService;
     }
 
     public function getStudentIdCard()
@@ -64,43 +66,8 @@ class IdCardController extends Controller
                 );
             }
 
-            // Prepare response data
-            $idCardData = [
-                'id' => $idCard->id,
-                'card_number' => $idCard->card_number,
-                'issue_date' => $idCard->issue_date->format('Y-m-d'),
-                'expiry_date' => $idCard->expiry_date->format('Y-m-d'),
-                'status' => $idCard->status,
-                'qr_code_url' => $idCard->qr_code ? 'data:image/png;base64,' . $idCard->qr_code : null,
-                'days_remaining' => now()->diffInDays($idCard->expiry_date, false),
-                'is_expired' => $idCard->expiry_date->isPast(),
-            ];
-
-            // Add student details
-            $idCardData['student'] = [
-                'full_name' => $studentDetail->full_name,
-                'admission_no' => $studentDetail->admission_no,
-                'roll_no' => $studentDetail->roll_no,
-                'standard' => $studentDetail->standard->name ?? null,
-                'section' => $studentDetail->section->name ?? null,
-                'image_url' => $studentDetail->image ? Storage::url($studentDetail->image) : null,
-                'dob' => $studentDetail->dob ? $studentDetail->dob->format('Y-m-d') : null,
-                'gender' => $studentDetail->gender,
-                'contact_number' => $studentDetail->phone,
-                'email' => $studentDetail->email,
-            ];
-
-            // Add organization details
-            if ($studentDetail->organization) {
-                $idCardData['organization'] = [
-                    'name' => $studentDetail->organization->name,
-                    'logo_url' => $studentDetail->organization->logo ?? null,
-                    'address' => $studentDetail->organization->address,
-                ];
-            }
-
             return $this->responseService->success(
-                $idCardData,
+                $this->buildCardData($idCard, 'student'),
                 'ID card retrieved successfully'
             );
         } catch (\Exception $e) {
@@ -122,13 +89,7 @@ class IdCardController extends Controller
                 );
             }
 
-            $teacherDetail = TeacherDetail::with([
-                'user',
-                'organization',
-                'assignedClasses.standard',
-                'assignedClasses.section'
-            ])
-                ->where('user_id', $user->id)
+            $teacherDetail = TeacherDetail::where('user_id', $user->id)
                 ->where('organization_id', $user->organization_id)
                 ->first();
 
@@ -152,52 +113,8 @@ class IdCardController extends Controller
                 );
             }
 
-            // Get assigned classes
-            $assignedClasses = $teacherDetail->assignedClasses->map(function ($class) {
-                return [
-                    'standard' => $class->standard->name ?? null,
-                    'section' => $class->section->name ?? null,
-                    'display' => ($class->standard->name ?? '') . ' ' . ($class->section->name ?? '')
-                ];
-            })->values();
-
-            $idCardData = [
-                'id' => $idCard->id,
-                'card_number' => $idCard->card_number,
-                'issue_date' => $idCard->issue_date->format('Y-m-d'),
-                'expiry_date' => $idCard->expiry_date->format('Y-m-d'),
-                'status' => $idCard->status,
-                'qr_code' => $idCard->qr_code ? 'data:image/png;base64,' . $idCard->qr_code : null,
-                'days_remaining' => now()->diffInDays($idCard->expiry_date, false),
-                'is_expired' => $idCard->expiry_date->isPast(),
-            ];
-
-            $idCardData['teacher'] = [
-                'id' => $teacherDetail->id,
-                'full_name' => $teacherDetail->user->name ?? 'N/A',
-                'employee_id' => $teacherDetail->employee_id,
-                'phone' => $teacherDetail->phone,
-                'email' => $teacherDetail->user->email ?? null,
-                'qualification' => $teacherDetail->qualification ?? null,
-                'date_of_joining' => $teacherDetail->date_of_joining ? \Carbon\Carbon::parse($teacherDetail->date_of_joining)->format('Y-m-d') : null,
-                'address' => $teacherDetail->address,
-                'city' => $teacherDetail->city,
-                'state' => $teacherDetail->state,
-                'pincode' => $teacherDetail->pincode,
-                'image_url' => $teacherDetail->user->image ?? null,
-                'assigned_classes' => $assignedClasses,
-            ];
-
-            $idCardData['organization'] = [
-                'id' => $teacherDetail->organization->id,
-                'name' => $teacherDetail->organization->name,
-                'logo_url' => $teacherDetail->organization->logo ?? null,
-                'address' => $teacherDetail->organization->address,
-                'phone' => $teacherDetail->organization->phone ?? null,
-            ];
-
             return $this->responseService->success(
-                $idCardData,
+                $this->buildCardData($idCard, 'teacher'),
                 'ID card retrieved successfully'
             );
         } catch (\Exception $e) {
@@ -206,6 +123,48 @@ class IdCardController extends Controller
                 500
             );
         }
+    }
+
+    /**
+     * Normalise a card into the exact same flat structure the admin ID-card
+     * design renders (IdCardService::cardViewData), so the app shows an
+     * identical card. Generates the QR on the fly when one is missing, then
+     * augments with a couple of convenience flags for the app.
+     */
+    private function buildCardData($idCard, string $type): array
+    {
+        // Eager-load everything cardViewData() touches for this type.
+        if ($type === 'student') {
+            $idCard->load([
+                'studentDetail.user',
+                'studentDetail.standard',
+                'studentDetail.section',
+                'organization.schoolInfo',
+            ]);
+            $person = $idCard->studentDetail;
+        } else {
+            $idCard->load([
+                'teacherDetail.user',
+                'organization.schoolInfo',
+            ]);
+            $person = $idCard->teacherDetail;
+        }
+
+        // Mirror the admin "view" behaviour: lazily generate the QR if absent.
+        if (!$idCard->qr_code && $person && $idCard->organization) {
+            $qr = $this->idCardService->generateQrCode($idCard, $person, $idCard->organization, $type);
+            if ($qr) {
+                $idCard->update(['qr_code' => $qr]);
+            }
+        }
+
+        $data = $this->idCardService->cardViewData($idCard, $type);
+
+        // App convenience extras (not part of the admin design, but handy).
+        $data['days_remaining'] = (int) round(now()->diffInDays($idCard->expiry_date, false));
+        $data['is_expired'] = $idCard->expiry_date->isPast();
+
+        return $data;
     }
 
     /**

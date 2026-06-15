@@ -434,6 +434,36 @@ curl -s "$BASE/v1/id-card/teacher"     -H "Accept: application/json" -H "Authori
 curl -s "$BASE/v1/id-card/admit-card"  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"
 ```
 
+`id-card/student` and `id-card/teacher` return the **same flat card structure** the admin
+ID-card design renders (`IdCardService::cardViewData`), so the app shows a card identical to
+the admin print/preview. `data` contains:
+
+```jsonc
+{
+  "type": "student",                  // or "teacher"
+  "name": "Aman Verma",
+  "subtitle": "Class 10 - A",         // teacher → "Teacher"
+  "photo": "https://.../photo.jpg",   // null if none
+  "card_number": "IDSTU1261234567",
+  "issue_date": "11 Jun 2026",        // d M Y
+  "expiry_date": "11 Jun 2027",       // d M Y
+  "status": "active",
+  "qr_code": "<base64-png>",          // raw base64 (no data: prefix), null if none
+  "school": { "name", "logo", "address", "website", "email", "phone" },
+  "front_rows": {                     // ordered key → value rows on the card front
+    "Reg No": "ADM-001", "Class": "10", "Section": "A",
+    "Father Name": "...", "Mobile": "...", "Address": "..."
+  },
+  "back_mode": "transport",           // student → transport, teacher → terms
+  "transport": null,                  // student: { Route, Pickup, Drop, ... } when assigned
+  "days_remaining": 364,              // app convenience
+  "is_expired": false                 // app convenience
+}
+```
+
+Teacher `front_rows` are: Employee ID, Designation, Qualification, Mobile, Joining Date, Address.
+403 if the caller's role doesn't match the endpoint; 404 if no active, non-expired card exists.
+
 ### Books / Instructors
 
 ```bash
