@@ -86,6 +86,7 @@ class FirebaseNotificationService
         $userIds = array_values(array_unique(array_filter($userIds)));
 
         if (empty($userIds)) {
+            logger()->info('[push] no recipients', ['type' => $type]);
             return false;
         }
 
@@ -93,6 +94,12 @@ class FirebaseNotificationService
             ->pluck('token')
             ->filter()
             ->all();
+
+        logger()->info('[push] dispatch', [
+            'type'   => $type,
+            'users'  => count($userIds),
+            'tokens' => count($tokens),
+        ]);
 
         return $this->sendData($tokens, $type, $opts);
     }
@@ -131,17 +138,23 @@ class FirebaseNotificationService
             ]);
 
         $anySuccess = false;
+        $sent = 0;
+        $failed = 0;
 
         // FCM allows at most 500 tokens per multicast — chunk for large audiences.
         foreach (array_chunk($tokens, 500) as $chunk) {
             try {
                 $report = $this->messaging->sendMulticast($message, $chunk);
                 $this->pruneInvalidTokens($report);
+                $sent += $report->successes()->count();
+                $failed += $report->failures()->count();
                 $anySuccess = $anySuccess || $report->successes()->count() > 0;
             } catch (\Throwable $e) {
                 report($e);
             }
         }
+
+        logger()->info('[push] sent', ['type' => $type, 'ok' => $sent, 'failed' => $failed]);
 
         return $anySuccess;
     }

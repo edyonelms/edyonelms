@@ -177,7 +177,12 @@ class AppPushNotifier
         try {
             $fn();
         } catch (\Throwable $e) {
-            report($e);
+            // Most common cause while rolling out: the Firebase service-account
+            // key isn't configured yet, so resolving Messaging throws. Log it
+            // clearly rather than as a scary stack trace, and never rethrow.
+            logger()->warning('[push] dispatch failed (is FIREBASE_CREDENTIALS set?)', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }
