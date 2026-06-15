@@ -197,11 +197,27 @@ class ContentController extends Controller
                 'topic_name'    => 'required|string|max:255',
                 'topic_content' => 'nullable|string',
                 'order'         => 'nullable|integer|min:0',
+                'image'         => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+                'pdf'           => 'nullable|mimes:pdf|max:10240',
             ]);
 
             // Ensure the chapter belongs to the caller's organization.
             $chapter = Chapter::where('organization_id', $user->organization_id)
                 ->findOrFail($request->chapter_id);
+
+            // Optional study-content media (image / pdf) — same disk + layout the
+            // bulk importer and updateTopic use, so admin & student see the same.
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('admin/content/topic-images', 's3');
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+            }
+
+            $pdfPath = null;
+            if ($request->hasFile('pdf')) {
+                $pdfPath = $request->file('pdf')->store('admin/content/topic-pdfs', 's3');
+                Storage::disk('s3')->setVisibility($pdfPath, 'public');
+            }
 
             $topic = Topic::create([
                 'organization_id' => $user->organization_id,
@@ -209,6 +225,8 @@ class ContentController extends Controller
                 'topic_name'      => $request->topic_name,
                 'topic_content'   => $request->topic_content,
                 'order'           => $request->input('order', 0),
+                'image_path'      => $imagePath,
+                'pdf_path'        => $pdfPath,
             ]);
 
             return $this->responseService->success($topic, 'Topic created successfully');

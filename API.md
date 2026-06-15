@@ -226,10 +226,18 @@ curl -s -X POST "$BASE/v1/content/chapter" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"standard_id":1,"section_id":1,"subject_id":1,"name":"Thermodynamics","description":"Heat & energy"}'
 
-# Create a single topic under a chapter (content optional)
+# Create a topic — Syllabus (name + order only)
 curl -s -X POST "$BASE/v1/content/topic" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"chapter_id":1,"topic_name":"Newton'\''s Laws"}'
+  -d '{"chapter_id":1,"topic_name":"Newton'\''s Laws","order":1}'
+
+# Create a topic — Study Content (content text + image, multipart with -F)
+curl -s -X POST "$BASE/v1/content/topic" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" \
+  -F "chapter_id=1" -F "topic_name=Newton's Laws" -F "topic_content=Full study notes..." \
+  -F "image=@/path/to/diagram.png"
+
+# List returns each topic with topic_content, image_url and pdf_url (or null)
 
 curl -s -X POST "$BASE/v1/content/chapter/1" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \

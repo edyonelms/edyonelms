@@ -115,7 +115,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "teacher", "subject" ]
 				},
-				"description": "Subjects for the logged-in TEACHER, combined from the timetable + any assigned subjects, grouped by class, plus `today_timetable` (today's periods) and a summary."
+				"description": "Subjects for the logged-in TEACHER, combined from the timetable + any assigned subjects, grouped by class, plus `today_timetable` (today's periods) and a summary. Each subject row includes `subject_image` and `subject_detail_image` (used by the syllabus/content screens)."
 			},
 			"response": []
 		}
