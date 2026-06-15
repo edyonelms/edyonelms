@@ -38,6 +38,20 @@ class PushTest extends Command
         $userId = $this->argument('user_id');
 
         if (!$userId) {
+            // List who actually has a token so it's easy to pick a test target.
+            $holders = UserFcmToken::with('user:id,name,role')
+                ->get()
+                ->map(fn ($t) => [
+                    'user_id' => $t->user_id,
+                    'name'    => $t->user->name ?? '(deleted)',
+                    'role'    => $t->user->role ?? '?',
+                    'platform' => $t->platform ?: '?',
+                ]);
+
+            if ($holders->isNotEmpty()) {
+                $this->table(['user_id', 'name', 'role', 'platform'], $holders);
+            }
+
             $this->line('Pass a user id to send a test push, e.g. php artisan push:test 42');
             return self::SUCCESS;
         }
