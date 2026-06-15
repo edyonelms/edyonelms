@@ -23,7 +23,16 @@ class AppPushNotifier
     private const STUDENT = 'user';
     private const TEACHER = 'teacher';
 
-    public function __construct(private FirebaseNotificationService $fcm) {}
+    /**
+     * Resolve the FCM transport lazily. When Firebase isn't configured yet (no
+     * service-account key), this throws — but it's only ever called inside
+     * {@see safe()}, so the originating action (saving the announcement, marking
+     * attendance, …) is never broken.
+     */
+    private function fcm(): FirebaseNotificationService
+    {
+        return app(FirebaseNotificationService::class);
+    }
 
     // ── Events ────────────────────────────────────────────────────────────────
 
@@ -40,7 +49,7 @@ class AppPushNotifier
                 default   => [self::STUDENT, self::TEACHER], // 'all'
             };
 
-            $this->fcm->notifyUserIds(
+            $this->fcm()->notifyUserIds(
                 $this->orgUserIds($a->organization_id, $roles),
                 'announcement',
                 [
@@ -65,7 +74,7 @@ class AppPushNotifier
                 ? $this->orgUserIds($orgId, $roles)
                 : $this->allUserIds($roles);
 
-            $this->fcm->notifyUserIds($ids, 'general', [
+            $this->fcm()->notifyUserIds($ids, 'general', [
                 'title'  => "{$label} updated",
                 'body'   => "{$label} has been updated. Tap to view.",
                 'screen' => $screen,
@@ -90,7 +99,7 @@ class AppPushNotifier
 
                 $status = $this->statusLabel($row['status'] ?? null);
 
-                $this->fcm->notifyUserIds([(int) $userId], 'attendance_marked', [
+                $this->fcm()->notifyUserIds([(int) $userId], 'attendance_marked', [
                     'title'  => 'Attendance Marked',
                     'body'   => $status
                         ? "Your attendance has been marked as {$status}."
@@ -121,7 +130,7 @@ class AppPushNotifier
             $subject = optional($hw->subject)->name;
             $title   = $hw->title ?: 'Homework';
 
-            $this->fcm->notifyUserIds($ids, 'homework_assigned', [
+            $this->fcm()->notifyUserIds($ids, 'homework_assigned', [
                 'title'  => 'New Homework Assigned',
                 'body'   => $subject ? "New {$subject} homework: {$title}" : "New homework: {$title}",
                 'screen' => 'Homework',
