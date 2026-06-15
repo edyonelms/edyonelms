@@ -199,6 +199,7 @@ class ContentController extends Controller
                 'order'         => 'nullable|integer|min:0',
                 'image'         => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
                 'pdf'           => 'nullable|mimes:pdf|max:10240',
+                'link'          => 'nullable|string|max:2048',
             ]);
 
             // Ensure the chapter belongs to the caller's organization.
@@ -227,6 +228,7 @@ class ContentController extends Controller
                 'order'           => $request->input('order', 0),
                 'image_path'      => $imagePath,
                 'pdf_path'        => $pdfPath,
+                'link'            => $request->link,
             ]);
 
             return $this->responseService->success($topic, 'Topic created successfully');
@@ -416,10 +418,11 @@ class ContentController extends Controller
 
             $topic->update([
                 'topic_name' => $request->topic_name ?? $topic->topic_name,
-                'topic_content' => $request->topic_content ?? $topic->topic_content,
+                'topic_content' => $request->has('topic_content') ? $request->topic_content : $topic->topic_content,
                 'order' => $request->has('order') ? (int) $request->input('order', 0) : $topic->order,
                 'image_path' => $imagePath,
                 'pdf_path' => $pdfPath,
+                'link' => $request->has('link') ? $request->link : $topic->link,
             ]);
 
             DB::commit();

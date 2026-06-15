@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class Topic extends Model
 {
-    protected $fillable = ['organization_id', 'chapter_id', 'topic_name', 'topic_content', 'order', 'image_path', 'pdf_path'];
+    protected $fillable = ['organization_id', 'chapter_id', 'topic_name', 'topic_content', 'order', 'image_path', 'pdf_path', 'link'];
 
     // Always expose ready-to-use URLs so the app/admin/student all get the same
     // thing regardless of whether the column holds a raw S3 path or a full URL.

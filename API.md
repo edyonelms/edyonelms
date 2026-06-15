@@ -246,9 +246,15 @@ curl -s -X POST "$BASE/v1/content/chapter/1" \
 curl -s -X DELETE "$BASE/v1/content/chapter-delete/1" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"
 
+# Add study material INTO an existing topic (text + link, JSON)
 curl -s -X POST "$BASE/v1/content/topic/1" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"topic_name":"New Topic"}'
+  -d '{"topic_content":"Study notes...","link":"https://drive.google.com/..."}'
+
+# Add study material INTO an existing topic (with image, multipart with -F)
+curl -s -X POST "$BASE/v1/content/topic/1" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" \
+  -F "topic_content=Study notes..." -F "link=https://youtu.be/..." -F "image=@/path/to/diagram.png"
 
 curl -s -X DELETE "$BASE/v1/content/topic-delete/1" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"

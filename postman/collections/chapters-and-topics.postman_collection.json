@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "f1a8d4c6-3b27-4e90-9a51-chaptertopic01",
 		"name": "LMS — Syllabus: Chapters & Topics (v1)",
-		"description": "Teacher/student APIs for the chapter + topic tree (the `content` module). The SAME endpoints back two app screens: the **Syllabus** (topics are just a name + order) and **Study Content** (topics also carry `topic_content` text + an optional image / PDF). Teacher edits reflect for students and admin because they all read/write the same `chapters`/`topics` tables.\n\n**Roles & scoping:**\n- **List (POST /content/get)** — STUDENTS are auto-scoped server-side to their own class + section (they only need to send `subject_id`; any class/section they send is ignored). TEACHERS/admins filter explicitly by `standard_id`, `section_id`, `subject_id`. Each topic in the response includes `topic_content`, `image_url` and `pdf_url` (ready-to-use absolute URLs, or null).\n- **Create / update / delete** — used by the teacher syllabus & content editors. Chapters are created one at a time (may start with no topics). Topics need only a `topic_name`; for Study Content also send `topic_content` and (as multipart) an `image` / `pdf`.\n\nThe single-item create endpoints (`POST /content/chapter`, `POST /content/topic`) were added for the app — distinct from the heavier `POST /content/upload` bulk importer. Auth: Sanctum bearer token in `authToken`.",
+		"description": "Teacher/student APIs for the chapter + topic tree (the `content` module). The SAME endpoints back two app screens: the **Syllabus** (topics are just a name + order) and **Study Content** (topics also carry `topic_content` text, a `link` URL + an optional image / PDF). Teacher edits reflect for students and admin because they all read/write the same `chapters`/`topics` tables.\n\n**Roles & scoping:**\n- **List (POST /content/get)** — STUDENTS are auto-scoped server-side to their own class + section (they only need to send `subject_id`; any class/section they send is ignored). TEACHERS/admins filter explicitly by `standard_id`, `section_id`, `subject_id`. Each topic in the response includes `topic_content`, `image_url` and `pdf_url` (ready-to-use absolute URLs, or null).\n- **Create / update / delete** — used by the teacher syllabus & content editors. Chapters are created one at a time (may start with no topics). Topics need only a `topic_name`; for Study Content also send `topic_content` and (as multipart) an `image` / `pdf`.\n\nThe single-item create endpoints (`POST /content/chapter`, `POST /content/topic`) were added for the app — distinct from the heavier `POST /content/upload` bulk importer. Auth: Sanctum bearer token in `authToken`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -29,7 +29,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "content", "get" ]
 				},
-				"description": "Paginated chapters (each with its `topics[]`), ordered by `order` then `id`. Every topic carries `topic_name`, `topic_content`, `image_url` and `pdf_url` (absolute URLs or null) + `order`.\n\n- **Teacher/admin:** send `standard_id`, `section_id`, `subject_id` to scope to one class+subject.\n- **Student:** the server forces the scope to the student's own class+section — just send `subject_id` (other filters are ignored). Returns 404 if the student record is missing."
+				"description": "Paginated chapters (each with its `topics[]`), ordered by `order` then `id`. Every topic carries `topic_name`, `topic_content`, `link`, `image_url` and `pdf_url` (absolute URLs or null) + `order`.\n\n- **Teacher/admin:** send `standard_id`, `section_id`, `subject_id` to scope to one class+subject.\n- **Student:** the server forces the scope to the student's own class+section — just send `subject_id` (other filters are ignored). Returns 404 if the student record is missing."
 			},
 			"response": []
 		},
@@ -106,7 +106,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "content", "topic" ]
 				},
-				"description": "Create a single topic under an existing chapter. The Syllabus editor sends just `topic_name` + `order` (integer, default 0). For Study Content, also send `topic_content` and optionally an `image` (jpeg/png/jpg/gif, max 4MB) and/or `pdf` (max 10MB) — when a file is attached send the request as multipart/form-data instead of JSON. The response topic includes `image_url` / `pdf_url`. The chapter must belong to the caller's organization; 404 otherwise."
+				"description": "Create a single topic under an existing chapter. The Syllabus editor sends just `topic_name` + `order` (integer, default 0). For Study Content, also send `topic_content`, `link` (any URL) and optionally an `image` (jpeg/png/jpg/gif, max 4MB) and/or `pdf` (max 10MB) — when a file is attached send the request as multipart/form-data instead of JSON. The response topic includes `image_url` / `pdf_url` / `link`. The chapter must belong to the caller's organization; 404 otherwise."
 			},
 			"response": []
 		},
@@ -127,7 +127,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "content", "topic", "1" ]
 				},
-				"description": "Update a topic's `topic_name`, `topic_content` and `order`. A new `image` / `pdf` can be sent as multipart to replace the existing file (old file is deleted). Response includes the refreshed `image_url` / `pdf_url`. Scoped to the caller's organization via the parent chapter; 404 if not found."
+				"description": "Update a topic — also the endpoint the app's Study Content editor uses to add material INTO an existing topic: `topic_content` (text), `link` (any URL — web link / doc / video), `order`, and a new `image` / `pdf` sent as multipart (replaces the existing file, old one deleted). Only fields that are sent are changed. Response includes the refreshed `image_url` / `pdf_url` and `link`. Scoped to the caller's organization via the parent chapter; 404 if not found."
 			},
 			"response": []
 		},
