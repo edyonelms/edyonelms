@@ -25,7 +25,7 @@ class PushTest extends Command
 
     protected $description = 'Diagnose / send a test mobile push notification';
 
-    public function handle(FirebaseNotificationService $fcm): int
+    public function handle(): int
     {
         $total = UserFcmToken::count();
         $this->info("Registered device tokens (all users): {$total}");
@@ -57,6 +57,9 @@ class PushTest extends Command
         }
 
         try {
+            // Resolved here (not in the signature) so the token report above
+            // still prints when Firebase credentials are missing.
+            $fcm = app(FirebaseNotificationService::class);
             $ok = $fcm->notifyUserIds([(int) $userId], 'general', [
                 'title'  => 'Test notification',
                 'body'   => 'If you can see this, push delivery works 🎉',
