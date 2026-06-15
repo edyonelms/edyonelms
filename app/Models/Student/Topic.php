@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Topic extends Model
 {
-    protected $fillable = ['organization_id', 'chapter_id', 'topic_name', 'topic_content', 'image_path', 'pdf_path'];
+    protected $fillable = ['organization_id', 'chapter_id', 'topic_name', 'topic_content', 'order', 'image_path', 'pdf_path'];
 
     public function organization()
     {

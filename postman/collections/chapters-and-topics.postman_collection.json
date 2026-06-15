@@ -43,14 +43,14 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"standard_id\": 1,\n  \"section_id\": 1,\n  \"subject_id\": 1,\n  \"name\": \"Thermodynamics\",\n  \"description\": \"Heat, work and energy\"\n}"
+					"raw": "{\n  \"standard_id\": 1,\n  \"section_id\": 1,\n  \"subject_id\": 1,\n  \"name\": \"Thermodynamics\",\n  \"order\": 1\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/v1/content/chapter",
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "content", "chapter" ]
 				},
-				"description": "Create a single chapter (no topics required). Idempotent on (organization, standard, section, subject, name) — re-sending the same name returns the existing chapter. `description` is optional. Returns the chapter with an empty/loaded `topics[]`."
+				"description": "Create a single chapter (no topics required). Idempotent on (organization, standard, section, subject, name) — re-sending the same name returns the existing chapter. `order` (integer, default 0) controls sort position; `description` is optional. The app's syllabus editor sends just `name` + `order`. Returns the chapter with an empty/loaded `topics[]`."
 			},
 			"response": []
 		},
@@ -64,7 +64,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"name\": \"Thermodynamics (updated)\",\n  \"description\": \"Updated description\"\n}"
+					"raw": "{\n  \"name\": \"Thermodynamics (updated)\",\n  \"order\": 2\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/v1/content/chapter/1",
@@ -99,14 +99,14 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"chapter_id\": 1,\n  \"topic_name\": \"Newton's Laws of Motion\",\n  \"topic_content\": \"Optional notes\"\n}"
+					"raw": "{\n  \"chapter_id\": 1,\n  \"topic_name\": \"Newton's Laws of Motion\",\n  \"order\": 1\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/v1/content/topic",
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "content", "topic" ]
 				},
-				"description": "Create a single topic under an existing chapter. `topic_content` is optional (syllabus topics are usually just a name). The chapter must belong to the caller's organization; 404 otherwise."
+				"description": "Create a single topic under an existing chapter. The app's syllabus editor sends just `topic_name` + `order` (integer, default 0, controls sort position); `topic_content` is still accepted but optional. The chapter must belong to the caller's organization; 404 otherwise."
 			},
 			"response": []
 		},
@@ -120,7 +120,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"topic_name\": \"Newton's Laws (updated)\",\n  \"topic_content\": \"Updated notes\"\n}"
+					"raw": "{\n  \"topic_name\": \"Newton's Laws (updated)\",\n  \"order\": 1\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/v1/content/topic/1",

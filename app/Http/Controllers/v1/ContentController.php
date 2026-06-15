@@ -153,6 +153,7 @@ class ContentController extends Controller
                 'subject_id'  => 'required|exists:subjects,id',
                 'name'        => 'required|string|max:255',
                 'description' => 'nullable|string',
+                'order'       => 'nullable|integer|min:0',
             ]);
 
             $chapter = Chapter::updateOrCreate(
@@ -166,6 +167,7 @@ class ContentController extends Controller
                 [
                     'user_id'     => $user->id,
                     'description' => $request->description,
+                    'order'       => $request->input('order', 0),
                 ]
             );
 
@@ -194,6 +196,7 @@ class ContentController extends Controller
                 'chapter_id'    => 'required|exists:chapters,id',
                 'topic_name'    => 'required|string|max:255',
                 'topic_content' => 'nullable|string',
+                'order'         => 'nullable|integer|min:0',
             ]);
 
             // Ensure the chapter belongs to the caller's organization.
@@ -205,6 +208,7 @@ class ContentController extends Controller
                 'chapter_id'      => $chapter->id,
                 'topic_name'      => $request->topic_name,
                 'topic_content'   => $request->topic_content,
+                'order'           => $request->input('order', 0),
             ]);
 
             return $this->responseService->success($topic, 'Topic created successfully');
@@ -225,8 +229,9 @@ class ContentController extends Controller
         try {
             $user = Auth::user();
 
-            $query = Chapter::with('topics')
-                ->where('organization_id', $user->organization_id);
+            $query = Chapter::with(['topics' => function ($q) {
+                $q->orderBy('order')->orderBy('id');
+            }])->where('organization_id', $user->organization_id);
 
             if ($user->role === 'user') {
                 // Students only ever see chapters for their own class + section.
@@ -299,11 +304,23 @@ class ContentController extends Controller
             $chapter = Chapter::where('organization_id', Auth::user()->organization_id)
                 ->findOrFail($chapterId);
 
-            $chapter->update(['name' => $request->name, 'description' => $request->description]);
+            // Only touch fields that were actually sent so the lean name+order
+            // editor doesn't wipe an existing description.
+            $payload = [];
+            if ($request->filled('name')) {
+                $payload['name'] = $request->name;
+            }
+            if ($request->has('description')) {
+                $payload['description'] = $request->description;
+            }
+            if ($request->has('order')) {
+                $payload['order'] = (int) $request->input('order', 0);
+            }
+            $chapter->update($payload);
 
             return $this->responseService->success(
                 $chapter,
-                'Chapter name updated successfully'
+                'Chapter updated successfully'
             );
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->responseService->errorResponse('Chapter not found', 404);
@@ -382,6 +399,7 @@ class ContentController extends Controller
             $topic->update([
                 'topic_name' => $request->topic_name ?? $topic->topic_name,
                 'topic_content' => $request->topic_content ?? $topic->topic_content,
+                'order' => $request->has('order') ? (int) $request->input('order', 0) : $topic->order,
                 'image_path' => $imagePath,
                 'pdf_path' => $pdfPath,
             ]);
