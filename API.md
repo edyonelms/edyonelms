@@ -288,24 +288,39 @@ curl -s -X POST "$BASE/v1/homework/student" \
   -d '{}'
 ```
 
-### Quiz
+### Quiz (MCQ)
+
+Each MCQ is one question with its options (one flagged `is_correct`) and a per-question
+`time_limit` (seconds). Questions are scoped to a class (`standard_id`+`section_id`) and a
+`chapter_id`/`topic_id`, so teacher edits, student attempts and the admin panel all stay in sync.
 
 ```bash
+# Create a question (teacher) — options[].is_correct marks the right one
 curl -s -X POST "$BASE/v1/quiz/upload" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"subject_id":1,"questions":[]}'
+  -d '{"question_text":"Newtons first law is?","standard_id":1,"section_id":1,"chapter_id":1,"topic_id":1,"time_limit":60,"options":[{"option_text":"Inertia","is_correct":true},{"option_text":"Force","is_correct":false},{"option_text":"Energy","is_correct":false},{"option_text":"Mass","is_correct":false}]}'
 
+# List questions (with options) for a chapter/topic
 curl -s -X POST "$BASE/v1/quiz/get" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"subject_id":1}'
+  -d '{"standard_id":1,"section_id":1,"chapter_id":1,"topic_id":1,"per_page":200}'
 
+# Update / delete a question (teacher)
+curl -s -X POST "$BASE/v1/quiz/update/1" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"question_text":"Updated?","time_limit":45,"options":[{"option_text":"A","is_correct":true},{"option_text":"B","is_correct":false}]}'
+curl -s -X DELETE "$BASE/v1/quiz/delete/1" \
+  -H "Accept: application/json" -H "Authorization: Bearer $TOKEN"
+
+# Submit an answer (student) — persisted for the report + admin sync
 curl -s -X POST "$BASE/v1/quiz/submit-answer" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"quiz_id":1,"answers":[]}'
+  -d '{"mcq_question_id":1,"mcq_option_id":2,"time_taken":12}'
 
+# Student's answers + correctness (report)
 curl -s -X POST "$BASE/v1/quiz/get/user-answer" \
   -H "Accept: application/json" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"quiz_id":1}'
+  -d '{"mcq_question_id":1}'
 ```
 
 ### Attendance
