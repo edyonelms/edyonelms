@@ -67,6 +67,70 @@ class SendNotificationController extends Controller
         }
     }
 
+    /**
+     * Register / upsert this device's FCM token for the logged-in user.
+     * Called by the app on every login and on token refresh.
+     * Body: token (required), platform (android|ios, optional).
+     */
+    public function registerDeviceToken(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token'    => 'required|string',
+            'platform' => 'nullable|in:android,ios',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->responseService->errorResponse(
+                implode(', ', $validator->errors()->all()),
+                400
+            );
+        }
+
+        try {
+            $this->firebaseService->saveToken(
+                Auth::user(),
+                $request->input('token'),
+                $request->input('platform')
+            );
+
+            return $this->responseService->success(null, 'Device token registered');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse(
+                'Failed to register device token: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Remove this device's FCM token (called on logout).
+     * Body: token (required).
+     */
+    public function removeDeviceToken(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->responseService->errorResponse(
+                implode(', ', $validator->errors()->all()),
+                400
+            );
+        }
+
+        try {
+            $this->firebaseService->removeToken(Auth::user(), $request->input('token'));
+
+            return $this->responseService->success(null, 'Device token removed');
+        } catch (Exception $e) {
+            return $this->responseService->errorResponse(
+                'Failed to remove device token: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
     public function saveFcmToken(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

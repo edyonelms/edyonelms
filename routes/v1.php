@@ -62,8 +62,12 @@ Route::prefix('v1')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('v1')->group(function () {
 
-        //Save Fcm Token
+        //Save Fcm Token (legacy)
         Route::post('/save-fcm-token', [SendNotificationController::class, 'saveFcmToken']);
+
+        //Device token registration for push (app)
+        Route::post('/device-token', [SendNotificationController::class, 'registerDeviceToken']);
+        Route::post('/device-token/remove', [SendNotificationController::class, 'removeDeviceToken']);
 
         //Auth Api
         Route::post('/update-password', [AuthController::class, 'updatePassword']);

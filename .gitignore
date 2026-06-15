@@ -16,6 +16,8 @@
 
 # Credentials & secrets
 /public/*firebase-adminsdk*.json
+/storage/app/firebase/*.json
+*firebase-adminsdk*.json
 *.pem
 auth.json
 
