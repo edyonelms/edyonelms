@@ -63,6 +63,21 @@ class AppServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+
+        // Online fee payment throttle (5/min per authenticated user, IP fallback).
+        // Prevents accidental double-taps and abusive order creation.
+        RateLimiter::for('payments', function (Request $request) {
+            $key = $request->user()?->id
+                ? 'pay:user:' . $request->user()->id
+                : 'pay:ip:' . $request->ip();
+
+            return Limit::perMinute(5)->by($key)->response(function () {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many payment attempts. Please wait a minute and try again.',
+                ], 429);
+            });
+        });
     }
 
     /**

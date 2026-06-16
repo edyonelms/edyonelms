@@ -3506,6 +3506,291 @@
           }
         }
       ]
+    },
+    {
+      "name": "22. Fees & Payments",
+      "item": [
+        {
+          "name": "Fee Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "dashboard"
+              ]
+            },
+            "description": "**Authenticated (student).** One-shot fee screen: `summary` (academic/transport due & paid, remaining, penalties, concession, cleared_percent), `upcoming` installments from fee cycles (with overdue penalty + payable), `recent_payments`, and `counts`."
+          }
+        },
+        {
+          "name": "Academic Fees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/academic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "academic"
+              ]
+            },
+            "description": "**Authenticated (student).** Full academic fee structure for the student's class + totals (structure_total, concession, net_due, paid, remaining) + the school `penalty` policy (per_day, due_day_of_month, cycle_type, charged)."
+          }
+        },
+        {
+          "name": "Penalties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/penalties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "penalties"
+              ]
+            },
+            "description": "**Authenticated (student).** Only penalties charged to the student, each tied to the payment (receipt) it was levied on. Returns penalty_per_day, total_penalty, count, items[]."
+          }
+        },
+        {
+          "name": "Fee Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "summary"
+              ]
+            },
+            "description": "**Authenticated (student).** Overall fee summary totals."
+          }
+        },
+        {
+          "name": "Fee Structure",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/structure",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "structure"
+              ]
+            },
+            "description": "**Authenticated (student).** Fee structure items for the student's class."
+          }
+        },
+        {
+          "name": "Fee Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "payments"
+              ]
+            },
+            "description": "**Authenticated (student).** Paginated list of the student's recorded payments. Query: `fee_type` (academic|transport), `per_page`."
+          }
+        },
+        {
+          "name": "Initiate Payment (PhonePe)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1500,\n  \"fee_type\": \"academic\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "pay"
+              ]
+            },
+            "description": "**Authenticated (student). Rate-limited (5/min).** Creates a PENDING transaction and returns a PhonePe hosted-checkout `redirect_url` + `merchant_order_id`. Open the URL in a browser/WebView; the app polls status on return. `fee_type`: academic|transport."
+          }
+        },
+        {
+          "name": "Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/pay/{{merchant_order_id}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "pay",
+                "{{merchant_order_id}}",
+                "status"
+              ]
+            },
+            "description": "**Authenticated (student).** Polls the latest payment state. On COMPLETED, the matching fee_payments record is created exactly once. Returns state (PENDING|COMPLETED|FAILED), paid, receipt_number."
+          }
+        },
+        {
+          "name": "PhonePe Webhook (public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{phonepe_webhook_sha256}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"checkout.order.completed\",\n  \"payload\": {\n    \"merchantOrderId\": \"{{merchant_order_id}}\",\n    \"orderId\": \"OMxxxxxxxx\",\n    \"state\": \"COMPLETED\",\n    \"amount\": 150000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/phonepe/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "phonepe",
+                "webhook"
+              ]
+            },
+            "description": "**Public (PhonePe server-to-server).** No bearer auth. PhonePe sends an `Authorization` header = SHA256(webhook_username:webhook_password); the server verifies it before settling. Configure the URL + username/password under PhonePe Developer Settings -> Webhooks."
+          }
+        }
+      ]
     }
   ],
   "variable": [
@@ -3533,6 +3818,14 @@
       "key": "added_token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "merchant_order_id",
+      "value": ""
+    },
+    {
+      "key": "phonepe_webhook_sha256",
+      "value": ""
     }
   ]
 }

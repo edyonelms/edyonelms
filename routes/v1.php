@@ -266,9 +266,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/structure', [FeeController::class, 'structure']);
             Route::get('/payments',  [FeeController::class, 'payments']);
 
-            // Online fee payment (PhonePe)
-            Route::post('/pay',                            [PaymentController::class, 'initiate']);
-            Route::get('/pay/{merchantOrderId}/status',    [PaymentController::class, 'status']);
+            // Dynamic fee data (student dashboard, academic structure, penalties)
+            Route::get('/dashboard',  [FeeController::class, 'dashboard']);
+            Route::get('/academic',   [FeeController::class, 'academic']);
+            Route::get('/penalties',  [FeeController::class, 'penalties']);
+
+            // Online fee payment (PhonePe) — initiation is rate-limited.
+            Route::post('/pay', [PaymentController::class, 'initiate'])->middleware('throttle:payments');
+            Route::get('/pay/{merchantOrderId}/status', [PaymentController::class, 'status']);
         });
 
         // Transport Api
