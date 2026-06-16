@@ -1,6 +1,12 @@
 <?php
 
+use App\Http\Controllers\PhonePeController;
 use Illuminate\Support\Facades\Route;
+
+// PhonePe browser redirect target (registered early so the website's
+// {organization} wildcard doesn't swallow it).
+Route::get('/payment/return/{merchantOrderId}', [PhonePeController::class, 'paymentReturn'])
+    ->name('phonepe.return');
 
 //Edyone Website (must be before admin — avoids {organization} wildcard swallowing /web/* routes)
 require __DIR__.'/website.php';

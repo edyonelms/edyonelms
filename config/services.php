@@ -48,6 +48,20 @@ return [
         'database_url' => env('FIREBASE_DATABASE_URL'),
     ],
 
+    'phonepe' => [
+        // PhonePe Standard Checkout (OAuth-based) credentials.
+        // Get these from PhonePe Business → Developer Settings → API Keys.
+        'client_id'      => env('PHONEPE_CLIENT_ID'),
+        'client_secret'  => env('PHONEPE_CLIENT_SECRET'),
+        'client_version' => env('PHONEPE_CLIENT_VERSION', '1'),
+        // 'sandbox' (Test Mode) or 'production'.
+        'env'            => env('PHONEPE_ENV', 'sandbox'),
+        // Webhook auth — set the SAME username/password in
+        // Developer Settings → Webhooks on the PhonePe dashboard.
+        'webhook_username' => env('PHONEPE_WEBHOOK_USERNAME'),
+        'webhook_password' => env('PHONEPE_WEBHOOK_PASSWORD'),
+    ],
+
     'zeptomail' => [
         'api_url' => env('ZEPTOMAIL_API_URL', 'https://api.zeptomail.in/v1.1'),
         'api_token' => env('ZEPTOMAIL_API_TOKEN'),

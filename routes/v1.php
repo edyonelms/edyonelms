@@ -16,6 +16,8 @@ use App\Http\Controllers\v1\IdCardController;
 use App\Http\Controllers\v1\InstructorController;
 use App\Http\Controllers\v1\LibraryController;
 use App\Http\Controllers\v1\McqController;
+use App\Http\Controllers\v1\PaymentController;
+use App\Http\Controllers\PhonePeController;
 use App\Http\Controllers\v1\ReportCardController;
 use App\Http\Controllers\v1\Student\ExamCopyController as StudentExamCopyController;
 use App\Http\Controllers\v1\Student\MarksController as StudentMarksController;
@@ -263,6 +265,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/summary',   [FeeController::class, 'summary']);
             Route::get('/structure', [FeeController::class, 'structure']);
             Route::get('/payments',  [FeeController::class, 'payments']);
+
+            // Online fee payment (PhonePe)
+            Route::post('/pay',                            [PaymentController::class, 'initiate']);
+            Route::get('/pay/{merchantOrderId}/status',    [PaymentController::class, 'status']);
         });
 
         // Transport Api
@@ -314,5 +320,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/notifications/send-to-me', [SendNotificationController::class, 'sendToMe']);
 });
+
+// PhonePe server-to-server webhook (public; verified by Authorization header).
+Route::post('/v1/phonepe/webhook', [PhonePeController::class, 'handleWebhook']);
 
 Route::get('/admit-card/verify/{admitCardNumber}', [IdCardController::class, 'verifyAdmitCard'])->name('admit-card.verify');
