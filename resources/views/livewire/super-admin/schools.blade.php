@@ -482,7 +482,7 @@
 
                 {{-- ════════ ONLINE PAYMENT TAB ════════ --}}
                 @if ($detailTab === 'payment')
-                    @php($pg = $this->pgSetting)
+                    @php $pg = $this->pgSetting; @endphp
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-4">
                             <div>
