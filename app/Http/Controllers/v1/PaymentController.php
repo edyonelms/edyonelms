@@ -26,8 +26,11 @@ class PaymentController extends ApiController
         if ($err = $this->requireRole('user')) return $err;
 
         if ($err = $this->validateWith($request, [
-            'amount'   => ['required', 'numeric', 'min:1'],
-            'fee_type' => ['nullable', 'in:academic,transport'],
+            'amount'            => ['required', 'numeric', 'min:1'],
+            'fee_type'          => ['nullable', 'in:academic,transport'],
+            'months'            => ['nullable', 'array'],
+            'months.*'          => ['string'],
+            'transportation_id' => ['nullable', 'integer'],
         ])) return $err;
 
         $student = StudentDetail::where('user_id', $user->id)
@@ -42,6 +45,16 @@ class PaymentController extends ApiController
         $amountRupees = round((float) $request->input('amount'), 2);
         $amountPaise  = (int) round($amountRupees * 100);
 
+        // For transport, capture which months the student intends to clear and
+        // the route, so the recorded payment carries that context.
+        $meta = [];
+        if ($feeType === 'transport') {
+            $meta['months'] = array_values(array_filter((array) $request->input('months', [])));
+            $transportId = $request->input('transportation_id')
+                ?: optional($student->transportations()->where('is_active', true)->first())->id;
+            $meta['transportation_id'] = $transportId;
+        }
+
         $merchantOrderId = 'TXN' . $user->organization_id . '-' . now()->timestamp . '-' . Str::upper(Str::random(6));
 
         $txn = PaymentTransaction::create([
@@ -53,6 +66,7 @@ class PaymentController extends ApiController
             'merchant_order_id' => $merchantOrderId,
             'amount'            => $amountRupees,
             'state'             => PaymentTransaction::STATE_PENDING,
+            'meta'              => $meta,
         ]);
 
         // Route to the organization's own PhonePe merchant when configured,

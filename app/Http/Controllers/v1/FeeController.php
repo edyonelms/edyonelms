@@ -7,9 +7,11 @@ use App\Models\Admin\Fee\FeeCycle;
 use App\Models\Admin\Fee\FeePayment;
 use App\Models\Admin\Fee\FeeSettings;
 use App\Models\Admin\Fee\FeeStructure;
+use App\Models\Admin\TransportFeePayment;
 use App\Models\Student\StudentDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FeeController extends ApiController
 {
@@ -158,30 +160,25 @@ class FeeController extends ApiController
     /**
      * GET /api/v1/fees/dashboard
      *
-     * One-shot screen for the student: overall summary, upcoming installments
-     * (from fee cycles, with overdue penalties), and recent payments.
+     * One-shot home screen: full academic + transport blocks (structure,
+     * upcoming, paid) and a merged "all payments" feed.
      */
     public function dashboard(Request $request)
     {
         [$student, $err] = $this->resolveStudent();
         if ($err) return $err;
 
-        $orgId   = $student->organization_id;
-        $totals  = $this->feeTotals($student);
-        $settings = FeeSettings::getForOrg($orgId);
+        $totals    = $this->feeTotals($student);
+        $academic  = $this->academicData($student);
+        $transport = $this->transportData($student);
 
-        $upcoming = $this->upcomingInstallments($student, $totals, $settings);
+        // Merge academic + transport payments into one chronological feed.
+        $overall = collect($academic['paid'])
+            ->merge($transport['paid'] ?? [])
+            ->sortByDesc('payment_date')
+            ->values();
 
-        $recent = FeePayment::with(['standard:id,name', 'section:id,name'])
-            ->forStudent($student->id)
-            ->forOrg($orgId)
-            ->latest('payment_date')
-            ->limit(5)
-            ->get()
-            ->map(fn($p) => $this->formatPayment($p));
-
-        $overdueCount = collect($upcoming)->where('status', 'overdue')->count();
-        $clearedPct   = $totals['total_due'] > 0
+        $clearedPct = $totals['total_due'] > 0
             ? (int) round($totals['total_paid'] / $totals['total_due'] * 100)
             : 0;
 
@@ -189,69 +186,42 @@ class FeeController extends ApiController
             'summary' => array_merge($totals, [
                 'cleared_percent' => min(100, $clearedPct),
             ]),
-            'upcoming'        => $upcoming,
-            'recent_payments' => $recent,
-            'counts'          => [
-                'overdue_installments' => $overdueCount,
-                'total_installments'   => count($upcoming),
-            ],
+            'academic'         => $academic,
+            'transport'        => $transport,
+            'overall_payments' => $overall,
         ], 'Fee dashboard fetched successfully.');
     }
 
     /**
      * GET /api/v1/fees/academic
      *
-     * Full academic fee structure for the student's class, plus the school's
-     * penalty policy and how much penalty has been charged on academic fees.
+     * Academic structure, upcoming installments, paid slips and penalty policy.
      */
     public function academic(Request $request)
     {
         [$student, $err] = $this->resolveStudent();
         if ($err) return $err;
 
-        $orgId   = $student->organization_id;
-        $settings = FeeSettings::getForOrg($orgId);
+        return $this->success($this->academicData($student), 'Academic fees fetched successfully.');
+    }
 
-        $structures = FeeStructure::where('organization_id', $orgId)
-            ->where('standard_id', $student->standard_id)
-            ->where(fn($q) => $q->whereNull('section_id')->orWhere('section_id', $student->section_id))
-            ->where('is_active', true)
-            ->where('fee_type', 'academic')
-            ->orderBy('fee_name')
-            ->get()
-            ->map(fn($s) => [
-                'id'            => $s->id,
-                'fee_name'      => $s->fee_name,
-                'amount'        => (float) $s->amount,
-                'academic_year' => $s->academic_year,
-            ]);
+    /**
+     * GET /api/v1/fees/transport
+     *
+     * Transport route, 12-month schedule, upcoming months and paid slips.
+     */
+    public function transport(Request $request)
+    {
+        [$student, $err] = $this->resolveStudent();
+        if ($err) return $err;
 
-        $structureTotal = (float) $structures->sum('amount');
-        $concession     = $this->concessionFor($student, 'academic', $structureTotal);
+        $data = $this->transportData($student);
 
-        $paid = (float) FeePayment::forStudent($student->id)->forOrg($orgId)
-            ->where('fee_type', 'academic')->sum('amount');
+        if (!$data) {
+            return $this->error('No transport route assigned to you.', 404);
+        }
 
-        $penaltyCharged = (float) FeePayment::forStudent($student->id)->forOrg($orgId)
-            ->where('fee_type', 'academic')->sum('penalty_amount');
-
-        return $this->success([
-            'academic_year' => $structures->first()['academic_year'] ?? null,
-            'structures'    => $structures,
-            'totals'        => [
-                'structure_total' => $structureTotal,
-                'concession'      => $concession,
-                'net_due'         => max(0, round($structureTotal - $concession, 2)),
-                'paid'            => $paid,
-                'remaining'       => max(0, round($structureTotal - $concession - $paid, 2)),
-            ],
-            'penalty' => [
-                'per_day'          => (float) $settings->penalty_per_day,
-                'due_day_of_month' => (int) $settings->due_day_of_month,
-                'cycle_type'       => $settings->cycle_type,
-                'charged'          => $penaltyCharged,
-            ],
-        ], 'Academic fees fetched successfully.');
+        return $this->success($data, 'Transport fees fetched successfully.');
     }
 
     /**
@@ -295,6 +265,204 @@ class FeeController extends ApiController
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /** Academic-year month order (April first, March last). */
+    private const MONTHS_ORDER = [
+        'apr' => 'April',    'may' => 'May',      'jun' => 'June',
+        'jul' => 'July',     'aug' => 'August',   'sep' => 'September',
+        'oct' => 'October',  'nov' => 'November', 'dec' => 'December',
+        'jan' => 'January',  'feb' => 'February', 'mar' => 'March',
+    ];
+
+    /**
+     * Full academic block: structure, totals, upcoming installments, paid slips,
+     * penalty policy. Shared by the academic tab and the dashboard.
+     */
+    private function academicData(StudentDetail $student): array
+    {
+        $orgId    = $student->organization_id;
+        $settings = FeeSettings::getForOrg($orgId);
+
+        $structures = FeeStructure::where('organization_id', $orgId)
+            ->where('standard_id', $student->standard_id)
+            ->where(fn($q) => $q->whereNull('section_id')->orWhere('section_id', $student->section_id))
+            ->where('is_active', true)
+            ->where('fee_type', 'academic')
+            ->orderBy('fee_name')
+            ->get()
+            ->map(fn($s) => [
+                'id'            => $s->id,
+                'fee_name'      => $s->fee_name,
+                'amount'        => (float) $s->amount,
+                'academic_year' => $s->academic_year,
+            ]);
+
+        $structureTotal = (float) $structures->sum('amount');
+        $concession     = $this->concessionFor($student, 'academic', $structureTotal);
+
+        $paidPayments = FeePayment::with(['standard:id,name', 'section:id,name'])
+            ->forStudent($student->id)->forOrg($orgId)
+            ->where('fee_type', 'academic')
+            ->latest('payment_date')
+            ->get();
+
+        $paid           = (float) $paidPayments->sum('amount');
+        $penaltyCharged = (float) $paidPayments->sum('penalty_amount');
+
+        $totals = [
+            'structure_total' => $structureTotal,
+            'concession'      => $concession,
+            'net_due'         => max(0, round($structureTotal - $concession, 2)),
+            'paid'            => $paid,
+            'remaining'       => max(0, round($structureTotal - $concession - $paid, 2)),
+        ];
+
+        // Reuse the cycle-based installment schedule for the academic "upcoming".
+        $feeTotals = $this->feeTotals($student);
+        $upcoming  = $this->upcomingInstallments($student, $feeTotals, $settings);
+
+        return [
+            'academic_year' => $structures->first()['academic_year'] ?? null,
+            'structures'    => $structures->values(),
+            'totals'        => $totals,
+            'upcoming'      => $upcoming,
+            'paid'          => $paidPayments->map(fn($p) => $this->formatPayment($p))->values(),
+            'penalty'       => [
+                'per_day'          => (float) $settings->penalty_per_day,
+                'due_day_of_month' => (int) $settings->due_day_of_month,
+                'cycle_type'       => $settings->cycle_type,
+                'charged'          => $penaltyCharged,
+            ],
+        ];
+    }
+
+    /**
+     * Full transport block: route, 12-month schedule, totals, upcoming months,
+     * paid slips. Excess payments carry forward via oldest-first allocation.
+     * Returns null when the student has no active transport.
+     */
+    private function transportData(StudentDetail $student): ?array
+    {
+        $transport = $student->transportations()
+            ->where('is_active', true)
+            ->with(['driver.user:id,name'])
+            ->first();
+
+        if (!$transport) {
+            return null;
+        }
+
+        $orgId      = $student->organization_id;
+        $monthlyFee = (float) $transport->monthly_fee;
+
+        $pivot = DB::table('transportation_students')
+            ->where('organization_id', $orgId)
+            ->where('transportation_id', $transport->id)
+            ->where('student_detail_id', $student->id)
+            ->first();
+
+        $months        = $this->normalizeBillableMonths($pivot->billable_months ?? null);
+        $billableCount = count(array_filter($months));
+        $annualFee     = round($monthlyFee * $billableCount, 2);
+
+        $payments = TransportFeePayment::where('organization_id', $orgId)
+            ->where('student_detail_id', $student->id)
+            ->where('transportation_id', $transport->id)
+            ->latest('payment_date')
+            ->get();
+
+        $totalPaid = (float) $payments->sum('amount');
+
+        // Allocate paid amount across billable months, oldest first → carry-forward.
+        $remaining = $totalPaid;
+        $schedule  = [];
+        $upcoming  = [];
+
+        foreach (self::MONTHS_ORDER as $key => $label) {
+            if (empty($months[$key])) {
+                $schedule[] = ['key' => $key, 'month' => $label, 'amount' => 0.0, 'paid' => 0.0, 'outstanding' => 0.0, 'status' => 'no_transport'];
+                continue;
+            }
+
+            if ($remaining >= $monthlyFee) {
+                $status = 'paid';
+                $paidPortion = $monthlyFee;
+                $remaining -= $monthlyFee;
+            } elseif ($remaining > 0) {
+                $status = 'partial';
+                $paidPortion = $remaining;
+                $remaining = 0;
+            } else {
+                $status = 'pending';
+                $paidPortion = 0;
+            }
+
+            $outstanding = round($monthlyFee - $paidPortion, 2);
+            $row = [
+                'key'         => $key,
+                'month'       => $label,
+                'amount'      => $monthlyFee,
+                'paid'        => round($paidPortion, 2),
+                'outstanding' => $outstanding,
+                'status'      => $status,
+            ];
+            $schedule[] = $row;
+
+            if ($outstanding > 0) {
+                $upcoming[] = $row;
+            }
+        }
+
+        return [
+            'route' => [
+                'id'              => $transport->id,
+                'route_name'      => $transport->route_name,
+                'pickup_location' => $transport->pickup_location,
+                'drop_location'   => $transport->drop_location,
+                'pickup_time'     => $transport->pickup_time,
+                'monthly_fee'     => $monthlyFee,
+                'driver'          => $transport->driver?->user?->name,
+                'vehicle_no'      => $transport->driver?->vehicle_no,
+            ],
+            'totals' => [
+                'monthly_fee'  => $monthlyFee,
+                'annual_fee'   => $annualFee,
+                'months_count' => $billableCount,
+                'paid'         => round($totalPaid, 2),
+                'remaining'    => round(max(0, $annualFee - $totalPaid), 2),
+            ],
+            'schedule' => $schedule,
+            'upcoming' => $upcoming,
+            'paid'     => $payments->map(fn($p) => [
+                'id'             => $p->id,
+                'receipt_number' => $p->receipt_number,
+                'fee_type'       => 'transport',
+                'amount'         => (float) $p->amount,
+                'penalty_amount' => 0.0,
+                'payment_mode'   => $p->payment_mode,
+                'payment_date'   => $p->payment_date?->format('Y-m-d'),
+                'remark'         => $p->remark,
+            ])->values(),
+        ];
+    }
+
+    /**
+     * Normalize stored billable_months (null | JSON | array) into a full
+     * apr..mar flag map (June off by default).
+     */
+    private function normalizeBillableMonths($raw): array
+    {
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true) ?: [];
+        }
+        $raw = (array) $raw;
+
+        $flags = [];
+        foreach (array_keys(self::MONTHS_ORDER) as $key) {
+            $flags[$key] = array_key_exists($key, $raw) ? (bool) $raw[$key] : ($key !== 'jun');
+        }
+        return $flags;
+    }
 
     /**
      * Resolve the authenticated student (role=user) or an error response.

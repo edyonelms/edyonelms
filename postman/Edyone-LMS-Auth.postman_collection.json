@@ -3535,7 +3535,7 @@
                 "dashboard"
               ]
             },
-            "description": "**Authenticated (student).** One-shot fee screen: `summary` (academic/transport due & paid, remaining, penalties, concession, cleared_percent), `upcoming` installments from fee cycles (with overdue penalty + payable), `recent_payments`, and `counts`."
+            "description": "**Authenticated (student).** One-shot home: `summary`, full `academic` block (structures, totals, upcoming installments, paid slips, penalty), full `transport` block (route, 12-month schedule, totals, upcoming, paid slips) or null, and `overall_payments` (merged academic+transport feed)."
           }
         },
         {
@@ -3563,7 +3563,7 @@
                 "academic"
               ]
             },
-            "description": "**Authenticated (student).** Full academic fee structure for the student's class + totals (structure_total, concession, net_due, paid, remaining) + the school `penalty` policy (per_day, due_day_of_month, cycle_type, charged)."
+            "description": "**Authenticated (student).** Academic: structures, totals, `upcoming` installments (cycle-based, overdue penalty + payable), `paid` slips, and penalty policy."
           }
         },
         {
@@ -3788,6 +3788,75 @@
               ]
             },
             "description": "**Public (PhonePe server-to-server).** No bearer auth. PhonePe sends an `Authorization` header = SHA256(webhook_username:webhook_password); the server verifies it before settling. Configure the URL + username/password under PhonePe Developer Settings -> Webhooks."
+          }
+        },
+        {
+          "name": "Transport Fees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/transport",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "transport"
+              ]
+            },
+            "description": "**Authenticated (student).** Transport route + 12-month schedule (paid/partial/pending with carry-forward), totals (monthly/annual/paid/remaining), upcoming months, and paid slips. 404 if no transport assigned."
+          }
+        },
+        {
+          "name": "Initiate Payment (Transport)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1600,\n  \"fee_type\": \"transport\",\n  \"months\": [\"jun\", \"jul\"],\n  \"transportation_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/fees/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fees",
+                "pay"
+              ]
+            },
+            "description": "**Authenticated (student). Rate-limited.** Transport online payment. `months` = which months the student intends to clear (apr..mar keys); `transportation_id` optional (resolves active route). Amount is editable — excess carries forward to next months via oldest-first allocation. On success a transport_fee_payments row is created (visible in admin + 12-month schedule)."
           }
         }
       ]

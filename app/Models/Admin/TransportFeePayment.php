@@ -29,6 +29,29 @@ class TransportFeePayment extends Model
         'payment_date' => 'date',
     ];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (empty($model->receipt_number)) {
+                $model->receipt_number = self::generateReceiptNumber((int) $model->organization_id);
+            }
+        });
+    }
+
+    public static function generateReceiptNumber(int $orgId): string
+    {
+        $year = date('Y');
+        $count = self::where('organization_id', $orgId)
+            ->whereYear('created_at', $year)
+            ->lockForUpdate()
+            ->count();
+
+        $sequence = str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+        return "TRCT-{$orgId}-{$year}-{$sequence}";
+    }
+
     public function organization()
     {
         return $this->belongsTo(Organization::class);
