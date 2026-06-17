@@ -17,6 +17,7 @@ use App\Http\Controllers\v1\InstructorController;
 use App\Http\Controllers\v1\LibraryController;
 use App\Http\Controllers\v1\AccountsController;
 use App\Http\Controllers\v1\AdminController;
+use App\Http\Controllers\v1\AdminProfileController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -285,6 +286,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('admin')->group(function () {
             Route::get('/me',        [AdminController::class, 'me']);
             Route::get('/dashboard', [AdminController::class, 'dashboard']);
+
+            // Profile / School Info (mirrors web Components\Profile)
+            Route::get('/profile',                   [AdminProfileController::class, 'show']);
+            Route::post('/profile/logo',             [AdminProfileController::class, 'updateLogo']);
+            Route::put('/profile/school-info',       [AdminProfileController::class, 'updateSchoolInfo']);
+            Route::post('/profile/members',          [AdminProfileController::class, 'addMember']);
+            Route::post('/profile/members/{id}',     [AdminProfileController::class, 'updateMember'])->whereNumber('id');
+            Route::delete('/profile/members/{id}',   [AdminProfileController::class, 'deleteMember'])->whereNumber('id');
+            Route::post('/profile/documents',        [AdminProfileController::class, 'addDocument']);
+            Route::delete('/profile/documents/{id}', [AdminProfileController::class, 'deleteDocument'])->whereNumber('id');
+            Route::post('/profile/password',         [AdminProfileController::class, 'updatePassword']);
         });
 
         // Accounts Api (role: accounts) — Phase 0
