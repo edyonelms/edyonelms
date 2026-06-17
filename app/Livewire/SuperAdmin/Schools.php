@@ -4,6 +4,7 @@ namespace App\Livewire\SuperAdmin;
 
 use App\Models\Admin\Fee\FeePayment;
 use App\Models\Organization;
+use App\Models\OrganizationPaymentSetting;
 use App\Models\Student\StudentDetail;
 use App\Models\Teacher\TeacherDetail;
 use App\Models\User;
@@ -71,6 +72,17 @@ class Schools extends Component
     public string $bankIfsc       = '';
     public string $bankBranch     = '';
     public string $bankHolderName = '';
+
+    // ── Online payment (per-org PhonePe) ──
+    public bool   $showPaymentModal = false;
+    public bool   $editPaymentMode  = false;
+    public string $pgClientId        = '';
+    public string $pgClientSecret    = '';   // blank = keep existing
+    public string $pgClientVersion   = '1';
+    public string $pgEnv             = 'sandbox';
+    public string $pgWebhookUsername = '';
+    public string $pgWebhookPassword = '';   // blank = keep existing
+    public bool   $pgIsActive        = false;
 
     protected $listeners = [
         'editSchool'   => 'onEdit',
@@ -252,6 +264,83 @@ class Schools extends Component
 
         $this->closeBankModal();
         $this->notification()->success('Bank details saved successfully!');
+    }
+
+    // ─── Online Payment (per-org PhonePe) ─────────────────────────────────────
+
+    /** Current org's payment setting (for the detail tab display). */
+    public function getPgSettingProperty(): ?OrganizationPaymentSetting
+    {
+        return $this->detailSchool
+            ? OrganizationPaymentSetting::forOrg($this->detailSchool->id)
+            : null;
+    }
+
+    public function openPaymentModal(): void
+    {
+        $setting = $this->pgSetting;
+
+        $this->pgClientId        = $setting->client_id ?? '';
+        $this->pgClientVersion   = $setting->client_version ?? '1';
+        $this->pgEnv             = $setting->env ?? 'sandbox';
+        $this->pgWebhookUsername = $setting->webhook_username ?? '';
+        $this->pgIsActive        = (bool) ($setting->is_active ?? false);
+        // Secrets are never sent back to the browser — blank means "keep".
+        $this->pgClientSecret     = '';
+        $this->pgWebhookPassword  = '';
+        $this->editPaymentMode    = (bool) $setting;
+        $this->showPaymentModal   = true;
+    }
+
+    public function closePaymentModal(): void
+    {
+        $this->showPaymentModal = false;
+        $this->reset([
+            'pgClientId', 'pgClientSecret', 'pgClientVersion', 'pgEnv',
+            'pgWebhookUsername', 'pgWebhookPassword', 'pgIsActive', 'editPaymentMode',
+        ]);
+        $this->pgClientVersion = '1';
+        $this->pgEnv = 'sandbox';
+    }
+
+    public function savePaymentSettings(): void
+    {
+        $this->validate([
+            'pgClientId'        => 'required|string|max:255',
+            'pgClientVersion'   => 'required|string|max:20',
+            'pgEnv'             => 'required|in:sandbox,production',
+            'pgWebhookUsername' => 'nullable|string|max:255',
+        ]);
+
+        $setting = OrganizationPaymentSetting::firstOrNew([
+            'organization_id' => $this->detailSchool->id,
+        ]);
+
+        // Activation needs both Client ID and a secret (new or already stored).
+        $hasSecret = filled($this->pgClientSecret) || ($setting->exists && filled($setting->client_secret));
+        if ($this->pgIsActive && (!filled($this->pgClientId) || !$hasSecret)) {
+            $this->addError('pgIsActive', 'Client ID and Client Secret are required to activate online collection.');
+            return;
+        }
+
+        $setting->gateway          = 'phonepe';
+        $setting->client_id        = $this->pgClientId;
+        $setting->client_version   = $this->pgClientVersion;
+        $setting->env              = $this->pgEnv;
+        $setting->webhook_username = $this->pgWebhookUsername ?: null;
+        $setting->is_active        = $this->pgIsActive;
+
+        if (filled($this->pgClientSecret)) {
+            $setting->client_secret = $this->pgClientSecret;
+        }
+        if (filled($this->pgWebhookPassword)) {
+            $setting->webhook_password = $this->pgWebhookPassword;
+        }
+
+        $setting->save();
+
+        $this->closePaymentModal();
+        $this->notification()->success('Online payment settings saved!');
     }
 
     // ─── School CRUD ──────────────────────────────────────────────────────────

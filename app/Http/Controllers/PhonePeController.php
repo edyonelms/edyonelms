@@ -24,13 +24,6 @@ class PhonePeController extends Controller
      */
     public function handleWebhook(Request $request)
     {
-        $service = PhonePeService::fromConfig();
-
-        if (!$service->verifyWebhook($request->header('Authorization'))) {
-            Log::warning('PhonePe webhook: invalid signature', ['ip' => $request->ip()]);
-            return response()->json(['success' => false], 401);
-        }
-
         $payload         = $request->input('payload', []);
         $merchantOrderId = $payload['merchantOrderId'] ?? null;
         $state           = $payload['state'] ?? 'PENDING';
@@ -39,7 +32,15 @@ class PhonePeController extends Controller
             return response()->json(['success' => false, 'message' => 'Missing merchantOrderId'], 422);
         }
 
-        $txn = PaymentTransaction::where('merchant_order_id', $merchantOrderId)->first();
+        // Find the order first so we can verify against the merchant that
+        // actually created it (the org's own account, or the platform).
+        $txn     = PaymentTransaction::where('merchant_order_id', $merchantOrderId)->first();
+        $service = $this->serviceForTxn($txn);
+
+        if (!$service->verifyWebhook($request->header('Authorization'))) {
+            Log::warning('PhonePe webhook: invalid signature', ['ip' => $request->ip(), 'order' => $merchantOrderId]);
+            return response()->json(['success' => false], 401);
+        }
 
         if ($txn) {
             $txn->settle($this->normalizeState($state), $payload);
@@ -65,7 +66,7 @@ class PhonePeController extends Controller
 
         if ($txn) {
             try {
-                $result = PhonePeService::fromConfig()->orderStatus($merchantOrderId);
+                $result = $this->serviceForTxn($txn)->orderStatus($merchantOrderId);
                 $txn    = $txn->settle($this->normalizeState($result['state']), $result['raw']);
                 $state  = $txn->state;
             } catch (\Throwable $e) {
@@ -86,6 +87,19 @@ class PhonePeController extends Controller
             'label'    => $label,
             'deepLink' => $deepLink,
         ]));
+    }
+
+    /**
+     * Resolve the PhonePe merchant that created a transaction. Uses the org's
+     * own account when the order was created under it, else the platform.
+     */
+    private function serviceForTxn(?PaymentTransaction $txn): PhonePeService
+    {
+        $scope = $txn?->meta['merchant_scope'] ?? null;
+
+        return ($txn && $scope === 'organization')
+            ? PhonePeService::fromOrganization($txn->organization_id)
+            : PhonePeService::fromConfig();
     }
 
     private function normalizeState(string $state): string

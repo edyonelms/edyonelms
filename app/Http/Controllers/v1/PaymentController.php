@@ -55,8 +55,12 @@ class PaymentController extends ApiController
             'state'             => PaymentTransaction::STATE_PENDING,
         ]);
 
+        // Route to the organization's own PhonePe merchant when configured,
+        // so the money settles into that school's account (else platform).
+        $phonepe = PhonePeService::fromOrganization($user->organization_id);
+
         try {
-            $result = PhonePeService::fromConfig()->createPayment(
+            $result = $phonepe->createPayment(
                 merchantOrderId: $merchantOrderId,
                 amountPaise: $amountPaise,
                 redirectUrl: route('phonepe.return', ['merchantOrderId' => $merchantOrderId]),
@@ -68,6 +72,7 @@ class PaymentController extends ApiController
         }
 
         $txn->phonepe_order_id = $result['orderId'] ?: null;
+        $txn->meta = array_merge($txn->meta ?? [], ['merchant_scope' => $phonepe->scope]);
         $txn->save();
 
         return $this->success([
@@ -105,7 +110,7 @@ class PaymentController extends ApiController
         }
 
         try {
-            $result = PhonePeService::fromConfig()->orderStatus($merchantOrderId);
+            $result = PhonePeService::fromOrganization($txn->organization_id)->orderStatus($merchantOrderId);
             $txn = $txn->settle($result['state'], $result['raw']);
         } catch (\Throwable $e) {
             // Leave it PENDING; the app can poll again.

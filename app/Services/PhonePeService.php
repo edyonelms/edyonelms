@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\OrganizationPaymentSetting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +29,10 @@ class PhonePeService
         private readonly ?string $clientSecret = null,
         private readonly ?string $clientVersion = null,
         private readonly string $env = 'sandbox',
+        private readonly ?string $webhookUsername = null,
+        private readonly ?string $webhookPassword = null,
+        /** 'organization' when using the org's own merchant, else 'platform'. */
+        public readonly string $scope = 'platform',
     ) {
     }
 
@@ -40,7 +45,36 @@ class PhonePeService
             clientSecret: $cfg['client_secret'] ?? null,
             clientVersion: (string) ($cfg['client_version'] ?? '1'),
             env: $cfg['env'] ?? 'sandbox',
+            webhookUsername: $cfg['webhook_username'] ?? null,
+            webhookPassword: $cfg['webhook_password'] ?? null,
+            scope: 'platform',
         );
+    }
+
+    /**
+     * Build a service for a specific organization.
+     *
+     * Uses the org's OWN PhonePe merchant credentials when configured & active —
+     * so a student's fee settles into that school's account. Falls back to the
+     * platform (Edyone) credentials when the org hasn't onboarded yet.
+     */
+    public static function fromOrganization(int $orgId): self
+    {
+        $setting = OrganizationPaymentSetting::forOrg($orgId);
+
+        if ($setting && $setting->collectionReady()) {
+            return new self(
+                clientId: $setting->client_id,
+                clientSecret: $setting->client_secret,
+                clientVersion: (string) ($setting->client_version ?: '1'),
+                env: $setting->env ?: 'sandbox',
+                webhookUsername: $setting->webhook_username,
+                webhookPassword: $setting->webhook_password,
+                scope: 'organization',
+            );
+        }
+
+        return self::fromConfig();
     }
 
     public function isProduction(): bool
@@ -69,7 +103,11 @@ class PhonePeService
      */
     public function accessToken(): string
     {
-        if ($cached = Cache::get(self::TOKEN_CACHE_KEY)) {
+        // Token is per-merchant — key on the client id so per-org and platform
+        // tokens never collide.
+        $cacheKey = self::TOKEN_CACHE_KEY . ':' . md5((string) $this->clientId);
+
+        if ($cached = Cache::get($cacheKey)) {
             return $cached;
         }
 
@@ -103,7 +141,7 @@ class PhonePeService
             ? max(60, $expiresAt - now()->timestamp - 60)
             : 3000;
 
-        Cache::put(self::TOKEN_CACHE_KEY, $token, $ttl);
+        Cache::put($cacheKey, $token, $ttl);
 
         return $token;
     }
@@ -190,9 +228,8 @@ class PhonePeService
      */
     public function verifyWebhook(?string $authHeader): bool
     {
-        $cfg      = config('services.phonepe');
-        $username = $cfg['webhook_username'] ?? null;
-        $password = $cfg['webhook_password'] ?? null;
+        $username = $this->webhookUsername;
+        $password = $this->webhookPassword;
 
         if (!$username || !$password || !$authHeader) {
             return false;

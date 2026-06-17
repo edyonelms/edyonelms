@@ -306,6 +306,7 @@
         'overview' => 'Overview',
         'modules' => 'Modules',
         'bank' => 'Bank Details',
+        'payment' => 'Online Payment',
         'fees' => 'Fees Analytics',
         'students' => 'Students',
         'teachers' => 'Teachers',
@@ -474,6 +475,68 @@
                         @else
                             <div class="py-12 text-center text-sm text-gray-400">
                                 No bank details added yet.
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- ════════ ONLINE PAYMENT TAB ════════ --}}
+                @if ($detailTab === 'payment')
+                    @php($pg = $this->pgSetting)
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    PhonePe Merchant (fee collection)
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Set this school's own PhonePe credentials so student fees settle into
+                                    <span class="font-medium">its own account</span>. Leave blank to use the platform account.
+                                </p>
+                            </div>
+                            <button wire:click="openPaymentModal"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
+                                    {{ $pg
+                                        ? 'text-amber-600 border border-amber-200 hover:bg-amber-50'
+                                        : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="{{ $pg ? 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' : 'M12 4v16m8-8H4' }}" />
+                                </svg>
+                                {{ $pg ? 'Edit' : 'Connect PhonePe' }}
+                            </button>
+                        </div>
+
+                        @if ($pg)
+                            <div class="mb-4">
+                                @if ($pg->collectionReady())
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active — collecting to own account
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Not active (using platform account)
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="divide-y divide-gray-100">
+                                @foreach ([
+        'Client ID' => $pg->client_id,
+        'Client Secret' => $pg->client_secret ? '•••••••• (saved)' : '—',
+        'Client Version' => $pg->client_version,
+        'Environment' => strtoupper($pg->env ?? 'sandbox'),
+        'Webhook Username' => $pg->webhook_username ?: '—',
+        'Webhook Password' => $pg->webhook_password ? '•••••••• (saved)' : '—',
+    ] as $label => $value)
+                                    <div class="flex items-center gap-6 py-3">
+                                        <span class="text-xs text-gray-400 w-36 flex-shrink-0">{{ $label }}</span>
+                                        <span class="text-sm font-semibold text-gray-800 font-mono break-all">{{ $value ?? '—' }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="py-12 text-center text-sm text-gray-400">
+                                Not connected. Student fees currently settle into the platform account.
                             </div>
                         @endif
                     </div>
@@ -1281,6 +1344,105 @@
                                disabled:opacity-60 disabled:cursor-not-allowed">
                         <span wire:loading.remove wire:target="saveBankDetails">{{ $editBankMode ? 'Update' : 'Save Details' }}</span>
                         <span wire:loading wire:target="saveBankDetails" class="flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════ ONLINE PAYMENT MODAL ══════════ --}}
+    @if ($showPaymentModal)
+        <div class="fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/[0.04] backdrop-blur-[1.5px]" wire:click="closePaymentModal"></div>
+            <div class="absolute top-0 right-0 bottom-0 z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col overflow-hidden">
+
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ $editPaymentMode ? 'Edit Online Payment' : 'Connect PhonePe' }}</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Student fees will settle into this school's own PhonePe account</p>
+                    </div>
+                    <button wire:click="closePaymentModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Body --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client ID <span class="text-red-500">*</span></label>
+                        <input wire:model.defer="pgClientId" type="text" placeholder="e.g. M23K3CIXXM08M_2601292258"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                        @error('pgClientId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Client Secret @if (!$editPaymentMode)<span class="text-red-500">*</span>@endif
+                        </label>
+                        <input wire:model.defer="pgClientSecret" type="password" autocomplete="new-password"
+                            placeholder="{{ $editPaymentMode ? 'Leave blank to keep existing' : 'Enter client secret' }}"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Client Version <span class="text-red-500">*</span></label>
+                            <input wire:model.defer="pgClientVersion" type="text" placeholder="1"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                            @error('pgClientVersion') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Environment <span class="text-red-500">*</span></label>
+                            <select wire:model.defer="pgEnv"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="sandbox">Sandbox (Test)</option>
+                                <option value="production">Production (Live)</option>
+                            </select>
+                            @error('pgEnv') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Username</label>
+                            <input wire:model.defer="pgWebhookUsername" type="text" placeholder="alphanumeric only"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                            @error('pgWebhookUsername') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Password</label>
+                            <input wire:model.defer="pgWebhookPassword" type="password" autocomplete="new-password"
+                                placeholder="{{ $editPaymentMode ? 'Leave blank to keep' : 'letters + numbers' }}"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono" />
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 pt-1 cursor-pointer">
+                        <input wire:model.defer="pgIsActive" type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        <span class="text-sm font-medium text-gray-700">Activate online collection for this school</span>
+                    </label>
+                    @error('pgIsActive') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    <p class="text-xs text-gray-400">Set the same Webhook URL <span class="font-mono">/api/v1/phonepe/webhook</span> + username/password in this school's PhonePe dashboard.</p>
+                </div>
+
+                {{-- Footer --}}
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    <button wire:click="closePaymentModal" type="button"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button wire:click="savePaymentSettings" type="button"
+                        wire:loading.attr="disabled" wire:target="savePaymentSettings"
+                        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                               bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm
+                               disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="savePaymentSettings">{{ $editPaymentMode ? 'Update' : 'Save' }}</span>
+                        <span wire:loading wire:target="savePaymentSettings" class="flex items-center gap-2">
                             <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
