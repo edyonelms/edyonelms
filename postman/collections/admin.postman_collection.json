@@ -1,0 +1,225 @@
+{
+	"info": {
+		"_postman_id": "c4f1a8d0-1234-4abc-9def-admin0000001",
+		"name": "LMS — Admin (v1)",
+		"description": "School-admin (role: admin / sub-admin) APIs for the mobile app.\n\nCovers: Profile / School Info, Announcements, Calendar events and Enquiries. All routes require a Bearer token (Sanctum) belonging to an admin/sub-admin user. Set `baseUrl` and `authToken` environment variables.\n\nNote: Calendar listing/detail reuse the shared Calendar collection (`POST /calendar/events`, `GET /calendar/events/{id}`) — only event create/update/delete are admin-only and live here.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [ { "key": "token", "value": "{{authToken}}", "type": "string" } ]
+	},
+	"item": [
+		{
+			"name": "Profile / School Info",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile" ] },
+						"description": "Returns user, organization (logo), school_info (about/website/email/mobile/address/USM/custom_sections), management_team[] and documents[]."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Logo",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "photo", "type": "file", "src": [] } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/logo", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "logo" ] },
+						"description": "Multipart. `photo` = image (max 2MB). Updates the organization logo."
+					},
+					"response": []
+				},
+				{
+					"name": "Update School Info",
+					"request": {
+						"method": "PUT",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"about_school\": \"A premier school\",\n  \"website_info\": \"Visit us online\",\n  \"website_url\": \"https://example.com\",\n  \"school_email\": \"info@example.com\",\n  \"school_mobile\": \"9876543210\",\n  \"school_address\": \"123 Street, City\",\n  \"usm_vision\": \"...\",\n  \"usm_mission\": \"...\",\n  \"usm_values\": \"...\",\n  \"usm_goals\": \"...\",\n  \"custom_sections\": [ { \"title\": \"History\", \"description\": \"Founded in 1990\" } ]\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/school-info", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "school-info" ] },
+						"description": "Replaces the school info text fields, USM and custom_sections. Returns the full refreshed profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Member",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "name", "value": "John Doe", "type": "text" }, { "key": "designation", "value": "Principal", "type": "text" }, { "key": "photo", "type": "file", "src": [] } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/members", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "members" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Update Member",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "name", "value": "John Doe", "type": "text" }, { "key": "designation", "value": "Vice Principal", "type": "text" }, { "key": "photo", "type": "file", "src": [] } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/members/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "members", "1" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Member",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/members/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "members", "1" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Add Document",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "title", "value": "Affiliation Certificate", "type": "text" }, { "key": "file", "type": "file", "src": [] } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/documents", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "documents" ] },
+						"description": "Multipart. `file` = PDF (max 2MB)."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/documents/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "documents", "1" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Update Password",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"current_password\": \"OldPass@123\",\n  \"new_password\": \"NewPass@123\",\n  \"new_password_confirmation\": \"NewPass@123\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/profile/password", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "profile", "password" ] },
+						"description": "new_password must differ from current and be min 8 chars with upper+lower case, a number and a symbol."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Announcements",
+			"item": [
+				{
+					"name": "List Announcements",
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/announcements?type=&days=", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "announcements" ], "query": [ { "key": "type", "value": "", "description": "all | user | teacher (optional)" }, { "key": "days", "value": "", "description": "only last N days (optional)" } ] },
+						"description": "Returns { announcements: [...], stats: { total, this_month } } for the admin's organization."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Announcement",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "announcement_name", "value": "Holiday Notice", "type": "text" }, { "key": "announcement_content", "value": "School closed on Friday.", "type": "text" }, { "key": "type", "value": "all", "type": "text", "description": "all | user | teacher" }, { "key": "file", "type": "file", "src": [], "description": "optional image or PDF (max 5MB)" } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/announcements", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "announcements" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Update Announcement",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "formdata", "formdata": [ { "key": "announcement_name", "value": "Holiday Notice (updated)", "type": "text" }, { "key": "announcement_content", "value": "Updated content.", "type": "text" }, { "key": "type", "value": "all", "type": "text" }, { "key": "file", "type": "file", "src": [], "description": "optional replacement image/PDF" } ] },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/announcements/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "announcements", "1" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Announcement",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/announcements/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "announcements", "1" ] }
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Calendar (events)",
+			"item": [
+				{
+					"name": "Create Event",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"title\": \"Annual Day\",\n  \"description\": \"Cultural program\",\n  \"date\": \"2026-07-15\",\n  \"is_all_day\": true,\n  \"event_type\": \"event\",\n  \"color\": \"#10b981\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/calendar/events", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "calendar", "events" ] },
+						"description": "event_type: class | exam | meeting | event | holiday. When is_all_day=false, send start_time/end_time as HH:mm."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Event",
+					"request": {
+						"method": "PUT",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"title\": \"Annual Day (rescheduled)\",\n  \"date\": \"2026-07-20\",\n  \"is_all_day\": false,\n  \"start_time\": \"10:00\",\n  \"end_time\": \"13:00\",\n  \"event_type\": \"event\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/calendar/events/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "calendar", "events", "1" ] }
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Event",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/calendar/events/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "calendar", "events", "1" ] }
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Enquiries",
+			"item": [
+				{
+					"name": "List Enquiries",
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/enquiries?tab=teacher&search=&days=&status=", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "enquiries" ], "query": [ { "key": "tab", "value": "teacher", "description": "teacher | student" }, { "key": "search", "value": "", "description": "optional text search" }, { "key": "days", "value": "", "description": "optional last N days" }, { "key": "status", "value": "", "description": "pending | replied (optional)" } ] },
+						"description": "Returns { tab, enquiries: [...], stats: { total, pending, replied }, tab_totals: { teacher, student } }."
+					},
+					"response": []
+				},
+				{
+					"name": "Reply Enquiry",
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"admin_text\": \"Thanks for reaching out. ...\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/enquiries/teacher/1/reply", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "enquiries", "teacher", "1", "reply" ] },
+						"description": "tab in the path is teacher | student. Marks the enquiry as replied."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Enquiry",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/api/v1/admin/enquiries/teacher/1", "host": [ "{{baseUrl}}" ], "path": [ "api", "v1", "admin", "enquiries", "teacher", "1" ] }
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

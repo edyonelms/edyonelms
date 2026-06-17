@@ -18,6 +18,7 @@ use App\Http\Controllers\v1\LibraryController;
 use App\Http\Controllers\v1\AccountsController;
 use App\Http\Controllers\v1\AdminController;
 use App\Http\Controllers\v1\AdminProfileController;
+use App\Http\Controllers\v1\AdminContentController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -297,6 +298,22 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/profile/documents',        [AdminProfileController::class, 'addDocument']);
             Route::delete('/profile/documents/{id}', [AdminProfileController::class, 'deleteDocument'])->whereNumber('id');
             Route::post('/profile/password',         [AdminProfileController::class, 'updatePassword']);
+
+            // Announcements (manage)
+            Route::get('/announcements',         [AdminContentController::class, 'announcements']);
+            Route::post('/announcements',        [AdminContentController::class, 'storeAnnouncement']);
+            Route::post('/announcements/{id}',   [AdminContentController::class, 'updateAnnouncement'])->whereNumber('id');
+            Route::delete('/announcements/{id}', [AdminContentController::class, 'deleteAnnouncement'])->whereNumber('id');
+
+            // Calendar events (manage — listing/show reuse /calendar/* which is org-scoped)
+            Route::post('/calendar/events',        [AdminContentController::class, 'storeEvent']);
+            Route::put('/calendar/events/{id}',    [AdminContentController::class, 'updateEvent'])->whereNumber('id');
+            Route::delete('/calendar/events/{id}', [AdminContentController::class, 'deleteEvent'])->whereNumber('id');
+
+            // Enquiries (teacher / student)
+            Route::get('/enquiries',                    [AdminContentController::class, 'enquiries']);
+            Route::post('/enquiries/{tab}/{id}/reply',  [AdminContentController::class, 'replyEnquiry'])->whereNumber('id');
+            Route::delete('/enquiries/{tab}/{id}',      [AdminContentController::class, 'deleteEnquiry'])->whereNumber('id');
         });
 
         // Accounts Api (role: accounts) — Phase 0
