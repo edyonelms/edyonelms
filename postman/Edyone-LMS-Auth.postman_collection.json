@@ -3958,6 +3958,104 @@
           }
         }
       ]
+    },
+    {
+      "name": "24. Accounts (Phase 0)",
+      "item": [
+        {
+          "name": "Accounts Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"accounts@school.com\",\n  \"password\": \"secret\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                "login"
+              ]
+            },
+            "description": "**Public. Rate-limited (login).** Accounts-staff login (role accounts), email + password. Returns `{ user (with organization), token, token_type }`. Set the returned token into `{{token}}`."
+          }
+        },
+        {
+          "name": "Accounts Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                "me"
+              ]
+            },
+            "description": "**Authenticated (accounts).** Current accounts profile + organization."
+          }
+        },
+        {
+          "name": "Accounts Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                "dashboard"
+              ]
+            },
+            "description": "**Authenticated (accounts).** Finance numbers: fees collected (today/month/total), transport collected, pending dues, students."
+          }
+        }
+      ]
     }
   ],
   "variable": [

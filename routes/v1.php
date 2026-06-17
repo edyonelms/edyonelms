@@ -15,6 +15,7 @@ use App\Http\Controllers\v1\HomeWorkController;
 use App\Http\Controllers\v1\IdCardController;
 use App\Http\Controllers\v1\InstructorController;
 use App\Http\Controllers\v1\LibraryController;
+use App\Http\Controllers\v1\AccountsController;
 use App\Http\Controllers\v1\AdminController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
@@ -46,6 +47,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/user/login', [UserController::class, 'studentLogin']);
         Route::post('/teacher/login', [TeacherController::class, 'teacherLogin']);
         Route::post('/admin/login', [AdminController::class, 'login']);
+        Route::post('/accounts/login', [AccountsController::class, 'login']);
         // Switch Account — `add` is public (login + return snapshot)
         Route::post('/switch-account/add', [SwitchAccountController::class, 'add']);
     });
@@ -283,6 +285,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('admin')->group(function () {
             Route::get('/me',        [AdminController::class, 'me']);
             Route::get('/dashboard', [AdminController::class, 'dashboard']);
+        });
+
+        // Accounts Api (role: accounts) — Phase 0
+        Route::prefix('accounts')->group(function () {
+            Route::get('/me',        [AccountsController::class, 'me']);
+            Route::get('/dashboard', [AccountsController::class, 'dashboard']);
         });
 
         // Transport Api
