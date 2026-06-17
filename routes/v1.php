@@ -15,6 +15,7 @@ use App\Http\Controllers\v1\HomeWorkController;
 use App\Http\Controllers\v1\IdCardController;
 use App\Http\Controllers\v1\InstructorController;
 use App\Http\Controllers\v1\LibraryController;
+use App\Http\Controllers\v1\AdminController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -44,6 +45,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('throttle:login')->group(function () {
         Route::post('/user/login', [UserController::class, 'studentLogin']);
         Route::post('/teacher/login', [TeacherController::class, 'teacherLogin']);
+        Route::post('/admin/login', [AdminController::class, 'login']);
         // Switch Account — `add` is public (login + return snapshot)
         Route::post('/switch-account/add', [SwitchAccountController::class, 'add']);
     });
@@ -275,6 +277,12 @@ Route::middleware('auth:sanctum')->group(function () {
             // Online fee payment (PhonePe) — initiation is rate-limited.
             Route::post('/pay', [PaymentController::class, 'initiate'])->middleware('throttle:payments');
             Route::get('/pay/{merchantOrderId}/status', [PaymentController::class, 'status']);
+        });
+
+        // School Admin Api (role: admin / sub-admin) — Phase 0
+        Route::prefix('admin')->group(function () {
+            Route::get('/me',        [AdminController::class, 'me']);
+            Route::get('/dashboard', [AdminController::class, 'dashboard']);
         });
 
         // Transport Api
