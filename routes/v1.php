@@ -24,6 +24,10 @@ use App\Http\Controllers\v1\AdminStudentController;
 use App\Http\Controllers\v1\AdminTeacherController;
 use App\Http\Controllers\v1\AdminIdCardController;
 use App\Http\Controllers\v1\AdminExamController;
+use App\Http\Controllers\v1\AdminSyllabusController;
+use App\Http\Controllers\v1\AdminChapterContentController;
+use App\Http\Controllers\v1\AdminQuizController;
+use App\Http\Controllers\v1\AdminBookController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -369,6 +373,43 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/exams/{id}',             [AdminExamController::class, 'update'])->whereNumber('id');
             Route::post('/exams/{id}/toggle-publish', [AdminExamController::class, 'togglePublish'])->whereNumber('id');
             Route::delete('/exams/{id}',          [AdminExamController::class, 'destroy'])->whereNumber('id');
+
+            // ─── Phase 1b: Curriculum modules (web parity) ───────────────────
+
+            // Shared curriculum lookups (used by Syllabus / Content / Quiz)
+            Route::get('/curriculum/subjects', [AdminSyllabusController::class, 'subjects']);
+            Route::get('/curriculum/chapters', [AdminSyllabusController::class, 'chapters']);
+
+            // Syllabus — chapters & topics
+            Route::get('/syllabus/stats',          [AdminSyllabusController::class, 'stats']);
+            Route::get('/syllabus',                [AdminSyllabusController::class, 'index']);
+            Route::post('/syllabus/chapters',      [AdminSyllabusController::class, 'storeChapters']);
+            Route::put('/syllabus/chapters/{id}',  [AdminSyllabusController::class, 'updateChapter'])->whereNumber('id');
+            Route::delete('/syllabus/chapters/{id}', [AdminSyllabusController::class, 'deleteChapter'])->whereNumber('id');
+            Route::post('/syllabus/topics',        [AdminSyllabusController::class, 'storeTopics']);
+            Route::put('/syllabus/topics/{id}',    [AdminSyllabusController::class, 'updateTopic'])->whereNumber('id');
+            Route::delete('/syllabus/topics/{id}', [AdminSyllabusController::class, 'deleteTopic'])->whereNumber('id');
+
+            // Content — chapter/topic learning content
+            Route::get('/content/stats',          [AdminChapterContentController::class, 'stats']);
+            Route::get('/content',                [AdminChapterContentController::class, 'index']);
+            Route::post('/content',               [AdminChapterContentController::class, 'save']);
+            Route::delete('/content/{type}/{id}', [AdminChapterContentController::class, 'clear'])->whereNumber('id');
+
+            // Quiz — MCQs on chapters/topics
+            Route::get('/quiz/stats',        [AdminQuizController::class, 'stats']);
+            Route::get('/quiz',              [AdminQuizController::class, 'index']);
+            Route::put('/quiz/mcqs',         [AdminQuizController::class, 'update']);
+            Route::delete('/quiz/mcqs',      [AdminQuizController::class, 'destroy']);
+            Route::get('/quiz/{type}/{id}',  [AdminQuizController::class, 'mcqs'])->whereNumber('id');
+            Route::post('/quiz/{type}/{id}', [AdminQuizController::class, 'store'])->whereNumber('id');
+
+            // Books (library)
+            Route::get('/books/options', [AdminBookController::class, 'options']);
+            Route::get('/books',         [AdminBookController::class, 'index']);
+            Route::post('/books',        [AdminBookController::class, 'store']);
+            Route::post('/books/{id}',   [AdminBookController::class, 'update'])->whereNumber('id');
+            Route::delete('/books/{id}', [AdminBookController::class, 'destroy'])->whereNumber('id');
         });
 
         // Accounts Api (role: accounts) — Phase 0

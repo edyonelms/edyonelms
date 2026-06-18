@@ -2668,6 +2668,1040 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Syllabus (Chapters / Topics)",
+      "item": [
+        {
+          "name": "Syllabus Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Curriculum Subjects",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/curriculum/subjects?standard_id=&section_id=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "curriculum",
+                "subjects"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "description": "optional"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Curriculum Chapters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/curriculum/chapters?subject_id=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "curriculum",
+                "chapters"
+              ],
+              "query": [
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "description": "subject id"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "View Syllabus",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus?standard_id=&section_id=&subject_id=&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "description": "optional"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "description": "subject id"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Chapters",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/chapters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "chapters"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"standard_id\": 1,\n  \"section_id\": null,\n  \"subject_id\": 1,\n  \"chapters\": [\n    {\n      \"name\": \"Chapter 1\",\n      \"description\": \"\",\n      \"order\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Chapter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/chapters/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "chapters",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chapter 1\",\n  \"description\": \"\",\n  \"order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Chapter",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/chapters/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "chapters",
+                "1"
+              ]
+            },
+            "description": "Also deletes its topics."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Topics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/topics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "topics"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chapter_id\": 1,\n  \"topics\": [\n    {\n      \"name\": \"Topic 1\"\n    },\n    {\n      \"name\": \"Topic 2\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Topic",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/topics/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "topics",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Topic 1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Topic",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/syllabus/topics/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "syllabus",
+                "topics",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Content (Chapter/Topic)",
+      "item": [
+        {
+          "name": "Content Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/content/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "content",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/content?standard_id=&section_id=&subject_id=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "content"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "description": "optional"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "description": "subject id"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Save Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/content",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "content"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "target_type",
+                  "value": "chapter",
+                  "type": "text",
+                  "description": "chapter | topic"
+                },
+                {
+                  "key": "target_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "content_type",
+                  "value": "text",
+                  "type": "text",
+                  "description": "text | url | image | pdf | all"
+                },
+                {
+                  "key": "text",
+                  "value": "Some learning content",
+                  "type": "text"
+                },
+                {
+                  "key": "url",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "when content_type=image|all"
+                },
+                {
+                  "key": "pdf",
+                  "type": "file",
+                  "src": [],
+                  "description": "when content_type=pdf|all"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Content",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/content/chapter/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "content",
+                "chapter",
+                "1"
+              ]
+            },
+            "description": "Replace chapter with topic to clear a topic."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quiz (MCQs)",
+      "item": [
+        {
+          "name": "Quiz Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Quiz Tree",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz?standard_id=&section_id=&subject_id=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "description": "optional"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "description": "subject id"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List MCQs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz/chapter/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz",
+                "chapter",
+                "1"
+              ]
+            },
+            "description": "Replace chapter with topic for topic MCQs."
+          },
+          "response": []
+        },
+        {
+          "name": "Create MCQs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz/chapter/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz",
+                "chapter",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mcqs\": [\n    {\n      \"question_text\": \"What is 2+2?\",\n      \"time_limit\": 30,\n      \"options\": [\n        {\n          \"text\": \"3\",\n          \"is_correct\": false\n        },\n        {\n          \"text\": \"4\",\n          \"is_correct\": true\n        },\n        {\n          \"text\": \"5\",\n          \"is_correct\": false\n        },\n        {\n          \"text\": \"6\",\n          \"is_correct\": false\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update MCQs",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz/mcqs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz",
+                "mcqs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mcqs\": [\n    {\n      \"id\": 1,\n      \"question_text\": \"What is 2+2?\",\n      \"time_limit\": 30,\n      \"options\": [\n        {\n          \"id\": 1,\n          \"text\": \"3\",\n          \"is_correct\": false\n        },\n        {\n          \"id\": 2,\n          \"text\": \"4\",\n          \"is_correct\": true\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete MCQs",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/quiz/mcqs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "quiz",
+                "mcqs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    1,\n    2\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Books (Library)",
+      "item": [
+        {
+          "name": "Book Options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/books/options?standard_id=&section_id=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "books",
+                "options"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "description": "optional"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/books?standard_id=&section_id=&subject_id=&search=&status=&page=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "standard_id",
+                  "value": "",
+                  "description": "class id (required for list)"
+                },
+                {
+                  "key": "section_id",
+                  "value": ""
+                },
+                {
+                  "key": "subject_id",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "0 | 1"
+                },
+                {
+                  "key": "page",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Mathematics Textbook",
+                  "type": "text"
+                },
+                {
+                  "key": "standard_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "optional"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "is_active",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "book_logo",
+                  "type": "file",
+                  "src": [],
+                  "description": "optional cover"
+                },
+                {
+                  "key": "pdf_file",
+                  "type": "file",
+                  "src": [],
+                  "description": "optional PDF"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Mathematics Textbook",
+                  "type": "text"
+                },
+                {
+                  "key": "standard_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "optional"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "is_active",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "book_logo",
+                  "type": "file",
+                  "src": [],
+                  "description": "optional cover"
+                },
+                {
+                  "key": "pdf_file",
+                  "type": "file",
+                  "src": [],
+                  "description": "optional PDF"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/admin/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "admin",
+                "books",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
