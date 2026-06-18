@@ -19,6 +19,11 @@ use App\Http\Controllers\v1\AccountsController;
 use App\Http\Controllers\v1\AdminController;
 use App\Http\Controllers\v1\AdminProfileController;
 use App\Http\Controllers\v1\AdminContentController;
+use App\Http\Controllers\v1\AdminStandardController;
+use App\Http\Controllers\v1\AdminStudentController;
+use App\Http\Controllers\v1\AdminTeacherController;
+use App\Http\Controllers\v1\AdminIdCardController;
+use App\Http\Controllers\v1\AdminExamController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -314,6 +319,56 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/enquiries',                    [AdminContentController::class, 'enquiries']);
             Route::post('/enquiries/{tab}/{id}/reply',  [AdminContentController::class, 'replyEnquiry'])->whereNumber('id');
             Route::delete('/enquiries/{tab}/{id}',      [AdminContentController::class, 'deleteEnquiry'])->whereNumber('id');
+
+            // ─── Phase 1: Academic management (web parity) ───────────────────
+
+            // Standards — Classes / Sections / Subjects
+            Route::get('/academic-lookups', [AdminStandardController::class, 'lookups']);
+            Route::get('/standards',         [AdminStandardController::class, 'standards']);
+            Route::post('/standards',        [AdminStandardController::class, 'storeStandard']);
+            Route::put('/standards/{id}',    [AdminStandardController::class, 'updateStandard'])->whereNumber('id');
+            Route::delete('/standards/{id}', [AdminStandardController::class, 'deleteStandard'])->whereNumber('id');
+            Route::get('/sections',          [AdminStandardController::class, 'sections']);
+            Route::post('/sections',         [AdminStandardController::class, 'storeSection']);
+            Route::put('/sections/{id}',     [AdminStandardController::class, 'updateSection'])->whereNumber('id');
+            Route::delete('/sections/{id}',  [AdminStandardController::class, 'deleteSection'])->whereNumber('id');
+            Route::get('/subjects',          [AdminStandardController::class, 'subjects']);
+            Route::post('/subjects',         [AdminStandardController::class, 'storeSubject']);
+            Route::post('/subjects/{id}',    [AdminStandardController::class, 'updateSubject'])->whereNumber('id');
+            Route::delete('/subjects/{id}',  [AdminStandardController::class, 'deleteSubject'])->whereNumber('id');
+
+            // Students
+            Route::get('/students/lookups',  [AdminStudentController::class, 'lookups']);
+            Route::get('/students',          [AdminStudentController::class, 'index']);
+            Route::get('/students/{id}',     [AdminStudentController::class, 'show'])->whereNumber('id');
+            Route::post('/students',         [AdminStudentController::class, 'store']);
+            Route::post('/students/{id}',    [AdminStudentController::class, 'update'])->whereNumber('id');
+            Route::delete('/students/{id}',  [AdminStudentController::class, 'destroy'])->whereNumber('id');
+
+            // Teachers
+            Route::get('/teachers',          [AdminTeacherController::class, 'index']);
+            Route::get('/teachers/{id}',     [AdminTeacherController::class, 'show'])->whereNumber('id');
+            Route::post('/teachers',         [AdminTeacherController::class, 'store']);
+            Route::post('/teachers/{id}',    [AdminTeacherController::class, 'update'])->whereNumber('id');
+            Route::delete('/teachers/{id}',  [AdminTeacherController::class, 'destroy'])->whereNumber('id');
+
+            // ID Cards (student / teacher / employee)
+            Route::get('/id-cards',                 [AdminIdCardController::class, 'index']);
+            Route::post('/id-cards/generate',       [AdminIdCardController::class, 'generate']);
+            Route::get('/id-cards/{type}/{id}',     [AdminIdCardController::class, 'show'])->whereNumber('id');
+            Route::put('/id-cards/{type}/{id}',     [AdminIdCardController::class, 'update'])->whereNumber('id');
+            Route::delete('/id-cards/{type}/{id}',  [AdminIdCardController::class, 'destroy'])->whereNumber('id');
+
+            // Exams + Syllabus
+            Route::get('/exams/syllabus/options', [AdminExamController::class, 'syllabusOptions']);
+            Route::get('/exams/syllabus',         [AdminExamController::class, 'syllabus']);
+            Route::post('/exams/syllabus',        [AdminExamController::class, 'storeSyllabus']);
+            Route::delete('/exams/syllabus',      [AdminExamController::class, 'deleteSyllabus']);
+            Route::get('/exams',                  [AdminExamController::class, 'index']);
+            Route::post('/exams',                 [AdminExamController::class, 'store']);
+            Route::put('/exams/{id}',             [AdminExamController::class, 'update'])->whereNumber('id');
+            Route::post('/exams/{id}/toggle-publish', [AdminExamController::class, 'togglePublish'])->whereNumber('id');
+            Route::delete('/exams/{id}',          [AdminExamController::class, 'destroy'])->whereNumber('id');
         });
 
         // Accounts Api (role: accounts) — Phase 0
