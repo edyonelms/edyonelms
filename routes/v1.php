@@ -28,6 +28,8 @@ use App\Http\Controllers\v1\AdminSyllabusController;
 use App\Http\Controllers\v1\AdminChapterContentController;
 use App\Http\Controllers\v1\AdminQuizController;
 use App\Http\Controllers\v1\AdminBookController;
+use App\Http\Controllers\v1\AdminTimetableController;
+use App\Http\Controllers\v1\AdminArrangementController;
 use App\Http\Controllers\v1\McqController;
 use App\Http\Controllers\v1\PaymentController;
 use App\Http\Controllers\PhonePeController;
@@ -410,6 +412,21 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/books',        [AdminBookController::class, 'store']);
             Route::post('/books/{id}',   [AdminBookController::class, 'update'])->whereNumber('id');
             Route::delete('/books/{id}', [AdminBookController::class, 'destroy'])->whereNumber('id');
+
+            // ─── Phase 1c: Timetable + Arrangement (web parity) ──────────────
+
+            // Timetable
+            Route::get('/timetable/lookups', [AdminTimetableController::class, 'lookups']);
+            Route::get('/timetable/stats',   [AdminTimetableController::class, 'stats']);
+            Route::get('/timetable/builder', [AdminTimetableController::class, 'builder']);
+            Route::get('/timetable',         [AdminTimetableController::class, 'index']);
+            Route::post('/timetable',        [AdminTimetableController::class, 'save']);
+            Route::delete('/timetable',      [AdminTimetableController::class, 'destroy']);
+
+            // Arrangement (substitutions)
+            Route::get('/arrangement',         [AdminArrangementController::class, 'index']);
+            Route::post('/arrangement',        [AdminArrangementController::class, 'assign']);
+            Route::delete('/arrangement/{id}', [AdminArrangementController::class, 'destroy'])->whereNumber('id');
         });
 
         // Accounts Api (role: accounts) — Phase 0
