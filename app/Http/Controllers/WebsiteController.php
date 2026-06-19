@@ -12,6 +12,7 @@ use App\Models\TermOfUse;
 use App\Models\WebsiteContact;
 use App\Models\WebsiteDemo;
 use App\Models\WebsitePage;
+use App\Models\SchoolWebsiteEnquiry;
 use Illuminate\Http\Request;
 
 class WebsiteController extends Controller
@@ -163,6 +164,26 @@ class WebsiteController extends Controller
                 $page->metadata ?? [],
                 ['last_updated' => $page->last_updated?->format('d M Y')]
             ) : null,
+        ]);
+    }
+
+    /** POST /api/website/school-contact — enquiry from a school's own website */
+    public function schoolContact(Request $request)
+    {
+        $validated = $request->validate([
+            'organization_id' => 'required|integer|exists:organizations,id',
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:30',
+            'subject'         => 'nullable|string|max:255',
+            'message'         => 'nullable|string|max:5000',
+        ]);
+
+        SchoolWebsiteEnquiry::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thank you! Your message has been sent. We will get back to you soon.',
         ]);
     }
 

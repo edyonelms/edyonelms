@@ -22,8 +22,9 @@ Route::prefix('website')->group(function () {
 
     // Anti-spam: 5 submissions per minute per IP on form endpoints.
     Route::middleware('throttle:5,1')->group(function () {
-        Route::post('/contact', [WebsiteController::class, 'contact']);
-        Route::post('/demo',    [WebsiteController::class, 'demo']);
+        Route::post('/contact',        [WebsiteController::class, 'contact']);
+        Route::post('/demo',           [WebsiteController::class, 'demo']);
+        Route::post('/school-contact', [WebsiteController::class, 'schoolContact']);
     });
 });
 

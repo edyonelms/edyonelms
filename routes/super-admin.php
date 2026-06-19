@@ -30,6 +30,7 @@ use App\Livewire\SuperAdmin\Careers;
 use App\Livewire\SuperAdmin\BecomeExecutive;
 use App\Livewire\SuperAdmin\Blogs;
 use App\Livewire\SuperAdmin\Faqs;
+use App\Livewire\SuperAdmin\SchoolWebsiteBuilder;
 use App\Livewire\Components\Profile;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,11 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('website/become-executive', BecomeExecutive::class)->name('super-admin.website.become-executive');
     Route::get('website/blogs', Blogs::class)->name('super-admin.website.blogs');
     Route::get('website/faqs', Faqs::class)->name('super-admin.website.faqs');
+
+    // School website builder (per organization)
+    Route::get('school-website/{organization}', SchoolWebsiteBuilder::class)
+        ->whereNumber('organization')
+        ->name('super-admin.school-website.edit');
 
     // Register the logged-in super-admin's browser for web push (FCM).
     Route::post('fcm/token', function (\Illuminate\Http\Request $request) {

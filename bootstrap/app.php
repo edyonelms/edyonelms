@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureIsAdmin;
 use App\Http\Middleware\EnsureIsSuperAdmin;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ServeSchoolSite;
 use App\Http\Middleware\VerifyOrganizationAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Global: serve a school's site on its custom domain. Appended so it runs
+        // after TrustProxies — getHost() then reflects the real forwarded host.
+        $middleware->append(ServeSchoolSite::class);
+
         $middleware->alias([
             'admin' => EnsureIsAdmin::class,
             'super-admin' => EnsureIsSuperAdmin::class,
