@@ -80,15 +80,9 @@ return [
     'blogs' => [
         'tag'      => 'The EDYONE Blog',
         'title'    => 'Ideas & insights for modern schools',
-        'subtitle' => 'Practical tips, product updates and stories to help your school run better, teach smarter and engage families more effectively.',
-        'posts'    => [
-            ['category' => 'School Tech', 'icon' => '📲', 'title' => '5 ways an LMS saves your school hours every week', 'excerpt' => 'From attendance to fee collection, see where digital tools cut the busywork so your staff can focus on students.', 'read_time' => '5 min read', 'link' => '#'],
-            ['category' => 'Fees', 'icon' => '💳', 'title' => 'Moving to online fee collection: a simple guide', 'excerpt' => 'How to roll out online payments smoothly, get parents on board, and reconcile fees without the headache.', 'read_time' => '6 min read', 'link' => '#'],
-            ['category' => 'Communication', 'icon' => '👨‍👩‍👧', 'title' => 'Keeping parents engaged with instant notifications', 'excerpt' => 'Why timely updates build trust, and how to use announcements and push alerts the right way.', 'read_time' => '4 min read', 'link' => '#'],
-            ['category' => 'Academics', 'icon' => '📊', 'title' => 'Faster exams and report cards, start to finish', 'excerpt' => 'A step-by-step look at setting up exams and generating professional report cards in minutes.', 'read_time' => '5 min read', 'link' => '#'],
-            ['category' => 'Admissions', 'icon' => '🎓', 'title' => 'Turning enquiries into enrolments online', 'excerpt' => 'Build an admission funnel that captures every lead and helps your team follow up at the right time.', 'read_time' => '7 min read', 'link' => '#'],
-            ['category' => 'Getting Started', 'icon' => '🚀', 'title' => 'Going digital: a checklist for school leaders', 'excerpt' => 'Everything to prepare before you switch to an LMS, so your rollout is smooth from day one.', 'read_time' => '6 min read', 'link' => '#'],
-        ],
+        'subtitle' => 'Welcome to the EDYONE blog — your go-to space for practical ideas, product updates and real stories from schools across India. We share hands-on tips on attendance, fees, exams, admissions and parent communication, alongside guides that help school leaders, teachers and administrators run their institutions better, teach smarter and engage families more effectively. Whether you are just going digital or looking to get more out of your LMS, there is something here to help your school grow.',
+        // Blog posts are now stored in the `blogs` table and managed from the
+        // super-admin Blogs screen (no longer config-driven).
     ],
 
     'faqs' => [

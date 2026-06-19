@@ -54,8 +54,15 @@ Route::prefix('web')->group(function () {
     Route::get('/become-an-executive', fn() => $dynamicPage('become-executive', 'components.website.become-executive'))
         ->name('website.become-executive');
 
-    Route::get('/blogs', fn() => $dynamicPage('blogs', 'components.website.blogs'))
-        ->name('website.blogs');
+    Route::get('/blogs', fn() => view('components.website.blogs', [
+        'page'  => \App\Models\WebsitePage::where('slug', 'blogs')->first(),
+        'blogs' => \App\Models\Blog::latest()->get(),
+    ]))->name('website.blogs');
+
+    Route::get('/blogs/{blog}', fn(\App\Models\Blog $blog) => view('components.website.blog-detail', [
+        'blog'   => $blog,
+        'recent' => \App\Models\Blog::where('id', '!=', $blog->id)->latest()->take(3)->get(),
+    ]))->name('website.blog.detail');
 
     Route::get('/faqs', fn() => $dynamicPage('faqs', 'components.website.faqs'))
         ->name('website.faqs');
