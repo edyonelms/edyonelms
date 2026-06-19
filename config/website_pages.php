@@ -31,7 +31,7 @@ return [
     'services' => [
         'tag'      => 'Our Services',
         'title'    => 'Everything your school needs, end to end',
-        'subtitle' => 'From setup to daily operations, EDYONE LMS gives schools a complete digital toolkit — backed by hands-on services so you are never left figuring it out alone.',
+        'subtitle' => 'EDYONE is much more than software. From our all-in-one LMS to ID cards, school loans, labs, smart classrooms, GPS-enabled transport, uniforms, books and online education — we partner with schools across India to digitise, equip and grow every part of their campus. Explore the complete range of services below.',
         'items'    => [
             ['icon' => '🎓', 'title' => 'School Management System', 'desc' => 'Manage students, staff, classes, sections and the full academic year from one powerful dashboard.'],
             ['icon' => '📝', 'title' => 'Admissions & Enquiries', 'desc' => 'Capture enquiries, run online admissions and convert leads into enrolled students with less paperwork.'],
