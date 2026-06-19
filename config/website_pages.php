@@ -17,7 +17,7 @@ return [
     'why-us' => [
         'tag'      => 'Why EDYONE LMS',
         'title'    => 'The smarter choice for modern schools',
-        'subtitle' => 'Hundreds of schools across India trust EDYONE LMS to run admissions, academics, fees and communication on a single affordable platform. Here is what sets us apart.',
+        'subtitle' => 'Hundreds of schools across India trust EDYONE to run admissions, academics, fees and communication on a single affordable platform — and to equip their campuses with everything from ID cards to smart classrooms and transport. Here is exactly why schools choose us over anyone else.',
         'items'    => [
             ['icon' => '💰', 'title' => 'Genuinely Affordable', 'desc' => 'Transparent, per-student pricing with no hidden setup fees. Built so that schools of every size can afford world-class technology.'],
             ['icon' => '🧩', 'title' => 'All-in-One Platform', 'desc' => 'Admissions, attendance, timetable, exams, fees, study material and parent communication — everything in one login instead of five different tools.'],
