@@ -59,22 +59,8 @@ return [
 
     'become-executive' => [
         'tag'      => 'Partner Program',
-        'title'    => 'Become an EDYONE Executive',
-        'subtitle' => 'Partner with EDYONE LMS to bring affordable school technology to institutions in your region — and earn attractive recurring income while you do it.',
-        'benefits' => [
-            ['icon' => '💸', 'title' => 'Attractive Commissions', 'desc' => 'Earn competitive payouts on every school you onboard, plus recurring income as they renew.'],
-            ['icon' => '📈', 'title' => 'Ready Demand', 'desc' => 'Schools everywhere need affordable digital tools — you bring a product that practically sells itself.'],
-            ['icon' => '🎒', 'title' => 'Full Sales Kit', 'desc' => 'Get brochures, demos, pricing and live training so you can pitch with confidence from day one.'],
-            ['icon' => '🛟', 'title' => 'Dedicated Support', 'desc' => 'Our team handles onboarding and technical support, so you can focus on building relationships.'],
-            ['icon' => '⏱️', 'title' => 'Flexible & Independent', 'desc' => 'Work your own hours, in your own region — full-time or alongside your existing work.'],
-            ['icon' => '🏅', 'title' => 'Recognition & Rewards', 'desc' => 'Top-performing executives unlock higher tiers, bonuses and exclusive incentives.'],
-        ],
-        'steps' => [
-            ['title' => 'Apply', 'desc' => 'Fill in a short form and tell us about your region and experience.'],
-            ['title' => 'Onboard', 'desc' => 'Get trained on the product, pricing and sales material.'],
-            ['title' => 'Pitch', 'desc' => 'Introduce EDYONE LMS to schools and book demos with our support.'],
-            ['title' => 'Earn', 'desc' => 'Get paid for every school you bring on board — and keep earning.'],
-        ],
+        'title'    => 'Become an EDYONE Executive & earn ₹1 Lakh+ a month',
+        'subtitle' => 'Partner with EDYONE to bring affordable school technology to institutions in your region. Work remotely, on your own schedule, with a simple joining process and fast payouts — and earn attractive recurring income for every school you bring on board.',
     ],
 
     'blogs' => [

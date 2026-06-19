@@ -26,6 +26,7 @@ Route::prefix('website')->group(function () {
         Route::post('/demo',           [WebsiteController::class, 'demo']);
         Route::post('/school-contact', [WebsiteController::class, 'schoolContact']);
         Route::post('/career-apply',   [WebsiteController::class, 'careerApply']);
+        Route::post('/executive-apply', [WebsiteController::class, 'executiveApply']);
     });
 });
 

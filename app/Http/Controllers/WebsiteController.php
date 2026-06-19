@@ -265,4 +265,40 @@ class WebsiteController extends Controller
             'message' => 'Application received! Our team will review it and reach out to you soon.',
         ]);
     }
+
+    /** POST /api/website/executive-apply */
+    public function executiveApply(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name'     => 'required|string|max:255',
+            'email'         => 'required|email|max:255',
+            'mobile'        => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
+            'address'       => 'required|string|max:1000',
+            'qualification' => 'required|string|max:255',
+            'description'   => 'nullable|string|max:5000',
+            'document'      => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5 MB
+        ], [
+            'mobile.regex' => 'Please enter a valid 10-digit mobile number.',
+        ]);
+
+        $documentPath = null;
+        if ($request->hasFile('document')) {
+            $documentPath = $request->file('document')->store('website/executive-docs', 's3');
+        }
+
+        \App\Models\ExecutiveApplication::create([
+            'full_name'     => $validated['full_name'],
+            'email'         => $validated['email'],
+            'mobile'        => $validated['mobile'],
+            'address'       => $validated['address'],
+            'qualification' => $validated['qualification'],
+            'description'   => $validated['description'] ?? null,
+            'document_path' => $documentPath,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Application received! Our partnerships team will review it and reach out to you soon.',
+        ]);
+    }
 }
