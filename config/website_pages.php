@@ -46,18 +46,13 @@ return [
     ],
 
     'careers' => [
-        'tag'      => 'Careers',
-        'title'    => 'Build the future of education with us',
-        'subtitle' => 'We are a fast-growing team on a mission to make quality school technology affordable for every institution in India. If that excites you, we would love to hear from you.',
-        'perks'    => [
-            ['icon' => '🚀', 'title' => 'Real Impact', 'desc' => 'Your work directly improves how thousands of students, teachers and parents learn and connect.'],
-            ['icon' => '🌱', 'title' => 'Grow Fast', 'desc' => 'Take ownership early, learn across functions, and grow as quickly as you can deliver.'],
-            ['icon' => '🤝', 'title' => 'Supportive Team', 'desc' => 'A friendly, ambitious team that celebrates wins and helps each other through challenges.'],
-        ],
+        'tag'      => 'Careers & Partnerships',
+        'title'    => 'Earn up to ₹1 Lakh+ a month with EDYONE',
+        'subtitle' => 'Join EDYONE as a partner and help schools across India go digital. Work remotely, on your own schedule, with a simple joining process and fast payouts — earn attractive recurring income for every school you bring on board.',
         'jobs' => [
             ['role' => 'Business Development Executive', 'department' => 'Sales', 'location' => 'Field / Remote', 'type' => 'Full-time'],
+            ['role' => 'School Partnership Associate', 'department' => 'Partnerships', 'location' => 'Remote', 'type' => 'Full-time / Part-time'],
             ['role' => 'Customer Support Associate', 'department' => 'Support', 'location' => 'Aligarh, UP', 'type' => 'Full-time'],
-            ['role' => 'Full-Stack Developer (Laravel / React Native)', 'department' => 'Engineering', 'location' => 'Remote', 'type' => 'Full-time'],
             ['role' => 'School Onboarding Specialist', 'department' => 'Operations', 'location' => 'Hybrid', 'type' => 'Full-time'],
         ],
     ],
