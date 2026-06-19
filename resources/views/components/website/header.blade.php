@@ -21,6 +21,9 @@
             <a href="{{ url('web/features') }}" class="{{ request()->is('web/features') ? 'active' : '' }}">Features</a>
         </li>
         <li>
+            <a href="{{ url('web/services') }}" class="{{ request()->is('web/services') ? 'active' : '' }}">Services</a>
+        </li>
+        <li>
             <a href="{{ url('web/pricing') }}" class="{{ request()->is('web/pricing') ? 'active' : '' }}">Pricing</a>
         </li>
         <li>
@@ -44,6 +47,7 @@
     <a href="{{ url('/') }}" class="mobile-nav-link">Home</a>
     <a href="{{ url('web/about') }}" class="mobile-nav-link">About</a>
     <a href="{{ url('web/features') }}" class="mobile-nav-link">Features</a>
+    <a href="{{ url('web/services') }}" class="mobile-nav-link">Services</a>
     <a href="{{ url('web/pricing') }}" class="mobile-nav-link">Pricing</a>
     <a href="{{ url('web/contact') }}" class="mobile-nav-link">Contact</a>
     <a href="{{ url('web/demo') }}" class="btn btn-primary" style="font-size:15px;padding:13px 32px;">Request Demo</a>

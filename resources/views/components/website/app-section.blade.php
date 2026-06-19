@@ -177,6 +177,120 @@
         color: var(--text3, #6B5B8A);
     }
 
+    /* ── Dashboard-style phone screen ── */
+    .edyone-dash-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: linear-gradient(135deg, #6F56FE 0%, #DB57B2 100%);
+        border-radius: 14px;
+        padding: 12px 13px;
+        color: #fff;
+    }
+
+    .edyone-dash-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .edyone-dash-hi {
+        font-size: 9px;
+        opacity: 0.85;
+        line-height: 1.2;
+    }
+
+    .edyone-dash-name {
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .edyone-dash-bell {
+        margin-left: auto;
+        font-size: 13px;
+    }
+
+    .edyone-kpi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .edyone-kpi {
+        background: #fff;
+        border: 1px solid var(--border2, rgba(111, 86, 254, 0.08));
+        border-radius: 11px;
+        padding: 9px 10px;
+    }
+
+    .edyone-kpi__num {
+        font-size: 15px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #6F56FE, #DB57B2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.1;
+    }
+
+    .edyone-kpi__label {
+        font-size: 8px;
+        color: var(--text3, #6B5B8A);
+        margin-top: 1px;
+    }
+
+    .edyone-mini-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 5px;
+        height: 46px;
+        margin-top: 8px;
+    }
+
+    .edyone-mini-chart span {
+        flex: 1;
+        border-radius: 3px 3px 0 0;
+        background: linear-gradient(180deg, #6F56FE, #DB57B2);
+        transform-origin: bottom;
+        animation: edyoneBar .9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes edyoneBar {
+        from { transform: scaleY(0); }
+        to   { transform: scaleY(1); }
+    }
+
+    .edyone-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+
+    .edyone-quick {
+        background: #fff;
+        border: 1px solid var(--border2, rgba(111, 86, 254, 0.08));
+        border-radius: 9px;
+        padding: 7px 2px;
+        text-align: center;
+    }
+
+    .edyone-quick__icon {
+        font-size: 14px;
+    }
+
+    .edyone-quick__label {
+        font-size: 7px;
+        color: var(--text3, #6B5B8A);
+        margin-top: 2px;
+    }
+
     @keyframes edyoneFloat {
         0%, 100% { transform: translateY(0); }
         50%       { transform: translateY(-14px); }
@@ -249,30 +363,68 @@
             <div class="edyone-phone-mockup">
                 <div class="edyone-phone-notch"></div>
                 <div class="edyone-phone-screen">
-                    <div class="edyone-phone-header">📚 EDYONE LMS</div>
-
-                    <div class="edyone-phone-card">
-                        <div class="edyone-phone-card__title">Today's Attendance</div>
-                        <div class="edyone-phone-bar" style="width:89%"></div>
-                        <div class="edyone-phone-label">89% Present — Class 10A</div>
+                    {{-- Greeting header --}}
+                    <div class="edyone-dash-head">
+                        <div class="edyone-dash-avatar">🎓</div>
+                        <div>
+                            <div class="edyone-dash-hi">Good morning,</div>
+                            <div class="edyone-dash-name">Aarav's Dashboard</div>
+                        </div>
+                        <div class="edyone-dash-bell">🔔</div>
                     </div>
 
-                    <div class="edyone-phone-card">
-                        <div class="edyone-phone-card__title">📝 Pending Assignments</div>
-                        <div class="edyone-phone-label">Math Quiz — Due Today</div>
-                        <div style="height:4px"></div>
-                        <div class="edyone-phone-label">Physics Lab — 2 Days</div>
+                    {{-- KPI tiles --}}
+                    <div class="edyone-kpi-grid">
+                        <div class="edyone-kpi">
+                            <div class="edyone-kpi__num">94%</div>
+                            <div class="edyone-kpi__label">Attendance</div>
+                        </div>
+                        <div class="edyone-kpi">
+                            <div class="edyone-kpi__num">A+</div>
+                            <div class="edyone-kpi__label">Avg. Grade</div>
+                        </div>
+                        <div class="edyone-kpi">
+                            <div class="edyone-kpi__num">3</div>
+                            <div class="edyone-kpi__label">Tasks Due</div>
+                        </div>
+                        <div class="edyone-kpi">
+                            <div class="edyone-kpi__num">Paid</div>
+                            <div class="edyone-kpi__label">Fee Status</div>
+                        </div>
                     </div>
 
+                    {{-- Performance chart --}}
                     <div class="edyone-phone-card">
-                        <div class="edyone-phone-card__title">💰 Fee Status</div>
-                        <div class="edyone-phone-bar" style="width:100%;background:#22C55E"></div>
-                        <div class="edyone-phone-label">Paid — Oct 2025</div>
+                        <div class="edyone-phone-card__title">Performance Overview</div>
+                        <div class="edyone-mini-chart">
+                            <span style="height:55%;animation-delay:.05s"></span>
+                            <span style="height:72%;animation-delay:.13s"></span>
+                            <span style="height:48%;animation-delay:.21s"></span>
+                            <span style="height:88%;animation-delay:.29s"></span>
+                            <span style="height:66%;animation-delay:.37s"></span>
+                            <span style="height:95%;animation-delay:.45s"></span>
+                        </div>
+                        <div class="edyone-phone-label" style="margin-top:6px;">Steady improvement this term 📈</div>
                     </div>
 
-                    <div class="edyone-phone-card">
-                        <div class="edyone-phone-card__title">🔔 Notifications (3)</div>
-                        <div class="edyone-phone-label">Exam schedule updated</div>
+                    {{-- Quick actions --}}
+                    <div class="edyone-quick-grid">
+                        <div class="edyone-quick">
+                            <div class="edyone-quick__icon">📚</div>
+                            <div class="edyone-quick__label">Classes</div>
+                        </div>
+                        <div class="edyone-quick">
+                            <div class="edyone-quick__icon">📝</div>
+                            <div class="edyone-quick__label">Homework</div>
+                        </div>
+                        <div class="edyone-quick">
+                            <div class="edyone-quick__icon">🗓️</div>
+                            <div class="edyone-quick__label">Timetable</div>
+                        </div>
+                        <div class="edyone-quick">
+                            <div class="edyone-quick__icon">💳</div>
+                            <div class="edyone-quick__label">Fees</div>
+                        </div>
                     </div>
                 </div>
             </div>
