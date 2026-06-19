@@ -2,6 +2,14 @@
      COMMON FOOTER — FULL GRID
      (about, homepage, privacy, terms pages)
 ══════════════════════════════════════ --}}
+{{-- Grid override so the extra "Company" column fits on every page.
+     Placed here (after the per-page <head> CSS) so it wins by source order;
+     full responsive rules included so mobile layouts stay intact. --}}
+<style>
+  footer .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; }
+  @media (max-width: 768px) { footer .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; } }
+  @media (max-width: 480px) { footer .footer-grid { grid-template-columns: 1fr; } }
+</style>
 <footer>
   
     <div style="max-width:1280px;margin:0 auto;">
@@ -58,6 +66,19 @@
                     <li><a href="{{ url('web/pricing') }}">→ Pricing</a></li>
                     <li><a href="{{ url('web/contact') }}">→ Contact Us</a></li>
                     <li><a href="{{ url('web/demo') }}">→ Request Demo</a></li>
+                </ul>
+            </div>
+
+            {{-- Company --}}
+            <div>
+                <div class="footer-col-title">Company</div>
+                <ul class="footer-links">
+                    <li><a href="{{ route('website.why-us') }}">→ Why Us</a></li>
+                    <li><a href="{{ route('website.services') }}">→ Services</a></li>
+                    <li><a href="{{ route('website.careers') }}">→ Careers</a></li>
+                    <li><a href="{{ route('website.become-executive') }}">→ Become an Executive</a></li>
+                    <li><a href="{{ route('website.blogs') }}">→ Blogs</a></li>
+                    <li><a href="{{ route('website.faqs') }}">→ FAQs</a></li>
                 </ul>
             </div>
 

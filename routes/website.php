@@ -34,4 +34,25 @@ Route::prefix('web')->group(function () {
 
     Route::get('/demo', fn() => view('components.website.demo'))
         ->name('website.demo');
+
+    /* ── Company / Resources pages ─────────────────────────────
+       Phase 1: static content. Phase 2 will make these dynamic
+       (managed from the super-admin panel). ──────────────────── */
+    Route::get('/why-us', fn() => view('components.website.why-us'))
+        ->name('website.why-us');
+
+    Route::get('/services', fn() => view('components.website.services'))
+        ->name('website.services');
+
+    Route::get('/careers', fn() => view('components.website.careers'))
+        ->name('website.careers');
+
+    Route::get('/become-an-executive', fn() => view('components.website.become-executive'))
+        ->name('website.become-executive');
+
+    Route::get('/blogs', fn() => view('components.website.blogs'))
+        ->name('website.blogs');
+
+    Route::get('/faqs', fn() => view('components.website.faqs'))
+        ->name('website.faqs');
 });
