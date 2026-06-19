@@ -74,17 +74,9 @@ return [
     'faqs' => [
         'tag'      => 'Help Center',
         'title'    => 'Frequently asked questions',
-        'subtitle' => "Everything you need to know about EDYONE LMS. Can't find your answer? Our team is just a message away.",
-        'faqs'     => [
-            ['question' => 'What is EDYONE LMS?', 'answer' => 'EDYONE LMS is an affordable, all-in-one Learning Management System for schools. It covers admissions, attendance, timetable, exams, fees, study material and parent communication — all from one platform, with apps for admins, teachers, students and parents.'],
-            ['question' => 'How much does it cost?', 'answer' => 'Pricing is simple and transparent, designed to be affordable for schools of every size. Visit our Pricing page or request a demo and we will share a plan tailored to your student count.'],
-            ['question' => 'Is there a mobile app?', 'answer' => 'Yes. EDYONE LMS has dedicated mobile apps for Android and iOS, so admins, teachers, students and parents can stay connected from anywhere.'],
-            ['question' => 'Can parents pay fees online?', 'answer' => 'Absolutely. Parents can pay fees securely online and receive instant digital receipts, while your accounts team gets automatic reconciliation and dues tracking.'],
-            ['question' => 'How long does it take to set up?', 'answer' => 'Most schools go live within a few days. Our onboarding team helps you import your data, configure classes and fees, and trains your staff so the transition is smooth.'],
-            ['question' => "Is my school's data secure?", 'answer' => 'Yes. Your data is stored securely, access is role-based, and payments are processed through trusted, secure gateways. Your information is never shared without your consent.'],
-            ['question' => 'Do you provide training and support?', 'answer' => 'Of course. We provide hands-on onboarding, staff training, and ongoing support over call, chat and WhatsApp so you are never left on your own.'],
-            ['question' => 'How do I get started?', 'answer' => 'Simply request a free demo or contact us. We will walk you through the platform and help you choose the right plan.'],
-        ],
+        'subtitle' => "Everything you need to know about EDYONE LMS — from pricing and setup to features, security and support — all in one place. Browse the questions below by category to quickly find what you're looking for, whether you're a school leader, teacher or parent exploring the platform. Can't find your answer here? Don't worry — our friendly team is always just a quick message away and happy to help.",
+        // FAQs are now stored in the `faqs` table and managed from the
+        // super-admin FAQs screen (no longer config-driven).
     ],
 
 ];

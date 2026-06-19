@@ -64,6 +64,9 @@ Route::prefix('web')->group(function () {
         'recent' => \App\Models\Blog::where('id', '!=', $blog->id)->latest()->take(3)->get(),
     ]))->name('website.blog.detail');
 
-    Route::get('/faqs', fn() => $dynamicPage('faqs', 'components.website.faqs'))
-        ->name('website.faqs');
+    Route::get('/faqs', fn() => view('components.website.faqs', [
+        'faqs'       => \App\Models\Faq::orderBy('category')->orderBy('id')->get(),
+        'categories' => \App\Models\Faq::query()->whereNotNull('category')
+            ->distinct()->orderBy('category')->pluck('category'),
+    ]))->name('website.faqs');
 });
