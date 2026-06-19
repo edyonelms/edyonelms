@@ -11,6 +11,7 @@ use App\Models\Teacher\TeacherDetail;
 use App\Models\TermOfUse;
 use App\Models\WebsiteContact;
 use App\Models\WebsiteDemo;
+use App\Models\WebsitePage;
 use Illuminate\Http\Request;
 
 class WebsiteController extends Controller
@@ -144,6 +145,24 @@ class WebsiteController extends Controller
                 'sections'     => $tou->metadata['sections'] ?? [],
                 'last_updated' => $tou->last_updated?->format('d M Y'),
             ] : null,
+        ]);
+    }
+
+    /**
+     * GET /api/website/page/{slug}
+     * Returns the metadata for a dynamic marketing page
+     * (why-us, services, careers, become-executive, blogs, faqs).
+     */
+    public function page(string $slug)
+    {
+        $page = WebsitePage::where('slug', $slug)->first();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $page ? array_merge(
+                $page->metadata ?? [],
+                ['last_updated' => $page->last_updated?->format('d M Y')]
+            ) : null,
         ]);
     }
 

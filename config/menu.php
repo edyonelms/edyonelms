@@ -316,7 +316,45 @@ return [
             'link' => 'super-admin.portal-website',
             'icon' => 'globe-alt',
             'prefix' => 'super-admin.portal-website',
-        ]
+        ],
+
+        // ── Dynamic marketing pages (footer "Company" section) ──
+        [
+            'title' => 'Why Us',
+            'link' => 'super-admin.website.why-us',
+            'icon' => 'sparkles',
+            'prefix' => 'super-admin.website.why-us',
+        ],
+        [
+            'title' => 'Services',
+            'link' => 'super-admin.website.services',
+            'icon' => 'squares-2x2',
+            'prefix' => 'super-admin.website.services',
+        ],
+        [
+            'title' => 'Careers',
+            'link' => 'super-admin.website.careers',
+            'icon' => 'briefcase',
+            'prefix' => 'super-admin.website.careers',
+        ],
+        [
+            'title' => 'Become Executive',
+            'link' => 'super-admin.website.become-executive',
+            'icon' => 'user-plus',
+            'prefix' => 'super-admin.website.become-executive',
+        ],
+        [
+            'title' => 'Blogs',
+            'link' => 'super-admin.website.blogs',
+            'icon' => 'newspaper',
+            'prefix' => 'super-admin.website.blogs',
+        ],
+        [
+            'title' => 'FAQs',
+            'link' => 'super-admin.website.faqs',
+            'icon' => 'question-mark-circle',
+            'prefix' => 'super-admin.website.faqs',
+        ],
 
     ],
 

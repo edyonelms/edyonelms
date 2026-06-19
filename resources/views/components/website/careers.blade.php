@@ -1,3 +1,12 @@
+@php
+    $stored   = $page?->metadata ?? [];
+    $def      = config('website_pages.careers', []);
+    $tag      = $stored['tag']      ?? $def['tag']      ?? 'Careers';
+    $title    = $stored['title']    ?? $def['title']    ?? '';
+    $subtitle = $stored['subtitle'] ?? $def['subtitle'] ?? '';
+    $perks    = !empty($stored['perks']) ? $stored['perks'] : ($def['perks'] ?? []);
+    $jobs     = !empty($stored['jobs'])  ? $stored['jobs']  : ($def['jobs'] ?? []);
+@endphp
 @include('components.website.partials.head', ['title' => 'Careers'])
 
 <style>
@@ -22,12 +31,9 @@
   <section class="page-header">
     <div class="grid-bg"></div>
     <div class="page-header-content">
-      <span class="section-tag tag-violet">💼 Careers</span>
-      <h1 class="section-title">Build the future of <span class="gradient-text">education with us</span></h1>
-      <p class="section-subtitle">
-        We are a fast-growing team on a mission to make quality school technology affordable for every
-        institution in India. If that excites you, we would love to hear from you.
-      </p>
+      <span class="section-tag tag-violet">💼 {{ $tag }}</span>
+      <h1 class="section-title">{{ $title }}</h1>
+      <p class="section-subtitle">{{ $subtitle }}</p>
     </div>
   </section>
 
@@ -37,21 +43,13 @@
       <h2 class="section-title">Why work at EDYONE LMS</h2>
     </div>
     <div class="cards-grid">
+      @foreach ($perks as $perk)
       <div class="feature-card">
-        <div class="feature-icon-wrap">🚀</div>
-        <h3 class="feature-title">Real Impact</h3>
-        <p class="feature-desc">Your work directly improves how thousands of students, teachers and parents learn and connect.</p>
+        <div class="feature-icon-wrap">{{ $perk['icon'] ?? '' }}</div>
+        <h3 class="feature-title">{{ $perk['title'] ?? '' }}</h3>
+        <p class="feature-desc">{{ $perk['desc'] ?? '' }}</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🌱</div>
-        <h3 class="feature-title">Grow Fast</h3>
-        <p class="feature-desc">Take ownership early, learn across functions, and grow as quickly as you can deliver.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🤝</div>
-        <h3 class="feature-title">Supportive Team</h3>
-        <p class="feature-desc">A friendly, ambitious team that celebrates wins and helps each other through challenges.</p>
-      </div>
+      @endforeach
     </div>
   </section>
 
@@ -62,39 +60,19 @@
       <h2 class="section-title">Current openings</h2>
     </div>
     <div class="jobs-wrap">
-
+      @foreach ($jobs as $job)
       <div class="job-card">
         <div>
-          <div class="job-role">Business Development Executive</div>
-          <div class="job-meta"><span class="job-pill">Sales</span><span class="job-pill pink">Field / Remote</span><span class="job-pill">Full-time</span></div>
+          <div class="job-role">{{ $job['role'] ?? '' }}</div>
+          <div class="job-meta">
+            @if (!empty($job['department']))<span class="job-pill">{{ $job['department'] }}</span>@endif
+            @if (!empty($job['location']))<span class="job-pill pink">{{ $job['location'] }}</span>@endif
+            @if (!empty($job['type']))<span class="job-pill">{{ $job['type'] }}</span>@endif
+          </div>
         </div>
         <a href="{{ url('web/contact') }}" class="btn btn-primary">Apply Now</a>
       </div>
-
-      <div class="job-card">
-        <div>
-          <div class="job-role">Customer Support Associate</div>
-          <div class="job-meta"><span class="job-pill">Support</span><span class="job-pill pink">Aligarh, UP</span><span class="job-pill">Full-time</span></div>
-        </div>
-        <a href="{{ url('web/contact') }}" class="btn btn-primary">Apply Now</a>
-      </div>
-
-      <div class="job-card">
-        <div>
-          <div class="job-role">Full-Stack Developer (Laravel / React Native)</div>
-          <div class="job-meta"><span class="job-pill">Engineering</span><span class="job-pill pink">Remote</span><span class="job-pill">Full-time</span></div>
-        </div>
-        <a href="{{ url('web/contact') }}" class="btn btn-primary">Apply Now</a>
-      </div>
-
-      <div class="job-card">
-        <div>
-          <div class="job-role">School Onboarding Specialist</div>
-          <div class="job-meta"><span class="job-pill">Operations</span><span class="job-pill pink">Hybrid</span><span class="job-pill">Full-time</span></div>
-        </div>
-        <a href="{{ url('web/contact') }}" class="btn btn-primary">Apply Now</a>
-      </div>
-
+      @endforeach
     </div>
     <p style="text-align:center;color:var(--text3);font-size:13px;margin-top:32px;">
       Don't see a role that fits? Write to us at <strong>support@edyonelms.in</strong> — we are always looking for great people.

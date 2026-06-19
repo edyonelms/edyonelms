@@ -36,23 +36,27 @@ Route::prefix('web')->group(function () {
         ->name('website.demo');
 
     /* ── Company / Resources pages ─────────────────────────────
-       Phase 1: static content. Phase 2 will make these dynamic
-       (managed from the super-admin panel). ──────────────────── */
-    Route::get('/why-us', fn() => view('components.website.why-us'))
+       Content is managed from the super-admin panel and stored in the
+       website_pages table (keyed by slug). The blades render this data
+       and fall back to built-in defaults when a row is missing. ──────── */
+    $dynamicPage = fn(string $slug, string $view) =>
+        view($view, ['page' => \App\Models\WebsitePage::where('slug', $slug)->first()]);
+
+    Route::get('/why-us', fn() => $dynamicPage('why-us', 'components.website.why-us'))
         ->name('website.why-us');
 
-    Route::get('/services', fn() => view('components.website.services'))
+    Route::get('/services', fn() => $dynamicPage('services', 'components.website.services'))
         ->name('website.services');
 
-    Route::get('/careers', fn() => view('components.website.careers'))
+    Route::get('/careers', fn() => $dynamicPage('careers', 'components.website.careers'))
         ->name('website.careers');
 
-    Route::get('/become-an-executive', fn() => view('components.website.become-executive'))
+    Route::get('/become-an-executive', fn() => $dynamicPage('become-executive', 'components.website.become-executive'))
         ->name('website.become-executive');
 
-    Route::get('/blogs', fn() => view('components.website.blogs'))
+    Route::get('/blogs', fn() => $dynamicPage('blogs', 'components.website.blogs'))
         ->name('website.blogs');
 
-    Route::get('/faqs', fn() => view('components.website.faqs'))
+    Route::get('/faqs', fn() => $dynamicPage('faqs', 'components.website.faqs'))
         ->name('website.faqs');
 });

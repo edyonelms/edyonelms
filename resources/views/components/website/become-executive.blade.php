@@ -1,3 +1,12 @@
+@php
+    $stored   = $page?->metadata ?? [];
+    $def      = config('website_pages.become-executive', []);
+    $tag      = $stored['tag']      ?? $def['tag']      ?? 'Partner Program';
+    $title    = $stored['title']    ?? $def['title']    ?? '';
+    $subtitle = $stored['subtitle'] ?? $def['subtitle'] ?? '';
+    $benefits = !empty($stored['benefits']) ? $stored['benefits'] : ($def['benefits'] ?? []);
+    $steps    = !empty($stored['steps'])    ? $stored['steps']    : ($def['steps'] ?? []);
+@endphp
 @include('components.website.partials.head', ['title' => 'Become an Executive'])
 
 <style>
@@ -17,12 +26,9 @@
   <section class="page-header">
     <div class="grid-bg"></div>
     <div class="page-header-content">
-      <span class="section-tag tag-pink">🤝 Partner Program</span>
-      <h1 class="section-title">Become an <span class="gradient-text">EDYONE Executive</span></h1>
-      <p class="section-subtitle">
-        Partner with EDYONE LMS to bring affordable school technology to institutions in your region —
-        and earn attractive recurring income while you do it.
-      </p>
+      <span class="section-tag tag-pink">🤝 {{ $tag }}</span>
+      <h1 class="section-title">{{ $title }}</h1>
+      <p class="section-subtitle">{{ $subtitle }}</p>
     </div>
   </section>
 
@@ -33,36 +39,13 @@
       <p class="section-subtitle">A simple, rewarding way to grow your own business with a product schools love.</p>
     </div>
     <div class="cards-grid">
+      @foreach ($benefits as $benefit)
       <div class="feature-card">
-        <div class="feature-icon-wrap">💸</div>
-        <h3 class="feature-title">Attractive Commissions</h3>
-        <p class="feature-desc">Earn competitive payouts on every school you onboard, plus recurring income as they renew.</p>
+        <div class="feature-icon-wrap">{{ $benefit['icon'] ?? '' }}</div>
+        <h3 class="feature-title">{{ $benefit['title'] ?? '' }}</h3>
+        <p class="feature-desc">{{ $benefit['desc'] ?? '' }}</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">📈</div>
-        <h3 class="feature-title">Ready Demand</h3>
-        <p class="feature-desc">Schools everywhere need affordable digital tools — you bring a product that practically sells itself.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🎒</div>
-        <h3 class="feature-title">Full Sales Kit</h3>
-        <p class="feature-desc">Get brochures, demos, pricing and live training so you can pitch with confidence from day one.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🛟</div>
-        <h3 class="feature-title">Dedicated Support</h3>
-        <p class="feature-desc">Our team handles onboarding and technical support, so you can focus on building relationships.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">⏱️</div>
-        <h3 class="feature-title">Flexible &amp; Independent</h3>
-        <p class="feature-desc">Work your own hours, in your own region — full-time or alongside your existing work.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🏅</div>
-        <h3 class="feature-title">Recognition &amp; Rewards</h3>
-        <p class="feature-desc">Top-performing executives unlock higher tiers, bonuses and exclusive incentives.</p>
-      </div>
+      @endforeach
     </div>
   </section>
 
@@ -73,10 +56,9 @@
       <h2 class="section-title">Get started in 4 steps</h2>
     </div>
     <div class="steps-wrap">
-      <div class="step-card"><div class="step-num">1</div><div class="step-title">Apply</div><p class="step-desc">Fill in a short form and tell us about your region and experience.</p></div>
-      <div class="step-card"><div class="step-num">2</div><div class="step-title">Onboard</div><p class="step-desc">Get trained on the product, pricing and sales material.</p></div>
-      <div class="step-card"><div class="step-num">3</div><div class="step-title">Pitch</div><p class="step-desc">Introduce EDYONE LMS to schools and book demos with our support.</p></div>
-      <div class="step-card"><div class="step-num">4</div><div class="step-title">Earn</div><p class="step-desc">Get paid for every school you bring on board — and keep earning.</p></div>
+      @foreach ($steps as $i => $step)
+      <div class="step-card"><div class="step-num">{{ $i + 1 }}</div><div class="step-title">{{ $step['title'] ?? '' }}</div><p class="step-desc">{{ $step['desc'] ?? '' }}</p></div>
+      @endforeach
     </div>
   </section>
 

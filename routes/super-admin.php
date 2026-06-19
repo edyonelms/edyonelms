@@ -24,6 +24,12 @@ use App\Livewire\SuperAdmin\Profile as SuperAdminProfile;
 use App\Livewire\SuperAdmin\TermOfUse;
 use App\Livewire\SuperAdmin\TermsCondition;
 use App\Livewire\SuperAdmin\WebsiteData;
+use App\Livewire\SuperAdmin\WhyUs;
+use App\Livewire\SuperAdmin\Services;
+use App\Livewire\SuperAdmin\Careers;
+use App\Livewire\SuperAdmin\BecomeExecutive;
+use App\Livewire\SuperAdmin\Blogs;
+use App\Livewire\SuperAdmin\Faqs;
 use App\Livewire\Components\Profile;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +62,14 @@ Route::middleware(['auth:web', 'super-admin'])->group(function () {
     Route::get('sessions', Session::class)->name('super-admin.sessions');
     Route::get('credit', Credit::class)->name('super-admin.credit');
     Route::get('profile', SuperAdminProfile::class)->name('super-admin.profile');
+
+    // Dynamic marketing pages (content editable from here, rendered on the website)
+    Route::get('website/why-us', WhyUs::class)->name('super-admin.website.why-us');
+    Route::get('website/services', Services::class)->name('super-admin.website.services');
+    Route::get('website/careers', Careers::class)->name('super-admin.website.careers');
+    Route::get('website/become-executive', BecomeExecutive::class)->name('super-admin.website.become-executive');
+    Route::get('website/blogs', Blogs::class)->name('super-admin.website.blogs');
+    Route::get('website/faqs', Faqs::class)->name('super-admin.website.faqs');
 
     // Register the logged-in super-admin's browser for web push (FCM).
     Route::post('fcm/token', function (\Illuminate\Http\Request $request) {

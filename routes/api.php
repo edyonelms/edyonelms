@@ -17,6 +17,9 @@ Route::prefix('website')->group(function () {
     Route::get('/terms-conditions', [WebsiteController::class, 'termsConditions']);
     Route::get('/terms-of-use',     [WebsiteController::class, 'termsOfUse']);
 
+    // Dynamic marketing pages (why-us, services, careers, become-executive, blogs, faqs)
+    Route::get('/page/{slug}',      [WebsiteController::class, 'page']);
+
     // Anti-spam: 5 submissions per minute per IP on form endpoints.
     Route::middleware('throttle:5,1')->group(function () {
         Route::post('/contact', [WebsiteController::class, 'contact']);

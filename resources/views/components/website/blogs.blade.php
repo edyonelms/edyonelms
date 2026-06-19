@@ -1,3 +1,11 @@
+@php
+    $stored   = $page?->metadata ?? [];
+    $def      = config('website_pages.blogs', []);
+    $tag      = $stored['tag']      ?? $def['tag']      ?? 'The EDYONE Blog';
+    $title    = $stored['title']    ?? $def['title']    ?? '';
+    $subtitle = $stored['subtitle'] ?? $def['subtitle'] ?? '';
+    $posts    = !empty($stored['posts']) ? $stored['posts'] : ($def['posts'] ?? []);
+@endphp
 @include('components.website.partials.head', ['title' => 'Blogs'])
 
 <style>
@@ -25,79 +33,26 @@
   <section class="page-header">
     <div class="grid-bg"></div>
     <div class="page-header-content">
-      <span class="section-tag tag-dual">✍ The EDYONE Blog</span>
-      <h1 class="section-title">Ideas &amp; insights for <span class="gradient-text">modern schools</span></h1>
-      <p class="section-subtitle">
-        Practical tips, product updates and stories to help your school run better, teach smarter and
-        engage families more effectively.
-      </p>
+      <span class="section-tag tag-dual">✍ {{ $tag }}</span>
+      <h1 class="section-title">{{ $title }}</h1>
+      <p class="section-subtitle">{{ $subtitle }}</p>
     </div>
   </section>
 
   {{-- ══════════════════ BLOG GRID ══════════════════ --}}
   <section class="section">
     <div class="blog-grid">
-
+      @foreach ($posts as $post)
       <article class="blog-card">
-        <div class="blog-thumb">📲</div>
+        <div class="blog-thumb">{{ $post['icon'] ?? '📝' }}</div>
         <div class="blog-body">
-          <div class="blog-cat">School Tech</div>
-          <h3 class="blog-heading">5 ways an LMS saves your school hours every week</h3>
-          <p class="blog-excerpt">From attendance to fee collection, see where digital tools cut the busywork so your staff can focus on students.</p>
-          <div class="blog-foot"><span>5 min read</span><a href="#">Read more →</a></div>
+          <div class="blog-cat">{{ $post['category'] ?? '' }}</div>
+          <h3 class="blog-heading">{{ $post['title'] ?? '' }}</h3>
+          <p class="blog-excerpt">{{ $post['excerpt'] ?? '' }}</p>
+          <div class="blog-foot"><span>{{ $post['read_time'] ?? '' }}</span><a href="{{ $post['link'] ?? '#' }}">Read more →</a></div>
         </div>
       </article>
-
-      <article class="blog-card">
-        <div class="blog-thumb">💳</div>
-        <div class="blog-body">
-          <div class="blog-cat">Fees</div>
-          <h3 class="blog-heading">Moving to online fee collection: a simple guide</h3>
-          <p class="blog-excerpt">How to roll out online payments smoothly, get parents on board, and reconcile fees without the headache.</p>
-          <div class="blog-foot"><span>6 min read</span><a href="#">Read more →</a></div>
-        </div>
-      </article>
-
-      <article class="blog-card">
-        <div class="blog-thumb">👨‍👩‍👧</div>
-        <div class="blog-body">
-          <div class="blog-cat">Communication</div>
-          <h3 class="blog-heading">Keeping parents engaged with instant notifications</h3>
-          <p class="blog-excerpt">Why timely updates build trust, and how to use announcements and push alerts the right way.</p>
-          <div class="blog-foot"><span>4 min read</span><a href="#">Read more →</a></div>
-        </div>
-      </article>
-
-      <article class="blog-card">
-        <div class="blog-thumb">📊</div>
-        <div class="blog-body">
-          <div class="blog-cat">Academics</div>
-          <h3 class="blog-heading">Faster exams and report cards, start to finish</h3>
-          <p class="blog-excerpt">A step-by-step look at setting up exams and generating professional report cards in minutes.</p>
-          <div class="blog-foot"><span>5 min read</span><a href="#">Read more →</a></div>
-        </div>
-      </article>
-
-      <article class="blog-card">
-        <div class="blog-thumb">🎓</div>
-        <div class="blog-body">
-          <div class="blog-cat">Admissions</div>
-          <h3 class="blog-heading">Turning enquiries into enrolments online</h3>
-          <p class="blog-excerpt">Build an admission funnel that captures every lead and helps your team follow up at the right time.</p>
-          <div class="blog-foot"><span>7 min read</span><a href="#">Read more →</a></div>
-        </div>
-      </article>
-
-      <article class="blog-card">
-        <div class="blog-thumb">🚀</div>
-        <div class="blog-body">
-          <div class="blog-cat">Getting Started</div>
-          <h3 class="blog-heading">Going digital: a checklist for school leaders</h3>
-          <p class="blog-excerpt">Everything to prepare before you switch to an LMS, so your rollout is smooth from day one.</p>
-          <div class="blog-foot"><span>6 min read</span><a href="#">Read more →</a></div>
-        </div>
-      </article>
-
+      @endforeach
     </div>
 
     <p style="text-align:center;color:var(--text3);font-size:13px;margin-top:44px;">
