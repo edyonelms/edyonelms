@@ -1,7 +1,7 @@
 <div class="p-3 sm:p-4">
 
     {{-- ── Tiles (compact — sized so the whole set fits without scrolling) ── --}}
-    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3">
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 sm:gap-3">
         @foreach ($links as $link)
             <a href="{{ route($link['route']) }}"
                class="group flex flex-col items-center text-center gap-2 p-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-200 transition-all duration-200">
