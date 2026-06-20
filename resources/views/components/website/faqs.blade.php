@@ -10,9 +10,9 @@
 
 <style>
   /* ── FAQ category chips ── */
-  .faq-chips { max-width: 820px; margin: 0 auto 32px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .faq-chips { max-width: 1000px; margin: 0 auto 32px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   .faq-chip {
-    font-size: 13px; font-weight: 600; padding: 8px 18px; border-radius: 50px;
+    font-size: 13px; font-weight: 600; padding: 8px 13px; border-radius: 50px;
     border: 1px solid var(--border); background: #fff; color: var(--text2);
     cursor: pointer; transition: all .2s; white-space: nowrap;
   }

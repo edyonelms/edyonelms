@@ -185,7 +185,7 @@
   </section>
 
   {{-- ══════════════════ WHAT YOU'LL DO ══════════════════ --}}
-  <section class="section" style="background:var(--bg3);">
+  <section class="section section-alt">
     <div class="section-head">
       <span class="section-tag tag-violet">Your Role</span>
       <h2 class="section-title">What you'll do</h2>
@@ -268,7 +268,7 @@
   </section>
 
   {{-- ══════════════════ OPEN POSITIONS ══════════════════ --}}
-  <section class="section" id="openings" style="background:var(--bg3);">
+  <section class="section section-alt" id="openings">
     <div class="section-head">
       <span class="section-tag tag-pink">Open Positions</span>
       <h2 class="section-title">Current openings</h2>

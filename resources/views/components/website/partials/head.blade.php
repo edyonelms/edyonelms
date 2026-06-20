@@ -166,6 +166,12 @@
 
     /* ══════════════════ SECTIONS / CARD GRID ══════════════════ */
     .section { padding: 80px 6%; }
+    /* Alternating tinted band — gives sub-pages the same gradient/white rhythm as the homepage */
+    .section-alt {
+      background: linear-gradient(135deg, var(--primary-faint) 0%, var(--secondary-faint) 100%);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+    }
     .section-head { text-align: center; max-width: 760px; margin: 0 auto 56px; }
     .section-head .section-title { font-size: clamp(1.9rem, 3.4vw, 2.8rem); }
 

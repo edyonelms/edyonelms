@@ -166,7 +166,7 @@
   </section>
 
   {{-- ══════════════════ WHAT YOU'LL DO ══════════════════ --}}
-  <section class="section" style="background:var(--bg3);">
+  <section class="section section-alt">
     <div class="section-head">
       <span class="section-tag tag-violet">Your Role</span>
       <h2 class="section-title">What you'll do</h2>
@@ -249,7 +249,7 @@
   </section>
 
   {{-- ══════════════════ APPLY FORM ══════════════════ --}}
-  <section class="section" id="apply" style="background:var(--bg3);">
+  <section class="section section-alt" id="apply">
     <div class="section-head">
       <span class="section-tag tag-violet">Apply Now</span>
       <h2 class="section-title">Send us your application</h2>

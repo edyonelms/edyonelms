@@ -26,9 +26,9 @@
   .svc-nav a:hover { border-color:var(--violet); color:var(--violet); transform:translateY(-2px); }
 
   /* ── Service section ── */
-  .svc-section { max-width:1100px; margin:0 auto; padding:64px 0; display:grid; grid-template-columns:1fr 1fr;
-    gap:56px; align-items:center; border-bottom:1px solid var(--border2); scroll-margin-top:90px; }
-  .svc-section:last-of-type { border-bottom:none; }
+  .svc-band { scroll-margin-top:90px; }
+  .svc-section { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr;
+    gap:56px; align-items:center; }
   .svc-section.reverse .svc-visual { order:2; }
 
   .svc-eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:1px;
@@ -57,7 +57,7 @@
   .svc-badge.b2 { bottom:26px; right:22px; }
 
   @media (max-width:860px) {
-    .svc-section { grid-template-columns:1fr; gap:30px; padding:48px 0; }
+    .svc-section { grid-template-columns:1fr; gap:30px; }
     .svc-section.reverse .svc-visual { order:0; }
     .svc-visual { min-height:230px; }
     .svc-emoji { font-size:90px; }
@@ -86,10 +86,9 @@
   </section>
 
   {{-- ══════════════════ DETAILED SERVICES ══════════════════ --}}
-  <section class="section" style="padding-top:24px;">
-
-    {{-- 1. LMS --}}
-    <div class="svc-section" id="lms">
+  {{-- 1. LMS --}}
+  <section class="section svc-band" id="lms">
+    <div class="svc-section">
       <div class="svc-visual">
         <span class="svc-emoji">🎓</span>
         <div class="svc-badge b1">📚 50+ Modules</div>
@@ -111,8 +110,11 @@
       </div>
     </div>
 
-    {{-- 2. ID Cards --}}
-    <div class="svc-section reverse" id="idcards">
+  </section>
+
+  {{-- 2. ID Cards --}}
+  <section class="section svc-band section-alt" id="idcards">
+    <div class="svc-section reverse">
       <div class="svc-visual">
         <span class="svc-emoji">🆔</span>
         <div class="svc-badge b1">🎨 Custom Branding</div>
@@ -134,8 +136,11 @@
       </div>
     </div>
 
-    {{-- 3. Loans --}}
-    <div class="svc-section" id="loans">
+  </section>
+
+  {{-- 3. Loans --}}
+  <section class="section svc-band" id="loans">
+    <div class="svc-section">
       <div class="svc-visual">
         <span class="svc-emoji">🏦</span>
         <div class="svc-badge b1">📝 Easy Paperwork</div>
@@ -157,8 +162,11 @@
       </div>
     </div>
 
-    {{-- 4. Labs --}}
-    <div class="svc-section reverse" id="labs">
+  </section>
+
+  {{-- 4. Labs --}}
+  <section class="section svc-band section-alt" id="labs">
+    <div class="svc-section reverse">
       <div class="svc-visual">
         <span class="svc-emoji">🔬</span>
         <div class="svc-badge b1">💻 Computer Labs</div>
@@ -180,8 +188,11 @@
       </div>
     </div>
 
-    {{-- 5. Smart classrooms --}}
-    <div class="svc-section" id="smart">
+  </section>
+
+  {{-- 5. Smart classrooms --}}
+  <section class="section svc-band" id="smart">
+    <div class="svc-section">
       <div class="svc-visual">
         <span class="svc-emoji">🖥️</span>
         <div class="svc-badge b1">📺 Interactive Panels</div>
@@ -203,8 +214,11 @@
       </div>
     </div>
 
-    {{-- 6. Transport --}}
-    <div class="svc-section reverse" id="transport">
+  </section>
+
+  {{-- 6. Transport --}}
+  <section class="section svc-band section-alt" id="transport">
+    <div class="svc-section reverse">
       <div class="svc-visual">
         <span class="svc-emoji">🚌</span>
         <div class="svc-badge b1">📍 Live GPS</div>
@@ -226,8 +240,11 @@
       </div>
     </div>
 
-    {{-- 7. Uniforms & books --}}
-    <div class="svc-section" id="essentials">
+  </section>
+
+  {{-- 7. Uniforms & books --}}
+  <section class="section svc-band" id="essentials">
+    <div class="svc-section">
       <div class="svc-visual">
         <span class="svc-emoji">👕</span>
         <div class="svc-badge b1">📚 Books &amp; Stationery</div>
@@ -248,8 +265,11 @@
       </div>
     </div>
 
-    {{-- 8. Online education --}}
-    <div class="svc-section reverse" id="online">
+  </section>
+
+  {{-- 8. Online education --}}
+  <section class="section svc-band section-alt" id="online">
+    <div class="svc-section reverse">
       <div class="svc-visual">
         <span class="svc-emoji">💻</span>
         <div class="svc-badge b1">🎥 Live &amp; Recorded</div>
