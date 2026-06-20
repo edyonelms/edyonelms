@@ -13,14 +13,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="{{ url('web/faqs') }}" target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        View Live
-                    </a>
                     <button wire:click="openCreate"
                         class="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
@@ -29,25 +21,36 @@
                 </div>
             </div>
         </div>
+
+        {{-- ── Filter bar (admin students-style sub-header) ── --}}
+        <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filter by:
+                </div>
+
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search by question…"
+                        class="text-xs bg-white border border-gray-200 rounded-md pl-8 pr-3 py-1.5 text-gray-700 w-64 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <select wire:model.live="categoryFilter"
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">All categories</option>
+                    @foreach ($categories as $cat)
+                        <option value="{{ $cat }}">{{ $cat }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-
-        {{-- ── Search + category filter ── --}}
-        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <div class="relative flex-1">
-                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search by question…"
-                    class="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400">
-            </div>
-            <select wire:model.live="categoryFilter"
-                class="sm:w-56 px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white">
-                <option value="">All categories</option>
-                @foreach ($categories as $cat)
-                    <option value="{{ $cat }}">{{ $cat }}</option>
-                @endforeach
-            </select>
-        </div>
+    <div class="px-4 sm:px-6 py-6 space-y-5">
 
         {{-- ── FAQ list ── --}}
         @if ($faqs->isEmpty())
