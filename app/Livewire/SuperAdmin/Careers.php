@@ -36,7 +36,7 @@ class Careers extends Component
     protected function rowTemplates(): array
     {
         return [
-            'jobs' => ['role' => '', 'department' => '', 'location' => '', 'type' => ''],
+            'jobs' => ['role' => '', 'department' => '', 'location' => '', 'type' => '', 'salary' => ''],
         ];
     }
 

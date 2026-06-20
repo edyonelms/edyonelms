@@ -46,14 +46,14 @@ return [
     ],
 
     'careers' => [
-        'tag'      => 'Careers & Partnerships',
-        'title'    => 'Earn up to ₹1 Lakh+ a month with EDYONE',
-        'subtitle' => 'Join EDYONE as a partner and help schools across India go digital. Work remotely, on your own schedule, with a simple joining process and fast payouts — earn attractive recurring income for every school you bring on board.',
+        'tag'      => 'Careers',
+        'title'    => 'Build your career with EDYONE',
+        'subtitle' => 'Join the team building India\'s most affordable school management platform. Explore our open roles and the salaries they offer, see how our hiring process works, and apply in minutes — we review every application and get back to you.',
         'jobs' => [
-            ['role' => 'Business Development Executive', 'department' => 'Sales', 'location' => 'Field / Remote', 'type' => 'Full-time'],
-            ['role' => 'School Partnership Associate', 'department' => 'Partnerships', 'location' => 'Remote', 'type' => 'Full-time / Part-time'],
-            ['role' => 'Customer Support Associate', 'department' => 'Support', 'location' => 'Aligarh, UP', 'type' => 'Full-time'],
-            ['role' => 'School Onboarding Specialist', 'department' => 'Operations', 'location' => 'Hybrid', 'type' => 'Full-time'],
+            ['role' => 'Business Development Executive', 'department' => 'Sales',        'location' => 'Aligarh / Remote', 'type' => 'Full-time', 'salary' => '₹3–6 LPA + incentives'],
+            ['role' => 'School Partnership Associate',   'department' => 'Partnerships', 'location' => 'Remote',          'type' => 'Full-time', 'salary' => '₹2.5–5 LPA'],
+            ['role' => 'Customer Support Associate',      'department' => 'Support',      'location' => 'Aligarh, UP',     'type' => 'Full-time', 'salary' => '₹2–3.5 LPA'],
+            ['role' => 'School Onboarding Specialist',    'department' => 'Operations',   'location' => 'Hybrid',          'type' => 'Full-time', 'salary' => '₹3–5 LPA'],
         ],
     ],
 

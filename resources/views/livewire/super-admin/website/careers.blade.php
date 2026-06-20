@@ -49,8 +49,9 @@
                 'cols'     => 2,
                 'fields'   => [
                     ['name' => 'role',       'label' => 'Role',       'full' => true, 'placeholder' => 'Business Development Executive'],
+                    ['name' => 'salary',     'label' => 'Salary',     'placeholder' => '₹3–6 LPA + incentives'],
                     ['name' => 'department', 'label' => 'Department',  'placeholder' => 'Sales'],
-                    ['name' => 'location',   'label' => 'Location',    'placeholder' => 'Field / Remote'],
+                    ['name' => 'location',   'label' => 'Location',    'placeholder' => 'Aligarh / Remote'],
                     ['name' => 'type',       'label' => 'Type',        'placeholder' => 'Full-time'],
                 ],
             ])
@@ -85,7 +86,7 @@
                                     <tr class="hover:bg-gray-50/70">
                                         <td class="px-5 py-3">
                                             <div class="font-semibold text-gray-900">{{ $app->full_name }}</div>
-                                            <div class="text-xs text-gray-400">{{ $app->qualification }}</div>
+                                            <div class="text-xs text-gray-400">{{ $app->experience ?: $app->qualification }}</div>
                                         </td>
                                         <td class="px-5 py-3 text-gray-600">{{ $app->job_role ?: '—' }}</td>
                                         <td class="px-5 py-3 text-gray-600">
@@ -152,13 +153,19 @@
                             <div class="text-sm text-gray-800">{{ $viewing->mobile }}</div>
                         </div>
                         <div>
-                            <div class="text-xs font-semibold text-gray-400 uppercase">Qualification</div>
-                            <div class="text-sm text-gray-800">{{ $viewing->qualification ?: '—' }}</div>
+                            <div class="text-xs font-semibold text-gray-400 uppercase">Experience</div>
+                            <div class="text-sm text-gray-800">{{ $viewing->experience ?: '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs font-semibold text-gray-400 uppercase">Applied On</div>
                             <div class="text-sm text-gray-800">{{ $viewing->created_at->format('d M Y, h:i A') }}</div>
                         </div>
+                        @if ($viewing->qualification)
+                            <div>
+                                <div class="text-xs font-semibold text-gray-400 uppercase">Qualification</div>
+                                <div class="text-sm text-gray-800">{{ $viewing->qualification }}</div>
+                            </div>
+                        @endif
                     </div>
                     <div>
                         <div class="text-xs font-semibold text-gray-400 uppercase">Address</div>

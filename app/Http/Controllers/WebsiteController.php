@@ -237,11 +237,15 @@ class WebsiteController extends Controller
             'email'         => 'required|email|max:255',
             'mobile'        => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
             'address'       => 'required|string|max:1000',
-            'qualification' => 'required|string|max:255',
+            'experience'    => 'required|string|max:255',
+            'qualification' => 'nullable|string|max:255',
             'description'   => 'nullable|string|max:5000',
-            'document'      => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5 MB
+            'document'      => 'required|file|mimes:pdf,doc,docx|max:2048', // 2 MB
         ], [
-            'mobile.regex' => 'Please enter a valid 10-digit mobile number.',
+            'mobile.regex'      => 'Please enter a valid 10-digit mobile number.',
+            'document.required' => 'Please attach your resume.',
+            'document.mimes'    => 'Resume must be a PDF or Word document.',
+            'document.max'      => 'Resume must not be larger than 2 MB.',
         ]);
 
         $documentPath = null;
@@ -255,7 +259,8 @@ class WebsiteController extends Controller
             'email'         => $validated['email'],
             'mobile'        => $validated['mobile'],
             'address'       => $validated['address'],
-            'qualification' => $validated['qualification'],
+            'experience'    => $validated['experience'],
+            'qualification' => $validated['qualification'] ?? null,
             'description'   => $validated['description'] ?? null,
             'document_path' => $documentPath,
         ]);

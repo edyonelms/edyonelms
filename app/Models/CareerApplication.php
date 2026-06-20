@@ -13,6 +13,7 @@ class CareerApplication extends Model
         'mobile',
         'address',
         'qualification',
+        'experience',
         'description',
         'document_path',
         'status',

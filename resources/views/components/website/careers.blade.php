@@ -7,38 +7,40 @@
     $title    = $def['title']    ?? '';
     $subtitle = $def['subtitle'] ?? '';
     $jobs     = !empty($stored['jobs']) ? $stored['jobs'] : ($def['jobs'] ?? []);
+
+    // Why work with us — perks shown as cards.
+    $perks = [
+        ['icon' => '💰', 'title' => 'Competitive Salary',  'desc' => 'Fair, market-aligned pay with performance incentives and on-time payouts — every single month.'],
+        ['icon' => '📈', 'title' => 'Learning & Growth',   'desc' => 'Real ownership from day one, hands-on mentorship and a clear path to grow with the company.'],
+        ['icon' => '🤝', 'title' => 'Supportive Team',      'desc' => 'Work with a friendly, helpful team that has your back and celebrates every win together.'],
+        ['icon' => '🌱', 'title' => 'Meaningful Impact',    'desc' => 'Your work directly helps hundreds of schools across India go digital and run better.'],
+        ['icon' => '🧘', 'title' => 'Work–Life Balance',    'desc' => 'A flexible, respectful culture — we care about results and outcomes, not clock-watching.'],
+        ['icon' => '🎓', 'title' => 'Training Provided',    'desc' => 'Full onboarding, product training and the tools you need to do your best work from day one.'],
+    ];
+
+    // Hiring / joining process steps.
+    $steps = [
+        ['n' => '1', 'title' => 'Apply / Enquiry', 'desc' => 'Submit the short application form with your details and resume — or enquire about a role you like.'],
+        ['n' => '2', 'title' => 'Screening',       'desc' => 'Our team reviews your application and shortlists the candidates who best fit the role.'],
+        ['n' => '3', 'title' => 'Interview',       'desc' => 'Have a friendly call / interview with the team to talk through your experience and the role.'],
+        ['n' => '4', 'title' => 'Offer & Joining', 'desc' => 'Clear the interview, receive your offer, complete onboarding and join the EDYONE team.'],
+    ];
 @endphp
 @include('components.website.partials.head', ['title' => 'Careers'])
 
 <style>
-  /* ── Advantages ── */
-  .perk-badge { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.5px;
-    color:var(--violet); background:var(--secondary-faint); border:1px solid var(--border);
-    padding:4px 12px; border-radius:50px; margin-top:14px; }
-
-  /* ── Earnings highlight banner ── */
-  .earn-banner { max-width:1060px; margin:0 auto; background:var(--grad1); border-radius:24px;
-    padding:44px 48px; color:#fff; display:grid; grid-template-columns:repeat(3,1fr); gap:28px;
-    box-shadow:0 24px 60px rgba(111,86,254,.25); position:relative; overflow:hidden; }
-  .earn-banner::before { content:''; position:absolute; top:-80px; right:-60px; width:260px; height:260px;
-    border-radius:50%; background:rgba(255,255,255,.12); }
-  .earn-stat { position:relative; z-index:1; }
-  .earn-num { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4vw,46px); font-weight:700; line-height:1; }
-  .earn-label { font-size:13px; opacity:.9; margin-top:8px; line-height:1.5; }
-
-  /* ── What you'll do ── */
-  .do-split { max-width:1060px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
-  .do-list { display:flex; flex-direction:column; gap:16px; }
-  .do-item { display:flex; gap:14px; align-items:flex-start; }
-  .do-check { flex-shrink:0; width:26px; height:26px; border-radius:8px; background:var(--secondary-faint);
-    color:var(--violet); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
-  .do-item-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:3px; }
-  .do-item-desc { font-size:13px; color:var(--text3); line-height:1.65; }
-  .do-visual { background:linear-gradient(135deg,var(--secondary-faint),var(--primary-faint));
-    border:1px solid var(--border); border-radius:24px; padding:40px; text-align:center; }
-  .do-visual-emoji { font-size:64px; }
-  .do-visual-title { font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:600; color:var(--text); margin:14px 0 8px; }
-  .do-visual-desc { font-size:14px; color:var(--text3); line-height:1.7; }
+  /* ── Jobs ── */
+  .jobs-wrap { max-width:880px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  .job-card { background:#fff; border:1px solid var(--border2); border-radius:var(--radius);
+    padding:24px 28px; display:flex; align-items:center; justify-content:space-between;
+    gap:20px; flex-wrap:wrap; transition:all .25s; box-shadow:var(--shadow3); }
+  .job-card:hover { border-color:var(--border); transform:translateY(-2px); box-shadow:var(--shadow2); }
+  .job-role { font-size:17px; font-weight:600; color:var(--text); margin-bottom:8px; }
+  .job-salary { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+    color:var(--violet); margin-bottom:10px; }
+  .job-meta { display:flex; gap:10px; flex-wrap:wrap; }
+  .job-pill { font-size:11px; font-weight:600; padding:4px 12px; border-radius:50px; background:var(--secondary-faint); color:var(--violet); }
+  .job-pill.pink { background:var(--primary-faint); color:var(--pink-dark); }
 
   /* ── Joining process steps ── */
   .steps-grid { max-width:1060px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
@@ -51,37 +53,40 @@
   .step-title { font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px; }
   .step-desc { font-size:13px; color:var(--text3); line-height:1.6; }
 
-  /* ── Jobs ── */
-  .jobs-wrap { max-width:880px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
-  .job-card { background:#fff; border:1px solid var(--border2); border-radius:var(--radius);
-    padding:24px 28px; display:flex; align-items:center; justify-content:space-between;
-    gap:20px; flex-wrap:wrap; transition:all .25s; box-shadow:var(--shadow3); }
-  .job-card:hover { border-color:var(--border); transform:translateY(-2px); box-shadow:var(--shadow2); }
-  .job-role { font-size:17px; font-weight:600; color:var(--text); margin-bottom:8px; }
-  .job-meta { display:flex; gap:10px; flex-wrap:wrap; }
-  .job-pill { font-size:11px; font-weight:600; padding:4px 12px; border-radius:50px; background:var(--secondary-faint); color:var(--violet); }
-  .job-pill.pink { background:var(--primary-faint); color:var(--pink-dark); }
+  /* ── Apply modal ── */
+  .apply-overlay { position:fixed; inset:0; background:rgba(26,15,46,.55); backdrop-filter:blur(4px);
+    display:none; align-items:flex-start; justify-content:center; z-index:9998; padding:40px 16px; overflow-y:auto; }
+  .apply-overlay.open { display:flex; }
+  .apply-modal { background:#fff; border-radius:24px; width:100%; max-width:600px; box-shadow:var(--shadow);
+    position:relative; padding:34px 34px 30px; animation:applyPop .3s cubic-bezier(.16,1,.3,1); }
+  @keyframes applyPop { from { opacity:0; transform:translateY(24px) scale(.98); } to { opacity:1; transform:none; } }
+  .apply-modal-close { position:absolute; top:18px; right:18px; width:34px; height:34px; border:none;
+    background:var(--bg3); color:var(--text3); border-radius:50%; font-size:20px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all .2s; }
+  .apply-modal-close:hover { background:var(--secondary-faint); color:var(--violet); }
+  .apply-head { margin-bottom:22px; padding-right:30px; }
+  .apply-head h3 { font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:700; color:var(--text); line-height:1.2; }
+  .apply-head p { font-size:13px; color:var(--text3); margin-top:4px; }
 
-  /* ── Apply form ── */
-  .apply-wrap { max-width:760px; margin:0 auto; background:#fff; border:1px solid var(--border2);
-    border-radius:24px; padding:40px; box-shadow:var(--shadow2); }
-  .apply-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .apply-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .field { display:flex; flex-direction:column; gap:6px; }
   .field.full { grid-column:1/-1; }
   .field label { font-size:13px; font-weight:600; color:var(--text); }
   .field label .req { color:var(--pink-dark); }
   .field input, .field textarea {
-    width:100%; padding:12px 14px; font-size:14px; font-family:inherit; color:var(--text);
+    width:100%; padding:11px 13px; font-size:14px; font-family:inherit; color:var(--text);
     background:var(--bg3); border:1px solid var(--border2); border-radius:12px; transition:border-color .2s, box-shadow .2s; }
   .field input:focus, .field textarea:focus { outline:none; border-color:var(--violet); box-shadow:0 0 0 3px rgba(111,86,254,.12); background:#fff; }
-  .field textarea { resize:vertical; min-height:90px; }
-  .file-drop { border:1.5px dashed var(--border); border-radius:12px; padding:18px; text-align:center;
+  .field textarea { resize:vertical; min-height:84px; }
+  .file-drop { border:1.5px dashed var(--border); border-radius:12px; padding:16px; text-align:center;
     cursor:pointer; transition:background .2s, border-color .2s; background:var(--bg3); }
   .file-drop:hover { border-color:var(--violet); background:var(--secondary-faint); }
   .file-drop input { display:none; }
-  .file-drop-icon { font-size:24px; }
-  .file-drop-text { font-size:13px; color:var(--text3); margin-top:6px; }
+  .file-drop-icon { font-size:22px; }
+  .file-drop-text { font-size:13px; color:var(--text3); margin-top:5px; }
+  .file-drop-hint { font-size:11px; color:var(--text4); margin-top:2px; }
   .file-drop-name { font-size:13px; font-weight:600; color:var(--violet); margin-top:6px; }
+  .file-err { font-size:12px; color:#dc2626; margin-top:6px; }
 
   /* ── Toast ── */
   .toast { position:fixed; bottom:28px; right:28px; background:#fff; border:1px solid rgba(34,197,94,.3);
@@ -93,13 +98,14 @@
   .toast-msg { font-size:12px; color:var(--text3); margin-top:2px; }
 
   @media (max-width:760px) {
-    .earn-banner { grid-template-columns:1fr; gap:22px; padding:34px 28px; text-align:center; }
-    .do-split { grid-template-columns:1fr; gap:30px; }
     .steps-grid { grid-template-columns:1fr 1fr; }
     .apply-grid { grid-template-columns:1fr; }
-    .apply-wrap { padding:28px 22px; }
+    .apply-modal { padding:28px 22px; }
   }
-  @media (max-width:480px) { .steps-grid { grid-template-columns:1fr; } .job-card { flex-direction:column; align-items:flex-start; } }
+  @media (max-width:480px) {
+    .steps-grid { grid-template-columns:1fr; }
+    .job-card { flex-direction:column; align-items:flex-start; }
+  }
 </style>
 
   @include('components.website.header')
@@ -112,173 +118,46 @@
       <h1 class="section-title">{{ $title }}</h1>
       <p class="section-subtitle">{{ $subtitle }}</p>
       <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <a href="#apply" class="btn btn-primary">Apply Now</a>
+        <button type="button" class="btn btn-primary" onclick="openApply('')">Apply Now</button>
         <a href="#openings" class="btn btn-outline">View Openings →</a>
       </div>
     </div>
   </section>
 
-  {{-- ══════════════════ ADVANTAGES ══════════════════ --}}
-  <section class="section" style="padding-bottom:40px;">
+  {{-- ══════════════════ WHY WORK WITH US ══════════════════ --}}
+  <section class="section" style="padding-bottom:48px;">
     <div class="section-head">
       <span class="section-tag tag-pink">Why Join EDYONE</span>
-      <h2 class="section-title">Perks that actually pay off</h2>
-      <p class="section-subtitle">A career with EDYONE means real earning potential, full flexibility and a product
-        schools genuinely need — backed by a team that supports you at every step.</p>
+      <h2 class="section-title">A place to do your best work</h2>
+      <p class="section-subtitle">We're a fast-growing team on a mission to make great school technology affordable for
+        every institution in India — and we look after the people who build it.</p>
     </div>
     <div class="cards-grid">
+      @foreach ($perks as $p)
       <div class="feature-card">
-        <div class="feature-icon-wrap">💰</div>
-        <h3 class="feature-title">Earn ₹1 Lakh+ / Month</h3>
-        <p class="feature-desc">High commissions on every school you onboard, plus recurring income as they renew —
-          your earnings grow with your effort, with no upper limit.</p>
+        <div class="feature-icon-wrap">{{ $p['icon'] }}</div>
+        <h3 class="feature-title">{{ $p['title'] }}</h3>
+        <p class="feature-desc">{{ $p['desc'] }}</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🌍</div>
-        <h3 class="feature-title">100% Remote Work</h3>
-        <p class="feature-desc">Work from anywhere, in your own city or region. No office, no fixed desk — just your
-          phone, a laptop and the freedom to build your own schedule.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">⚡</div>
-        <h3 class="feature-title">Simple Joining Process</h3>
-        <p class="feature-desc">No lengthy interviews or complex paperwork. Fill one short form, get verified and
-          start within days — onboarding is quick and completely hassle-free.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🏦</div>
-        <h3 class="feature-title">Fast & Easy Payouts</h3>
-        <p class="feature-desc">Transparent payouts sent straight to your bank account on time, every time. Track
-          every school and every payment clearly from one place.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">🎓</div>
-        <h3 class="feature-title">Full Training & Support</h3>
-        <p class="feature-desc">Get product training, ready-made demos, brochures and pricing kits — plus a dedicated
-          team that handles onboarding and tech support for your schools.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrap">📈</div>
-        <h3 class="feature-title">Grow Without Limits</h3>
-        <p class="feature-desc">Top performers unlock higher tiers, bigger incentives and leadership opportunities.
-          The more schools you bring, the faster you rise.</p>
-      </div>
-    </div>
-  </section>
-
-  {{-- ══════════════════ EARNINGS BANNER ══════════════════ --}}
-  <section class="section" style="padding-top:20px;padding-bottom:40px;">
-    <div class="earn-banner">
-      <div class="earn-stat">
-        <div class="earn-num">₹1 Lakh+</div>
-        <div class="earn-label">Monthly earning potential for active partners</div>
-      </div>
-      <div class="earn-stat">
-        <div class="earn-num">100%</div>
-        <div class="earn-label">Remote &amp; flexible — work on your own terms</div>
-      </div>
-      <div class="earn-stat">
-        <div class="earn-num">Recurring</div>
-        <div class="earn-label">Income that keeps coming as schools renew</div>
-      </div>
-    </div>
-  </section>
-
-  {{-- ══════════════════ WHAT YOU'LL DO ══════════════════ --}}
-  <section class="section section-alt">
-    <div class="section-head">
-      <span class="section-tag tag-violet">Your Role</span>
-      <h2 class="section-title">What you'll do</h2>
-      <p class="section-subtitle">Your core mission is simple — help schools in your region partner with EDYONE and go
-        digital. You connect them with us, and we take care of the rest.</p>
-    </div>
-    <div class="do-split">
-      <div class="do-list">
-        <div class="do-item">
-          <div class="do-check">🏫</div>
-          <div>
-            <div class="do-item-title">Get schools to partner with us</div>
-            <div class="do-item-desc">Reach out to schools in your area and introduce them to EDYONE — India's
-              affordable, all-in-one school management platform.</div>
-          </div>
-        </div>
-        <div class="do-item">
-          <div class="do-check">🤝</div>
-          <div>
-            <div class="do-item-title">Pitch &amp; book demos</div>
-            <div class="do-item-desc">Share our brochures and pricing, and book a demo with our team. We help you
-              present EDYONE with confidence — even if you're brand new to sales.</div>
-          </div>
-        </div>
-        <div class="do-item">
-          <div class="do-check">✅</div>
-          <div>
-            <div class="do-item-title">Help them onboard</div>
-            <div class="do-item-desc">Once a school says yes, our onboarding team sets everything up. You simply stay
-              in touch and keep building relationships.</div>
-          </div>
-        </div>
-        <div class="do-item">
-          <div class="do-check">💸</div>
-          <div>
-            <div class="do-item-title">Earn for every school</div>
-            <div class="do-item-desc">Get paid a healthy commission for each school you bring on board, plus recurring
-              income for as long as they stay with EDYONE.</div>
-          </div>
-        </div>
-      </div>
-      <div class="do-visual">
-        <div class="do-visual-emoji">🏫🤝🚀</div>
-        <div class="do-visual-title">Schools need you</div>
-        <div class="do-visual-desc">Thousands of schools across India are still running on paperwork. You bring them a
-          product that practically sells itself — and earn well doing it.</div>
-      </div>
-    </div>
-  </section>
-
-  {{-- ══════════════════ JOINING PROCESS ══════════════════ --}}
-  <section class="section">
-    <div class="section-head">
-      <span class="section-tag tag-pink">How It Works</span>
-      <h2 class="section-title">Simple joining process</h2>
-      <p class="section-subtitle">Getting started takes minutes. Here's exactly how you go from applying to earning.</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <div class="step-title">Apply</div>
-        <div class="step-desc">Fill the short application form below with your details and upload your resume or ID.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <div class="step-title">Get Verified</div>
-        <div class="step-desc">Our team reviews your application and reaches out within a few days to welcome you on board.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <div class="step-title">Train</div>
-        <div class="step-desc">Get product training, sales material and pricing so you can pitch EDYONE with confidence.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">4</div>
-        <div class="step-title">Start Earning</div>
-        <div class="step-desc">Onboard schools, track your payouts, and earn recurring income — all on your own schedule.</div>
-      </div>
+      @endforeach
     </div>
   </section>
 
   {{-- ══════════════════ OPEN POSITIONS ══════════════════ --}}
   <section class="section section-alt" id="openings">
     <div class="section-head">
-      <span class="section-tag tag-pink">Open Positions</span>
+      <span class="section-tag tag-violet">Open Positions</span>
       <h2 class="section-title">Current openings</h2>
-      <p class="section-subtitle">Pick the role that fits you best, then apply using the form below.</p>
+      <p class="section-subtitle">Pick the role that fits you best and click Apply — it only takes a couple of minutes.</p>
     </div>
     <div class="jobs-wrap">
-      @foreach ($jobs as $job)
+      @forelse ($jobs as $job)
       <div class="job-card">
         <div>
           <div class="job-role">{{ $job['role'] ?? '' }}</div>
+          @if (!empty($job['salary']))
+            <div class="job-salary">💰 {{ $job['salary'] }}</div>
+          @endif
           <div class="job-meta">
             @if (!empty($job['department']))<span class="job-pill">{{ $job['department'] }}</span>@endif
             @if (!empty($job['location']))<span class="job-pill pink">{{ $job['location'] }}</span>@endif
@@ -286,22 +165,46 @@
           </div>
         </div>
         <button type="button" class="btn btn-primary"
-          onclick="applyForRole('{{ addslashes($job['role'] ?? '') }}')">Apply Now</button>
+          onclick="openApply('{{ addslashes($job['role'] ?? '') }}')">Apply Now</button>
       </div>
-      @endforeach
+      @empty
+      <p style="text-align:center;color:var(--text3);font-size:14px;">No open positions right now — but we're always
+        happy to hear from great people. Use <strong>Apply Now</strong> above to send us your details.</p>
+      @endforelse
     </div>
   </section>
 
-  {{-- ══════════════════ APPLY FORM ══════════════════ --}}
-  <section class="section" id="apply">
+  {{-- ══════════════════ JOINING PROCESS ══════════════════ --}}
+  <section class="section">
     <div class="section-head">
-      <span class="section-tag tag-violet">Apply Now</span>
-      <h2 class="section-title">Send us your application</h2>
-      <p class="section-subtitle">Fill in your details and our team will get back to you. Fields marked
-        <span style="color:var(--pink-dark)">*</span> are required.</p>
+      <span class="section-tag tag-pink">How Hiring Works</span>
+      <h2 class="section-title">Our joining process</h2>
+      <p class="section-subtitle">From enquiry to offer, here's exactly what happens after you apply — simple,
+        transparent and quick.</p>
     </div>
+    <div class="steps-grid">
+      @foreach ($steps as $s)
+      <div class="step-card">
+        <div class="step-num">{{ $s['n'] }}</div>
+        <div class="step-title">{{ $s['title'] }}</div>
+        <div class="step-desc">{{ $s['desc'] }}</div>
+      </div>
+      @endforeach
+    </div>
+    <div style="text-align:center;margin-top:40px;">
+      <button type="button" class="btn btn-primary btn-lg" onclick="openApply('')">Apply Now</button>
+    </div>
+  </section>
 
-    <div class="apply-wrap">
+  {{-- ══════════════════ APPLY MODAL ══════════════════ --}}
+  <div class="apply-overlay" id="applyModal" aria-hidden="true">
+    <div class="apply-modal" role="dialog" aria-modal="true" aria-labelledby="applyTitle">
+      <button type="button" class="apply-modal-close" onclick="closeApply()" aria-label="Close">&times;</button>
+      <div class="apply-head">
+        <h3 id="applyTitle">Apply <span id="applyRoleLabel"></span></h3>
+        <p>Fill in your details and attach your resume. Fields marked <span style="color:var(--pink-dark)">*</span> are required.</p>
+      </div>
+
       <form id="careerForm" onsubmit="handleCareerSubmit(event)" enctype="multipart/form-data">
         <input type="hidden" name="job_role" id="jobRole">
         <div class="apply-grid">
@@ -319,8 +222,8 @@
               placeholder="10-digit mobile number">
           </div>
           <div class="field">
-            <label>Qualification <span class="req">*</span></label>
-            <input type="text" name="qualification" required placeholder="e.g. B.Com, MBA, Graduate">
+            <label>Experience <span class="req">*</span></label>
+            <input type="text" name="experience" required placeholder="e.g. 2 years in sales / Fresher">
           </div>
           <div class="field full">
             <label>Address <span class="req">*</span></label>
@@ -328,17 +231,19 @@
           </div>
           <div class="field full">
             <label>About You / Why you want to join</label>
-            <textarea name="description" placeholder="Tell us a little about your experience and why you'd be a great fit (optional)"></textarea>
+            <textarea name="description" placeholder="Tell us a little about yourself and why you'd be a great fit (optional)"></textarea>
           </div>
           <div class="field full">
-            <label>Attach Document <span style="font-weight:400;color:var(--text3)">(Resume / ID — PDF, DOC or image, max 5 MB)</span></label>
+            <label>Attach Resume <span class="req">*</span></label>
             <label class="file-drop" for="careerDoc">
               <div class="file-drop-icon">📎</div>
-              <div class="file-drop-text">Click to upload your document</div>
+              <div class="file-drop-text">Click to upload your resume</div>
+              <div class="file-drop-hint">PDF or Word (DOC/DOCX) — max 2 MB</div>
               <div class="file-drop-name" id="fileName"></div>
-              <input type="file" name="document" id="careerDoc" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                onchange="document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : ''">
+              <input type="file" name="document" id="careerDoc" required accept=".pdf,.doc,.docx"
+                onchange="checkFile(this)">
             </label>
+            <div class="file-err" id="fileErr"></div>
           </div>
           <div class="field full">
             <button type="submit" class="btn btn-primary btn-submit" style="width:100%;justify-content:center;">
@@ -347,7 +252,7 @@
         </div>
       </form>
     </div>
-  </section>
+  </div>
 
   {{-- Toast --}}
   <div class="toast hidden" id="toast">
@@ -359,16 +264,57 @@
   </div>
 
   <script>
-    function applyForRole(role) {
-      var f = document.getElementById('jobRole');
-      if (f) f.value = role || '';
-      var apply = document.getElementById('apply');
-      if (apply) apply.scrollIntoView({ behavior: 'smooth' });
+    var MAX_RESUME_BYTES = 2 * 1024 * 1024; // 2 MB
+
+    function openApply(role) {
+      document.getElementById('jobRole').value = role || '';
+      document.getElementById('applyRoleLabel').textContent = role ? ('for ' + role) : 'to EDYONE';
+      var m = document.getElementById('applyModal');
+      m.classList.add('open');
+      m.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeApply() {
+      var m = document.getElementById('applyModal');
+      m.classList.remove('open');
+      m.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    // Close on backdrop click and Escape.
+    document.getElementById('applyModal').addEventListener('click', function (e) {
+      if (e.target === this) closeApply();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeApply();
+    });
+
+    function checkFile(input) {
+      var nameEl = document.getElementById('fileName');
+      var errEl  = document.getElementById('fileErr');
+      errEl.textContent = '';
+      var f = input.files[0];
+      if (!f) { nameEl.textContent = ''; return; }
+      if (f.size > MAX_RESUME_BYTES) {
+        errEl.textContent = 'This file is larger than 2 MB. Please upload a smaller resume.';
+        input.value = '';
+        nameEl.textContent = '';
+        return;
+      }
+      nameEl.textContent = f.name;
     }
 
     async function handleCareerSubmit(e) {
       e.preventDefault();
       var form = e.target;
+
+      var fileInput = document.getElementById('careerDoc');
+      if (fileInput.files[0] && fileInput.files[0].size > MAX_RESUME_BYTES) {
+        showToast('Resume must be 2 MB or smaller.', false);
+        return;
+      }
+
       var btn = form.querySelector('.btn-submit');
       var orig = btn.textContent;
       btn.textContent = 'Submitting…';
@@ -384,6 +330,8 @@
         if (json.success) {
           form.reset();
           document.getElementById('fileName').textContent = '';
+          document.getElementById('fileErr').textContent = '';
+          closeApply();
           showToast(json.message || 'Application sent!', true);
         } else {
           showToast(Object.values(json.errors || {}).flat()[0] || 'Something went wrong.', false);
