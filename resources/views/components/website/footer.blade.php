@@ -9,6 +9,26 @@
   footer .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; }
   @media (max-width: 768px) { footer .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; } }
   @media (max-width: 480px) { footer .footer-grid { grid-template-columns: 1fr; } }
+
+  /* ══════════════════ GLOBAL SCROLL REVEAL ══════════════════
+     Applied automatically (by the script at the end of this partial) to content
+     blocks as they scroll into view, so every page gets strong, consistent
+     motion. The homepage is skipped — it already has its own reveal system.
+     Classes are removed once the entry animation finishes, so hover transforms
+     on cards keep working normally. */
+  .ed-anim-on {
+    opacity: 0;
+    transition: opacity .85s cubic-bezier(.16, 1, .3, 1), transform .85s cubic-bezier(.16, 1, .3, 1);
+    will-change: opacity, transform;
+  }
+  .ed-anim-on.ed-up    { transform: translateY(40px); }
+  .ed-anim-on.ed-left  { transform: translateX(-54px); }
+  .ed-anim-on.ed-right { transform: translateX(54px); }
+  .ed-anim-on.ed-zoom  { transform: scale(.93) translateY(22px); }
+  .ed-anim-on.ed-shown { opacity: 1; transform: none; }   /* must stay after the variants */
+  @media (prefers-reduced-motion: reduce) {
+    .ed-anim-on { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
 </style>
 <footer>
   
@@ -119,3 +139,77 @@
         </div>
     </div>
 </footer>
+
+{{-- ══════════════════ GLOBAL SCROLL-REVEAL ENGINE ══════════════════
+     Auto-tags content blocks and reveals them on scroll. Runs on every page
+     except the homepage (which has its own system). Elements already in view on
+     load are left untouched (no flash). One-shot: classes are cleaned up after
+     the animation so hover effects stay intact. --}}
+<script>
+  (function () {
+    if (!('IntersectionObserver' in window)) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Homepage already ships its own .reveal system — don't double up.
+    if (document.querySelector('.hero-section')) return;
+
+    function init() {
+      var SEL = '.section-head, .feature-card, .module-card, .card-about-item, .card-wmodel, '
+        + '.team-card, .story-highlight, .info-card, .trust-badge, .feature-row, .blog-card, '
+        + '.recent-card, .testimonial-card, .stat-card, .app-card, .module-mini, .role-card, '
+        + '.hiw-card, .step-card, .job-card, .team-card-leader, .faq-item, .do-split, .apply-wrap, '
+        + '.faq-chips, .svc-nav, .wu-feature-chips, .article-wrap, .recent-wrap, '
+        + '.svc-section, .wu-section, .cta-card, .earn-banner';
+      var EXCLUDE = '.navbar, header, .hero-section, footer, .page-header';
+      // Skip anything already handled by the homepage reveal classes, just in case.
+      var SKIP = '.reveal, .reveal-left, .reveal-right, .reveal-scale, .stagger-children';
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var el = e.target;
+          io.unobserve(el);
+          el.classList.add('ed-shown');
+          var cleaned = false;
+          var done = function (ev) {
+            if (ev && ev.target !== el) return;        // ignore bubbling child transitions
+            if (cleaned) return;
+            cleaned = true;
+            el.classList.remove('ed-anim-on', 'ed-up', 'ed-left', 'ed-right', 'ed-zoom', 'ed-shown');
+            el.style.transitionDelay = '';
+            el.removeEventListener('transitionend', done);
+          };
+          el.addEventListener('transitionend', done);
+          setTimeout(done, 1800);                        // fallback if transitionend never fires
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+      document.querySelectorAll(SEL).forEach(function (el) {
+        if (el.closest(EXCLUDE) || el.closest(SKIP)) return;
+        if (el.classList.contains('ed-anim-on')) return;
+        if (el.getBoundingClientRect().top < vh * 0.88) return;   // already on screen → no flash
+
+        var variant = 'ed-up';
+        if (el.classList.contains('cta-card') || el.classList.contains('earn-banner')) {
+          variant = 'ed-zoom';
+        } else if (el.classList.contains('svc-section') || el.classList.contains('wu-section')) {
+          variant = el.classList.contains('reverse') ? 'ed-right' : 'ed-left';
+        }
+
+        var idx = 0, sib = el.previousElementSibling;
+        while (sib) { idx++; sib = sib.previousElementSibling; }
+        var delay = Math.min(idx, 7) * 70;
+
+        el.classList.add('ed-anim-on', variant);
+        if (delay) el.style.transitionDelay = delay + 'ms';
+        io.observe(el);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

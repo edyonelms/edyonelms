@@ -26,10 +26,9 @@
 @include('components.website.partials.head', ['title' => 'Why Us'])
 
 <style>
-  /* ── Reason detail sections (alternating) ── */
-  .wu-section { max-width:1100px; margin:0 auto; padding:60px 0; display:grid; grid-template-columns:1fr 1fr;
-    gap:56px; align-items:center; border-bottom:1px solid var(--border2); }
-  .wu-section:last-of-type { border-bottom:none; }
+  /* ── Reason detail sections (alternating full-width bands) ── */
+  .wu-section { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr;
+    gap:56px; align-items:center; }
   .wu-section.reverse .wu-visual { order:2; }
   .wu-eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:1px;
     text-transform:uppercase; color:var(--violet); background:var(--secondary-faint); border:1px solid var(--border);
@@ -67,7 +66,7 @@
   .wu-price-sub { font-size:13px; color:var(--text3); margin-top:8px; }
 
   @media (max-width:860px) {
-    .wu-section { grid-template-columns:1fr; gap:30px; padding:46px 0; }
+    .wu-section { grid-template-columns:1fr; gap:30px; }
     .wu-section.reverse .wu-visual { order:0; }
     .wu-visual { min-height:230px; }
     .wu-emoji { font-size:90px; }
@@ -100,9 +99,8 @@
   </section>
 
   {{-- ══════════════════ DETAILED REASONS ══════════════════ --}}
-  <section class="section" style="padding-top:8px;">
-
-    {{-- 1. Everything in one place (all services / features) --}}
+  {{-- 1. Everything in one place (all services / features) --}}
+  <section class="section section-alt">
     <div class="wu-section">
       <div class="wu-visual">
         <span class="wu-emoji">🧩</span>
@@ -124,7 +122,10 @@
       </div>
     </div>
 
-    {{-- 2. Affordable pricing --}}
+  </section>
+
+  {{-- 2. Affordable pricing --}}
+  <section class="section">
     <div class="wu-section reverse">
       <div class="wu-visual">
         <div class="wu-price">
@@ -152,7 +153,10 @@
       </div>
     </div>
 
-    {{-- 3. Hybrid web + mobile --}}
+  </section>
+
+  {{-- 3. Hybrid web + mobile --}}
+  <section class="section section-alt">
     <div class="wu-section">
       <div class="wu-visual">
         <span class="wu-emoji">🔁</span>
@@ -174,7 +178,10 @@
       </div>
     </div>
 
-    {{-- 4. Integration & data upload --}}
+  </section>
+
+  {{-- 4. Integration & data upload --}}
+  <section class="section">
     <div class="wu-section reverse">
       <div class="wu-visual">
         <span class="wu-emoji">🛠️</span>
@@ -196,7 +203,10 @@
       </div>
     </div>
 
-    {{-- 5. Human support --}}
+  </section>
+
+  {{-- 5. Human support --}}
+  <section class="section section-alt">
     <div class="wu-section">
       <div class="wu-visual">
         <span class="wu-emoji">🛟</span>
@@ -218,7 +228,10 @@
       </div>
     </div>
 
-    {{-- 6. Built for India --}}
+  </section>
+
+  {{-- 6. Built for India --}}
+  <section class="section">
     <div class="wu-section reverse">
       <div class="wu-visual">
         <span class="wu-emoji">🇮🇳</span>
