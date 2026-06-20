@@ -12,35 +12,24 @@ class QuickLinks extends Component
     {
         $configLinks = config('menu.super-admin');
 
+        // Stable, evenly-spread palette — assigned by position so a tile keeps
+        // the same colour on every load (no more random flicker on reload).
         $colors = [
-            'blue',
-            'indigo',
-            'purple',
-            'green',
-            'yellow',
-            'pink',
-            'teal',
-            'rose',
-            'cyan',
-            'lime',
-            'fuchsia',
-            'red',
-            'orange',
-            'amber',
-            'sky',
-            'violet',
-            'gray'
+            'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose',
+            'red', 'orange', 'amber', 'lime', 'green', 'teal', 'cyan', 'sky',
         ];
 
-        $configLinks = array_filter($configLinks, fn($link) => $link['link'] !== 'super-admin.quick-links');
+        $configLinks = array_values(array_filter(
+            $configLinks,
+            fn($link) => $link['link'] !== 'super-admin.quick-links'
+        ));
 
-        foreach ($configLinks as $link) {
-            $randomColor = $colors[array_rand($colors)];
+        foreach ($configLinks as $i => $link) {
             $this->links[] = [
                 'title' => $link['title'],
                 'route' => $link['link'],
-                'icon' => $link['icon'],
-                'color' => $randomColor
+                'icon'  => $link['icon'],
+                'color' => $colors[$i % count($colors)],
             ];
         }
     }
