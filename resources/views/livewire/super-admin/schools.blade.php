@@ -3,64 +3,73 @@
     {{-- ══════════ LIST VIEW ══════════ --}}
     @if ($activeView === 'list')
 
-        {{-- ── HEADER ── --}}
-        <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Schools</h1>
-                    <p class="text-sm text-gray-500 mt-0.5">Manage all registered schools</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-3 divide-x divide-gray-200">
-                        <span class="pr-4">Total: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
-                        <span class="px-4">Active: <strong
-                                class="text-emerald-600">{{ $activeSchools }}</strong></span>
-                        <span class="px-4">Pending: <strong
-                                class="text-amber-500">{{ $pendingSchools }}</strong></span>
-                        <span class="px-4">Students: <strong
-                                class="text-blue-600">{{ $totalStudents }}</strong></span>
-                        <span class="px-4">Teachers: <strong
-                                class="text-purple-600">{{ $totalTeachers }}</strong></span>
-                        <span class="pl-4">Avg Students: <strong
-                                class="text-gray-800">{{ $avgStudents }}</strong></span>
+        {{-- ── HEADER (analytics + filter) ── --}}
+        <div class="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div class="px-4 sm:px-6 py-4 sm:py-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Schools</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">Manage all registered schools</p>
                     </div>
                     <button wire:click="openModal"
                         class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700
-                               text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                               text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex-shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         <span class="hidden sm:inline">Add School</span>
                     </button>
                 </div>
+
+                {{-- Analytics chips — wrap freely so the header never overflows --}}
+                <div class="flex flex-wrap items-center gap-2 mt-3">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">All <strong class="text-gray-900">{{ $totalSchools }}</strong></span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-600">This Week <strong class="text-indigo-700">{{ $weekSchools }}</strong></span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-600">This Month <strong class="text-blue-700">{{ $monthSchools }}</strong></span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-100 text-xs text-violet-600">Last Month <strong class="text-violet-700">{{ $lastMonthSchools }}</strong></span>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-600">Active <strong class="text-emerald-700">{{ $activeSchools }}</strong></span>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-xs text-amber-600">Inactive <strong class="text-amber-700">{{ $inactiveSchools }}</strong></span>
+                    <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Students <strong class="text-gray-900">{{ $totalStudents }}</strong></span>
+                    <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Teachers <strong class="text-gray-900">{{ $totalTeachers }}</strong></span>
+                </div>
             </div>
-            {{-- Mobile stats --}}
-            <div class="flex lg:hidden flex-wrap items-center gap-3 text-xs text-gray-500 mt-3">
-                <span>Total: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
-                <span>Active: <strong class="text-emerald-600">{{ $activeSchools }}</strong></span>
-                <span>Pending: <strong class="text-amber-500">{{ $pendingSchools }}</strong></span>
-                <span>Students: <strong class="text-blue-600">{{ $totalStudents }}</strong></span>
-                <span>Teachers: <strong class="text-purple-600">{{ $totalTeachers }}</strong></span>
-                <span>Avg: <strong class="text-gray-800">{{ $avgStudents }}</strong></span>
+
+            {{-- Filter bar (enquiry-style sub-header) --}}
+            <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filter by:
+                    </div>
+
+                    <div class="relative">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                        <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search by name, email, code…"
+                            class="text-xs bg-white border border-gray-200 rounded-md pl-8 pr-3 py-1.5 text-gray-700 w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <select wire:model.live="statusFilter"
+                        class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+
+                    @if ($search || $statusFilter)
+                        <button wire:click="clearFilters"
+                            class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            Clear
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
 
         <div class="p-4 sm:p-6 space-y-5">
-
-            {{-- ── SEARCH ── --}}
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                <div class="relative max-w-md">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Search by name, email, code, affiliation..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" />
-                </div>
-            </div>
 
             {{-- ── SCHOOL CARDS ── --}}
             @if ($schools->count())
@@ -227,10 +236,10 @@
                         </svg>
                     </div>
                     <p class="text-gray-500 text-sm">No schools found</p>
-                    @if ($search)
-                        <button wire:click="$set('search', '')"
+                    @if ($search || $statusFilter)
+                        <button wire:click="clearFilters"
                             class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
-                            Clear search
+                            Clear filters
                         </button>
                     @endif
                 </div>
@@ -1148,8 +1157,26 @@
                     </button>
                 </div>
 
+                {{-- Step indicator (create flow only) --}}
+                @if (!$editId)
+                    <div class="flex items-center gap-2 px-6 pt-4 flex-shrink-0">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold {{ $modalStep === 1 ? 'text-blue-600' : 'text-gray-400' }}">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $modalStep === 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500' }}">1</span>
+                            School Details
+                        </span>
+                        <span class="w-6 h-px bg-gray-200"></span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold {{ $modalStep === 2 ? 'text-blue-600' : 'text-gray-400' }}">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] {{ $modalStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500' }}">2</span>
+                            Select Modules
+                        </span>
+                    </div>
+                @endif
+
                 {{-- Body --}}
                 <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                    {{-- ===== STEP 1: School details ===== --}}
+                    @if ($editId || $modalStep === 1)
 
                     {{-- Logo --}}
                     <div>
@@ -1249,28 +1276,72 @@
                         </div>
                     @endif
 
+                    @endif {{-- ===== end STEP 1 ===== --}}
+
+                    {{-- ===== STEP 2: Module selection (create only) ===== --}}
+                    @if (!$editId && $modalStep === 2)
+                        <div>
+                            <div class="flex items-center justify-between mb-3 gap-3">
+                                <div>
+                                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Module Access</h3>
+                                    <p class="text-xs text-gray-400 mt-0.5">Choose which features this school can use. You can change these later from the school's Modules tab.</p>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <button type="button" wire:click="enableAllNewModules"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">Enable all</button>
+                                    <button type="button" wire:click="disableAllNewModules"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">Disable all</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach (config('modules', []) as $key => $def)
+                                    <label class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition-colors">
+                                        <span class="text-sm font-medium text-gray-800">{{ $def['label'] ?? $key }}</span>
+                                        <input type="checkbox" wire:model="selectedModules.{{ $key }}"
+                                            class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
 
                 {{-- Footer --}}
                 <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                    @if (!$editId && $modalStep === 2)
+                        <button wire:click="backToDetailsStep" type="button"
+                            class="mr-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            ← Back
+                        </button>
+                    @endif
                     <button wire:click="closeModal" type="button"
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                         Cancel
                     </button>
-                    <button wire:click="saveSchool" type="button"
-                        wire:loading.attr="disabled" wire:target="saveSchool,logo"
-                        class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
-                               bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm
-                               disabled:opacity-60 disabled:cursor-not-allowed">
-                        <span wire:loading.remove wire:target="saveSchool,logo">{{ $editId ? 'Update School' : 'Create School' }}</span>
-                        <span wire:loading wire:target="saveSchool,logo" class="flex items-center gap-2">
-                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                            </svg>
-                            Saving...
-                        </span>
-                    </button>
+
+                    @if (!$editId && $modalStep === 1)
+                        <button wire:click="goToModuleStep" type="button"
+                            class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                                   bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm">
+                            Next: Select Modules →
+                        </button>
+                    @else
+                        <button wire:click="saveSchool" type="button"
+                            wire:loading.attr="disabled" wire:target="saveSchool,logo"
+                            class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold
+                                   bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm
+                                   disabled:opacity-60 disabled:cursor-not-allowed">
+                            <span wire:loading.remove wire:target="saveSchool,logo">{{ $editId ? 'Update School' : 'Create School' }}</span>
+                            <span wire:loading wire:target="saveSchool,logo" class="flex items-center gap-2">
+                                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                Saving...
+                            </span>
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>

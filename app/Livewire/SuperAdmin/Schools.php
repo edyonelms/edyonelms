@@ -28,11 +28,22 @@ class Schools extends Component
     public int $totalSchools   = 0;
     public int $activeSchools  = 0;
     public int $pendingSchools = 0;
+    public int $inactiveSchools = 0;
     public int $totalStudents  = 0;
     public int $totalTeachers  = 0;
     public     $avgStudents    = 0;
 
-    public string $search = '';
+    // ── Registration analytics ────────────────────────────────────────────────
+    public int $weekSchools      = 0;
+    public int $monthSchools     = 0;
+    public int $lastMonthSchools = 0;
+
+    public string $search       = '';
+    public string $statusFilter = ''; // '' | 'active' | 'inactive'
+
+    // ── Add-school flow ────────────────────────────────────────────────────────
+    public int   $modalStep       = 1; // 1 = details, 2 = module selection (create only)
+    public array $selectedModules = []; // module_key => bool for a new school
 
     public string $activeView   = 'list';
     public        $detailSchool = null;
@@ -99,16 +110,36 @@ class Schools extends Component
         $this->totalSchools   = Organization::count();
         $this->activeSchools  = Organization::where('status', true)->count();
         $this->pendingSchools = Organization::where('status', false)->count();
+        $this->inactiveSchools = $this->pendingSchools;
         $this->totalStudents  = StudentDetail::count();
         $this->totalTeachers  = TeacherDetail::count();
         $this->avgStudents    = $this->totalSchools > 0
             ? round($this->totalStudents / $this->totalSchools) : 0;
+
+        // Registered-school analytics
+        $this->weekSchools      = Organization::where('created_at', '>=', now()->startOfWeek())->count();
+        $this->monthSchools     = Organization::where('created_at', '>=', now()->startOfMonth())->count();
+        $this->lastMonthSchools = Organization::whereBetween('created_at', [
+            now()->subMonthNoOverflow()->startOfMonth(),
+            now()->subMonthNoOverflow()->endOfMonth(),
+        ])->count();
     }
 
-    // ─── Search ───────────────────────────────────────────────────────────────
+    // ─── Search / filters ───────────────────────────────────────────────────────
 
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'statusFilter']);
         $this->resetPage();
     }
 
@@ -348,6 +379,8 @@ class Schools extends Component
     public function openModal(): void
     {
         $this->resetForm();
+        $this->initNewSchoolModules();
+        $this->modalStep = 1;
         $this->showModal = true;
     }
 
@@ -355,6 +388,72 @@ class Schools extends Component
     {
         $this->showModal = false;
         $this->resetForm();
+    }
+
+    /** Pre-tick the new-school module list from each module's config default. */
+    private function initNewSchoolModules(): void
+    {
+        $states = [];
+        foreach (config('modules', []) as $key => $def) {
+            $states[$key] = (bool) ($def['default'] ?? true);
+        }
+        $this->selectedModules = $states;
+    }
+
+    /** Step 1 → 2: validate the school fields, then show module selection. */
+    public function goToModuleStep(): void
+    {
+        $this->validate($this->schoolRules());
+        $this->modalStep = 2;
+    }
+
+    public function backToDetailsStep(): void
+    {
+        $this->modalStep = 1;
+    }
+
+    public function enableAllNewModules(): void
+    {
+        foreach (array_keys(config('modules', [])) as $key) {
+            $this->selectedModules[$key] = true;
+        }
+    }
+
+    public function disableAllNewModules(): void
+    {
+        foreach (array_keys(config('modules', [])) as $key) {
+            $this->selectedModules[$key] = false;
+        }
+    }
+
+    /** Validation rules shared by the step transition and the final save. */
+    protected function schoolRules(): array
+    {
+        return [
+            'schoolName'     => 'required|string|max:255',
+            'email'          => [
+                'required',
+                'email',
+                Rule::unique('organizations', 'email')->ignore($this->editId),
+                Rule::unique('users', 'email')->ignore($this->adminUserId),
+            ],
+            'mobileNumber'   => 'required|string|max:15',
+            'state'          => 'required|string',
+            'educationBoard' => 'required|string',
+            'schoolCode'     => [
+                'required',
+                'string',
+                Rule::unique('organizations', 'school_code')->ignore($this->editId),
+            ],
+            'serialNumber'   => [
+                'required',
+                'string',
+                Rule::unique('organizations', 'serial_number')->ignore($this->editId),
+            ],
+            'affiliationNo'  => 'nullable|string|max:100',
+            'udiseNumber'    => 'nullable|string|max:100',
+            'logo'           => 'nullable|image|max:2048',
+        ];
     }
 
     public function onEdit($id): void
@@ -384,31 +483,7 @@ class Schools extends Component
 
     public function saveSchool(): void
     {
-        $this->validate([
-            'schoolName'     => 'required|string|max:255',
-            'email'          => [
-                'required',
-                'email',
-                Rule::unique('organizations', 'email')->ignore($this->editId),
-                Rule::unique('users', 'email')->ignore($this->adminUserId),
-            ],
-            'mobileNumber'   => 'required|string|max:15',
-            'state'          => 'required|string',
-            'educationBoard' => 'required|string',
-            'schoolCode'     => [
-                'required',
-                'string',
-                Rule::unique('organizations', 'school_code')->ignore($this->editId),
-            ],
-            'serialNumber'   => [
-                'required',
-                'string',
-                Rule::unique('organizations', 'serial_number')->ignore($this->editId),
-            ],
-            'affiliationNo'  => 'nullable|string|max:100',
-            'udiseNumber'    => 'nullable|string|max:100',
-            'logo'           => 'nullable|image|max:2048',
-        ]);
+        $this->validate($this->schoolRules());
 
         $plainPassword = null;
 
@@ -457,6 +532,14 @@ class Schools extends Component
                     'role'            => 'admin',
                     'password'        => Hash::make($plainPassword),
                 ]);
+
+                // Persist the modules selected during the add-school flow.
+                foreach (config('modules', []) as $key => $def) {
+                    \App\Models\OrganizationModule::updateOrCreate(
+                        ['organization_id' => $org->id, 'module_key' => $key],
+                        ['enabled' => (bool) ($this->selectedModules[$key] ?? ($def['default'] ?? true))],
+                    );
+                }
             }
         });
 
@@ -554,6 +637,8 @@ class Schools extends Component
             'existingLogo',
             'editId',
             'adminUserId',
+            'modalStep',
+            'selectedModules',
         ]);
     }
 
@@ -570,6 +655,7 @@ class Schools extends Component
                     ->orWhere('school_code', 'like', "%{$this->search}%")
                     ->orWhere('affiliation_no', 'like', "%{$this->search}%")
             ))
+            ->when($this->statusFilter !== '', fn($q) => $q->where('status', $this->statusFilter === 'active'))
             ->latest()
             ->paginate(12);
 
