@@ -6,7 +6,12 @@
     $tag      = $def['tag']      ?? 'Careers';
     $title    = $def['title']    ?? '';
     $subtitle = $def['subtitle'] ?? '';
-    $jobs     = !empty($stored['jobs']) ? $stored['jobs'] : ($def['jobs'] ?? []);
+    // Show ONLY the job openings added from the super-admin Careers screen
+    // (no hardcoded fallback). Skip any blank rows without a role.
+    $jobs     = collect($stored['jobs'] ?? [])
+        ->filter(fn ($j) => !empty($j['role'] ?? null))
+        ->values()
+        ->all();
 
     // Why work with us — perks shown as cards.
     $perks = [
