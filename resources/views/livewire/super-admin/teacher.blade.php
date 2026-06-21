@@ -8,41 +8,51 @@
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Teachers</h1>
                     <p class="text-sm text-gray-500 mt-0.5">Manage all teacher records across schools</p>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    {{-- Export Button (first) --}}
-                    <button wire:click="exportTeachers" @disabled(!$filterOrganization)
-                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
-                               rounded-lg transition-colors
-                               {{ $filterOrganization
-                                   ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
-                                   : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200' }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <span class="hidden sm:inline">{{ $filterOrganization ? 'Export' : 'Select School to Export' }}</span>
-                        <span class="sm:hidden">Export</span>
-                    </button>
+                <div class="flex items-center gap-4">
+                    {{-- Analytics (Users-style) --}}
+                    <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 divide-x divide-gray-200">
+                        <span class="pr-4">Schools: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
+                        <span class="px-4">Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
+                        <span class="px-4">Active: <strong class="text-emerald-600">{{ $activeTeachers }}</strong></span>
+                        <span class="pl-4">Inactive: <strong class="text-rose-500">{{ $inactiveTeachers }}</strong></span>
+                    </div>
 
-                    {{-- Add Teacher Button (after Export) --}}
-                    <button wire:click="openAddPanel"
-                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
-                               bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span class="hidden sm:inline">Add Teacher</span>
-                        <span class="sm:hidden">Add</span>
-                    </button>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        {{-- Export Button (first) --}}
+                        <button wire:click="exportTeachers" @disabled(!$filterOrganization)
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
+                                   rounded-lg transition-colors
+                                   {{ $filterOrganization
+                                       ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
+                                       : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span class="hidden sm:inline">{{ $filterOrganization ? 'Export' : 'Select School to Export' }}</span>
+                            <span class="sm:hidden">Export</span>
+                        </button>
+
+                        {{-- Add Teacher Button (after Export) --}}
+                        <button wire:click="openAddPanel"
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
+                                   bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span class="hidden sm:inline">Add Teacher</span>
+                            <span class="sm:hidden">Add</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {{-- Analytics chips — wrap so the header never overflows --}}
-            <div class="flex flex-wrap items-center gap-2 mt-3">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Schools <strong class="text-gray-900">{{ $totalSchools }}</strong></span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Total <strong class="text-gray-900">{{ $totalTeachers }}</strong></span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-600">Active <strong class="text-emerald-700">{{ $activeTeachers }}</strong></span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 border border-red-100 text-xs text-red-600">Inactive <strong class="text-red-700">{{ $inactiveTeachers }}</strong></span>
+            {{-- Mobile stats --}}
+            <div class="flex lg:hidden items-center gap-4 text-xs text-gray-500 mt-3 flex-wrap">
+                <span>Schools: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
+                <span>Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
+                <span>Active: <strong class="text-emerald-600">{{ $activeTeachers }}</strong></span>
+                <span>Inactive: <strong class="text-rose-500">{{ $inactiveTeachers }}</strong></span>
             </div>
         </div>
 
