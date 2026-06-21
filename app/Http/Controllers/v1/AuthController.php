@@ -12,6 +12,7 @@ use App\Models\PrivacyPolicy;
 use App\Models\Student\Chapter;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
+use App\Models\Student\StudentDetail;
 use App\Models\Student\Subject;
 use App\Models\Student\Topic;
 use App\Models\TermOfUse;
@@ -45,6 +46,150 @@ class AuthController extends Controller
     public function __construct(ResponseService $responseService)
     {
         $this->responseService = $responseService;
+    }
+
+    /**
+     * POST /api/v1/login
+     *
+     * Unified login for every user type. The app shows a single login screen:
+     * students enter their admission number, all other roles (teacher, admin,
+     * sub-admin, accounts) enter their email. The role is auto-detected from the
+     * identifier — there is no "select user type" step.
+     *
+     * Body:
+     *   - identifier (required) — admission number OR email
+     *   - password   (required)
+     *
+     * Back-compat: also accepts `admission_number` or `email` in place of `identifier`.
+     *
+     * Returns: { user, token, token_type, role, user_type, dashboard }
+     *   where user_type / dashboard ∈ { student, teacher, admin, accounts }.
+     */
+    public function login(Request $request)
+    {
+        $identifier = trim((string) $request->input('identifier', ''));
+        if ($identifier === '') {
+            // Accept the legacy single-purpose fields too.
+            $identifier = trim((string) ($request->input('email') ?? $request->input('admission_number') ?? ''));
+        }
+
+        $validator = Validator::make(
+            ['identifier' => $identifier, 'password' => $request->input('password')],
+            ['identifier' => 'required|string', 'password' => 'required|string'],
+        );
+
+        if ($validator->fails()) {
+            return $this->responseService->error(
+                implode(' ', $validator->errors()->all()),
+                422
+            );
+        }
+
+        try {
+            $isEmail = (bool) filter_var($identifier, FILTER_VALIDATE_EMAIL);
+
+            if ($isEmail) {
+                // Teacher / Admin / Sub-admin / Accounts all sign in with their email.
+                $user = User::where('email', $identifier)
+                    ->whereIn('role', ['teacher', 'admin', 'sub-admin', 'accounts'])
+                    ->first();
+
+                if (!$user) {
+                    return $this->responseService->error('No account found with this email address.', 401);
+                }
+            } else {
+                // Anything that isn't an email is treated as a student admission number.
+                $studentDetail = StudentDetail::where('admission_no', $identifier)->first();
+                $user = $studentDetail
+                    ? $studentDetail->user()->where('role', 'user')->first()
+                    : null;
+
+                if (!$user) {
+                    return $this->responseService->error('No student account found with this admission number.', 401);
+                }
+            }
+
+            if (!Hash::check($request->password, $user->password)) {
+                return $this->responseService->error('The provided password is incorrect.', 401);
+            }
+
+            // Owner admins stay usable even if flagged inactive (mirrors AdminController);
+            // every other role must be active.
+            if (!$user->is_active && $user->role !== 'admin') {
+                return $this->responseService->error('Your account has been deactivated. Please contact support.', 403);
+            }
+
+            // Staff roles must belong to an organization.
+            if (in_array($user->role, ['admin', 'sub-admin', 'accounts'], true) && !$user->organization_id) {
+                return $this->responseService->error('No organization assigned to this account.', 403);
+            }
+
+            $userType = $this->userTypeForRole($user->role);
+            $token    = $user->createToken('auth_token')->plainTextToken;
+            $parts    = explode('|', $token);
+
+            return $this->responseService->success([
+                'user'       => $this->loginProfile($user, $userType),
+                'token'      => end($parts),
+                'token_type' => 'Bearer',
+                'role'       => $user->role,
+                'user_type'  => $userType,
+                'dashboard'  => $userType,
+            ], 'Login successful');
+        } catch (\Exception $e) {
+            return $this->responseService->error('Login failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /** Map a DB role to the app's friendly account type. */
+    private function userTypeForRole(string $role): string
+    {
+        return match ($role) {
+            'teacher'            => 'teacher',
+            'admin', 'sub-admin' => 'admin',
+            'accounts'           => 'accounts',
+            default              => 'student',
+        };
+    }
+
+    /** Normalised profile returned by the unified login for any role. */
+    private function loginProfile(User $user, string $userType): array
+    {
+        $org = $user->organization;
+
+        $profile = [
+            'id'           => $user->id,
+            'name'         => $user->name,
+            'email'        => $user->email,
+            'role'         => $user->role,
+            'user_type'    => $userType,
+            'image'        => $user->image,
+            'organization' => $org ? [
+                'id'          => $org->id,
+                'name'        => $org->name,
+                'logo'        => $org->logo,
+                'school_code' => $org->school_code ?? null,
+            ] : null,
+        ];
+
+        if ($userType === 'student') {
+            $student = StudentDetail::with(['standard:id,name,code', 'section:id,name'])
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($student) {
+                $profile['admission_number'] = $student->admission_no;
+                $profile['roll_no']          = $student->roll_no;
+                $profile['class']            = trim(
+                    ($student->standard->name ?? '') .
+                    ($student->section ? ' - ' . $student->section->name : '')
+                ) ?: null;
+                $profile['name']             = $student->full_name ?? $user->name;
+                $profile['image']            = $student->image ?? $user->image;
+            }
+        }
+
+        return $profile;
     }
 
     public function forgotPassword(Request $request)

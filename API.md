@@ -98,28 +98,54 @@ curl -s "$BASE/admit-card/verify/ADMIT123" -H "Accept: application/json"
 
 ## 2. Authentication — get a token
 
-### Student login
+### Unified login (recommended)
+
+One endpoint for **every** user type. Send an `identifier` (student admission
+number **or** an email for teacher / admin / sub-admin / accounts) plus a
+`password`. The role is auto-detected from the identifier — there is no
+"select user type" step.
 
 ```bash
+# Student (admission number)
+curl -s -X POST "$BASE/v1/login" \
+  -H "Accept: application/json" -H "Content-Type: application/json" \
+  -d '{"identifier":"STU001","password":"yourpassword"}'
+
+# Teacher / Admin / Sub-admin / Accounts (email)
+curl -s -X POST "$BASE/v1/login" \
+  -H "Accept: application/json" -H "Content-Type: application/json" \
+  -d '{"identifier":"admin@school.com","password":"yourpassword"}'
+```
+
+Response `data` includes `user`, `token`, `token_type`, plus `role`,
+`user_type` and `dashboard` (∈ `student | teacher | admin | accounts`) so the
+client can route straight to the right dashboard. Back-compat: `admission_number`
+or `email` are also accepted in place of `identifier`.
+
+### Legacy per-role login (still supported)
+
+```bash
+# Student
 curl -s -X POST "$BASE/v1/user/login" \
   -H "Accept: application/json" -H "Content-Type: application/json" \
   -d '{"admission_number":"STU001","password":"yourpassword"}'
-```
 
-### Teacher login
-
-```bash
+# Teacher
 curl -s -X POST "$BASE/v1/teacher/login" \
   -H "Accept: application/json" -H "Content-Type: application/json" \
-  -d '{"mobile_number":"9876543210","password":"yourpassword"}'
+  -d '{"email":"teacher@school.com","password":"yourpassword"}'
+
+# Admin / Accounts
+curl -s -X POST "$BASE/v1/admin/login"    -H "Accept: application/json" -H "Content-Type: application/json" -d '{"email":"admin@school.com","password":"yourpassword"}'
+curl -s -X POST "$BASE/v1/accounts/login" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"email":"accounts@school.com","password":"yourpassword"}'
 ```
 
 ### Capture the token automatically (requires `jq`)
 
 ```bash
-TOKEN=$(curl -s -X POST "$BASE/v1/user/login" \
+TOKEN=$(curl -s -X POST "$BASE/v1/login" \
   -H "Accept: application/json" -H "Content-Type: application/json" \
-  -d '{"admission_number":"STU001","password":"yourpassword"}' \
+  -d '{"identifier":"STU001","password":"yourpassword"}' \
   | jq -r '.data.token // .token // empty')
 echo "Token: $TOKEN"
 ```

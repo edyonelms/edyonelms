@@ -57,6 +57,9 @@ Route::get('/unauthenticate', [AuthController::class, 'unauthenticate'])->name('
 Route::prefix('v1')->group(function () {
     // Login: per-email rate limit defined in AppServiceProvider.
     Route::middleware('throttle:login')->group(function () {
+        // Unified login — auto-detects role from the identifier (admission no / email).
+        Route::post('/login', [AuthController::class, 'login']);
+        // Legacy per-role endpoints (kept for backward compatibility).
         Route::post('/user/login', [UserController::class, 'studentLogin']);
         Route::post('/teacher/login', [TeacherController::class, 'teacherLogin']);
         Route::post('/admin/login', [AdminController::class, 'login']);

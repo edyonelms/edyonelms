@@ -10,6 +10,55 @@
       "name": "1. Authentication",
       "item": [
         {
+          "name": "Login (Unified — auto-detect role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('token', json.data.token);",
+                  "        pm.collectionVariables.set('user_id', json.data.user.id);",
+                  "        console.log('Login token saved — user_type:', json.data.user_type);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"ADM001\",\n  \"password\": \"Student@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "login"
+              ]
+            },
+            "description": "Single global login for every user type. The role is auto-detected from the `identifier`:\n\n- **Student** → admission number (e.g. `ADM001`)\n- **Teacher / Admin / Sub-admin / Accounts** → email (e.g. `admin@school.com`)\n\n**Request body:**\n- `identifier` (required, string) — admission number OR email\n- `password` (required, string)\n\n_Back-compat: `admission_number` or `email` are also accepted in place of `identifier`._\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"status_code\": 200,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": { \"id\": 1, \"name\": \"...\", \"email\": \"...\", \"role\": \"user\", \"user_type\": \"student\", \"organization\": { ... } },\n    \"token\": \"...\",\n    \"token_type\": \"Bearer\",\n    \"role\": \"user\",\n    \"user_type\": \"student\",\n    \"dashboard\": \"student\"\n  }\n}\n```\n\n`user_type` / `dashboard` ∈ `student | teacher | admin | accounts` — the app uses it to route to the correct dashboard."
+          }
+        },
+        {
           "name": "Student Login",
           "event": [
             {
@@ -462,7 +511,7 @@
                 "add"
               ]
             },
-            "description": "**Public.** Instagram-style \"Add Account\" — one endpoint, both account types. The app stores the returned `{ token, account }` locally; the user can switch between stored accounts without re-login and remove any one of them.\n\n**Unified request body (recommended):**\n```json\n{\n  \"identifier\": \"ADM001\",\n  \"password\": \"Student@123\"\n}\n```\n`identifier` accepts either a student **admission number** OR a teacher **email**. The server auto-detects the type by checking whether the value looks like an email address. Pass an optional `login_type: 'student' | 'teacher'` to override the auto-detection.\n\n**Teacher example:**\n```json\n{\n  \"identifier\": \"priya.mehta@edyone.in\",\n  \"password\": \"Teacher@123\"\n}\n```\n\n**Legacy body (still accepted):**\n```json\n{ \"login_type\": \"student\",  \"admission_number\": \"ADM001\", \"password\": \"...\" }\n{ \"login_type\": \"teacher\",  \"email\": \"t@x.in\",            \"password\": \"...\" }\n```\n\n**Response (200):**\n```json\n{\n  \"data\": {\n    \"account\": {\n      \"user_id\": 42,\n      \"name\": \"Amit Dagur\",\n      \"email\": \"amit@edyone.in\",\n      \"role\": \"user\",\n      \"role_label\": \"Student\",\n      \"user_type\": \"student\",\n      \"image\": \"https://.../avatar.jpg\",\n      \"organization\": { \"id\": 5, \"name\": \"THE DEMO SCHOOL\", \"logo\": \"https://.../logo.png\" },\n      \"class_info\": { \"admission_no\": \"ADM001\", \"roll_no\": \"01\", \"class_display\": \"Class 1 - Section A\", ... }\n    },\n    \"token\":      \"abc123...\",\n    \"token_type\": \"Bearer\"\n  }\n}\n```\nFor a teacher, `user_type` is `\"teacher\"` and `class_info` carries `{ employee_id, qualification, class_display }`.\n\n**App flow (Instagram-style):**\n1. User taps **Add Account** in the switcher and enters admission no / email + password.\n2. App calls this endpoint.\n3. App appends the returned `{ token, account }` to its local accounts list and shows it as a card with: image, name, `user_type` badge.\n4. To switch, the app loads the stored token for the chosen account and uses it as the Bearer.\n5. To remove an account, send `POST /remove` with that account's token (see next request) — only that token is revoked, the other accounts keep working."
+            "description": "**Public.** Instagram-style \"Add Account\" — one endpoint, both account types. The app stores the returned `{ token, account }` locally; the user can switch between stored accounts without re-login and remove any one of them.\n\n**Unified request body (recommended):**\n```json\n{\n  \"identifier\": \"ADM001\",\n  \"password\": \"Student@123\"\n}\n```\n`identifier` accepts a student **admission number** OR an **email** for any other role (teacher / admin / sub-admin / accounts). The server auto-detects the role by checking whether the value looks like an email address — no `login_type` needed. `user_type` ∈ `student | teacher | admin | accounts`.\n\n**Teacher example:**\n```json\n{\n  \"identifier\": \"priya.mehta@edyone.in\",\n  \"password\": \"Teacher@123\"\n}\n```\n\n**Legacy body (still accepted):**\n```json\n{ \"login_type\": \"student\",  \"admission_number\": \"ADM001\", \"password\": \"...\" }\n{ \"login_type\": \"teacher\",  \"email\": \"t@x.in\",            \"password\": \"...\" }\n```\n\n**Response (200):**\n```json\n{\n  \"data\": {\n    \"account\": {\n      \"user_id\": 42,\n      \"name\": \"Amit Dagur\",\n      \"email\": \"amit@edyone.in\",\n      \"role\": \"user\",\n      \"role_label\": \"Student\",\n      \"user_type\": \"student\",\n      \"image\": \"https://.../avatar.jpg\",\n      \"organization\": { \"id\": 5, \"name\": \"THE DEMO SCHOOL\", \"logo\": \"https://.../logo.png\" },\n      \"class_info\": { \"admission_no\": \"ADM001\", \"roll_no\": \"01\", \"class_display\": \"Class 1 - Section A\", ... }\n    },\n    \"token\":      \"abc123...\",\n    \"token_type\": \"Bearer\"\n  }\n}\n```\nFor a teacher, `user_type` is `\"teacher\"` and `class_info` carries `{ employee_id, qualification, class_display }`.\n\n**App flow (Instagram-style):**\n1. User taps **Add Account** in the switcher and enters admission no / email + password.\n2. App calls this endpoint.\n3. App appends the returned `{ token, account }` to its local accounts list and shows it as a card with: image, name, `user_type` badge.\n4. To switch, the app loads the stored token for the chosen account and uses it as the Bearer.\n5. To remove an account, send `POST /remove` with that account's token (see next request) — only that token is revoked, the other accounts keep working."
           }
         },
         {

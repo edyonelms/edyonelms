@@ -38,7 +38,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"login_type\": \"student\",\n  \"admission_number\": \"ADM-001\",\n  \"password\": \"password\"\n}",
+					"raw": "{\n  \"identifier\": \"ADM-001\",\n  \"password\": \"password\"\n}",
 					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
@@ -46,7 +46,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "switch-account", "add" ]
 				},
-				"description": "Log in a STUDENT by admission number + password and return `{ user, token, token_type, snapshot }`. The app stores the token + snapshot as an added account. `snapshot.user_type` will be `student`."
+				"description": "Add a STUDENT account. Pass `identifier` (admission number) + `password`; the role is auto-detected (no `login_type`). Returns `{ account, token, token_type }`; `account.user_type` will be `student`."
 			},
 			"response": []
 		},
@@ -76,7 +76,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"login_type\": \"teacher\",\n  \"email\": \"teacher@example.com\",\n  \"password\": \"password\"\n}",
+					"raw": "{\n  \"identifier\": \"teacher@example.com\",\n  \"password\": \"password\"\n}",
 					"options": { "raw": { "language": "json" } }
 				},
 				"url": {
@@ -84,7 +84,7 @@
 					"host": [ "{{baseUrl}}" ],
 					"path": [ "api", "v1", "switch-account", "add" ]
 				},
-				"description": "Log in a TEACHER by email + password and return `{ user, token, token_type, snapshot }`. `snapshot.user_type` will be `teacher`."
+				"description": "Add a TEACHER / ADMIN / SUB-ADMIN / ACCOUNTS account by email + password. Pass `identifier` (email) + `password`; the role is auto-detected (no `login_type`). `account.user_type` ∈ `teacher | admin | accounts`."
 			},
 			"response": []
 		},

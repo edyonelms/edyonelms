@@ -19,17 +19,20 @@ class SwitchAccountController extends ApiController
      * and can remove any one of them.
      *
      * Body (preferred, unified):
-     *   - identifier: string (required) — student admission number OR teacher email
+     *   - identifier: string (required) — admission number (student) OR email (any other role)
      *   - password:   string (required)
-     *   - login_type: 'student' | 'teacher' (optional, auto-detected)
+     *
+     * The role is auto-detected from the identifier — the app no longer asks the
+     * user to pick a user type.
      *
      * Body (legacy, still accepted):
      *   - admission_number: string  (with login_type=student)
      *   - email:            string  (with login_type=teacher)
+     *   - login_type:       'student' | 'teacher'
      *   - password:         string
      *
      * Returns: { account: <snapshot>, token, token_type }
-     *   where snapshot includes user_type ('student' | 'teacher') for the card UI.
+     *   where snapshot includes user_type ('student'|'teacher'|'admin'|'accounts').
      */
     public function add(Request $request)
     {
@@ -42,11 +45,7 @@ class SwitchAccountController extends ApiController
         if ($identifier === '') {
             // Fall back to legacy fields
             $identifier = $loginType === 'teacher' ? (string) $email : (string) $admission;
-        }
-
-        // Auto-detect login_type if not provided
-        if (!in_array($loginType, ['student', 'teacher'], true)) {
-            $loginType = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'teacher' : 'student';
+            $identifier = trim($identifier);
         }
 
         $validationErr = $this->validateWith($request, [
@@ -57,13 +56,19 @@ class SwitchAccountController extends ApiController
         if ($identifier === '') {
             return $this->error('Please provide an admission number or email.', 422);
         }
-        if ($loginType === 'teacher' && !filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-            return $this->error('A valid email is required for a teacher account.', 422);
-        }
 
-        // ── Resolve user ────────────────────────────────────────────────
-        $user = null;
-        if ($loginType === 'student') {
+        // ── Resolve user (auto-detect: email = any staff/teacher role, else student) ──
+        $isEmail = (bool) filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        $user    = null;
+
+        if ($isEmail) {
+            $user = User::where('email', $identifier)
+                ->whereIn('role', ['teacher', 'admin', 'sub-admin', 'accounts'])
+                ->first();
+            if (!$user) {
+                return $this->error('No account found with this email address.', 401);
+            }
+        } else {
             $studentDetail = StudentDetail::where('admission_no', $identifier)->first();
             if (!$studentDetail) {
                 return $this->error('No student account found with this admission number.', 401);
@@ -72,23 +77,18 @@ class SwitchAccountController extends ApiController
             if (!$user) {
                 return $this->error('No valid student account for this admission number.', 401);
             }
-        } else {
-            $user = User::where('email', $identifier)->where('role', 'teacher')->first();
-            if (!$user) {
-                return $this->error('No teacher account found with this email.', 401);
-            }
         }
 
         if (!Hash::check($request->password, $user->password)) {
             return $this->error('The provided password is incorrect.', 401);
         }
-        if (!$user->is_active) {
+        if (!$user->is_active && $user->role !== 'admin') {
             return $this->error('This account has been deactivated.', 403);
         }
 
         // ── Issue a fresh token for this account (each added account has
         //    its own token; removing one does not log out the others). ──
-        $tokenName = $loginType . '_switch_' . now()->timestamp;
+        $tokenName = $user->role . '_switch_' . now()->timestamp;
         $token     = $user->createToken($tokenName)->plainTextToken;
         $snapshot  = $this->buildSnapshot($user);
 
@@ -275,15 +275,29 @@ class SwitchAccountController extends ApiController
             }
         }
 
+        // Friendly account type for the switcher card.
+        $userType = match ($user->role) {
+            'teacher'            => 'teacher',
+            'admin', 'sub-admin' => 'admin',
+            'accounts'           => 'accounts',
+            default              => 'student',
+        };
+        $roleLabel = match ($user->role) {
+            'user'      => 'Student',
+            'sub-admin' => 'Sub-admin',
+            'accounts'  => 'Accounts',
+            default     => ucfirst($user->role),
+        };
+
         return [
             'user_id'      => $user->id,
             'name'         => $displayName,
             'username'     => $displayName,
             'email'        => $user->email,
             'role'         => $user->role,
-            'role_label'   => $user->role === 'user' ? 'Student' : ucfirst($user->role),
-            // Friendly account type for the switcher card: 'student' | 'teacher'
-            'user_type'    => $user->role === 'teacher' ? 'teacher' : 'student',
+            'role_label'   => $roleLabel,
+            // Friendly account type: 'student' | 'teacher' | 'admin' | 'accounts'
+            'user_type'    => $userType,
             'image'        => $displayImage,
             'organization' => $organization ? [
                 'id'   => $organization->id,
