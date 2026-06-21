@@ -15,8 +15,10 @@ class BecomeExecutive extends Component
     /** Allowed statuses. */
     public const STATUSES = ['new', 'contacted', 'approved', 'rejected'];
 
-    /** Filter */
+    /** Filters */
     public string $statusFilter = '';
+    public string $search = '';
+    public string $filterDays = '';
 
     /** Application open in the detail modal. */
     public ?int $viewingId = null;
@@ -30,6 +32,22 @@ class BecomeExecutive extends Component
 
     public function updatingStatusFilter(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterDays(): void
+    {
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'filterDays', 'statusFilter']);
         $this->resetPage();
     }
 
@@ -65,6 +83,26 @@ class BecomeExecutive extends Component
             ]);
             $this->notification()->success('Saved', 'Status updated to ' . $this->editStatus . '.');
         }
+    }
+
+    /** Open the document inline in a new browser tab (a "second screen"). */
+    public function viewDocument(int $id): void
+    {
+        $app = ExecutiveApplication::find($id);
+
+        if (!$app || !$app->document_path) {
+            $this->notification()->error('No document attached for this application.');
+            return;
+        }
+
+        if (!Storage::disk('s3')->exists($app->document_path)) {
+            $this->notification()->error('File missing on storage.');
+            return;
+        }
+
+        $url = Storage::disk('s3')->temporaryUrl($app->document_path, now()->addMinutes(10));
+
+        $this->dispatch('open-document', url: $url);
     }
 
     public function downloadDocument(int $id): mixed
@@ -125,16 +163,31 @@ class BecomeExecutive extends Component
     {
         $applications = ExecutiveApplication::query()
             ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
+            ->when($this->filterDays, fn($q) => $q->where('created_at', '>=', now()->subDays((int) $this->filterDays)))
+            ->when($this->search, function ($q) {
+                $term = '%' . $this->search . '%';
+                $q->where(fn($w) => $w->where('full_name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('mobile', 'like', $term)
+                    ->orWhere('qualification', 'like', $term));
+            })
             ->latest()
             ->paginate(15);
 
-        $viewing  = $this->viewingId ? ExecutiveApplication::find($this->viewingId) : null;
-        $newCount = ExecutiveApplication::where('status', 'new')->count();
+        $viewing = $this->viewingId ? ExecutiveApplication::find($this->viewingId) : null;
+
+        $analytics = [
+            'total'      => ExecutiveApplication::count(),
+            'pending'    => ExecutiveApplication::where('status', 'new')->count(),
+            'updated'    => ExecutiveApplication::where('status', '!=', 'new')->count(),
+            'this_month' => ExecutiveApplication::whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)->count(),
+        ];
 
         return view('livewire.super-admin.website.become-executive', [
             'applications' => $applications,
             'viewing'      => $viewing,
-            'newCount'     => $newCount,
+            'analytics'    => $analytics,
             'statuses'     => self::STATUSES,
         ]);
     }
