@@ -70,9 +70,9 @@ class SchoolWebsite extends Model
         $preset  = $presets[$theme['preset'] ?? 'sunset'] ?? $presets['sunset'];
 
         return [
-            'primary' => $theme['primary'] ?: $preset['primary'],
-            'light'   => $theme['light']   ?: $preset['light'],
-            'dark'    => $theme['dark']    ?: $preset['dark'],
+            'primary' => ($theme['primary'] ?? null) ?: $preset['primary'],
+            'light'   => ($theme['light']   ?? null) ?: $preset['light'],
+            'dark'    => ($theme['dark']    ?? null) ?: $preset['dark'],
         ];
     }
 
