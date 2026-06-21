@@ -320,18 +320,6 @@ return [
 
         // ── Dynamic marketing pages (footer "Company" section) ──
         [
-            'title' => 'Why Us',
-            'link' => 'super-admin.website.why-us',
-            'icon' => 'sparkles',
-            'prefix' => 'super-admin.website.why-us',
-        ],
-        [
-            'title' => 'Services',
-            'link' => 'super-admin.website.services',
-            'icon' => 'squares-2x2',
-            'prefix' => 'super-admin.website.services',
-        ],
-        [
             'title' => 'Careers',
             'link' => 'super-admin.website.careers',
             'icon' => 'briefcase',

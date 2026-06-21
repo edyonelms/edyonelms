@@ -97,7 +97,8 @@
                         'rejected'  => 'bg-red-100 text-red-700',
                     ][$app->status] ?? 'bg-gray-100 text-gray-600';
                 @endphp
-                <div class="group bg-white rounded-xl border border-gray-200 hover:border-indigo-200 hover:shadow-md transition-all duration-200 overflow-hidden" wire:key="app-{{ $app->id }}">
+                <div wire:click="viewApplication({{ $app->id }})"
+                    class="group bg-white rounded-xl border border-gray-200 hover:border-indigo-200 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer" wire:key="app-{{ $app->id }}">
                     <div class="flex items-stretch">
                         <div class="w-1 flex-shrink-0 {{ $strip }}"></div>
 
@@ -164,7 +165,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-1 flex-shrink-0">
+                                <div class="flex items-center gap-1 flex-shrink-0" @click.stop>
                                     <button wire:click="viewApplication({{ $app->id }})" title="View"
                                         class="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

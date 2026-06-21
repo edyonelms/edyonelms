@@ -83,6 +83,9 @@ class BecomeExecutive extends Component
             ]);
             $this->notification()->success('Saved', 'Status updated to ' . $this->editStatus . '.');
         }
+
+        // Close the panel so the refreshed listing is shown immediately.
+        $this->closeApplication();
     }
 
     /** Open the document inline in a new browser tab (a "second screen"). */

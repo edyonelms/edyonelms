@@ -61,32 +61,32 @@
                 <p class="text-sm text-gray-500 mt-1">Click <span class="font-semibold text-indigo-600">Add Blog</span> to publish your first article.</p>
             </div>
         @else
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 @foreach ($blogs as $blog)
-                    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col" wire:key="blog-{{ $blog->id }}">
-                        <div class="h-40 bg-gradient-to-br from-pink-400 via-fuchsia-500 to-indigo-500 flex items-center justify-center text-4xl overflow-hidden">
+                    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col" wire:key="blog-{{ $blog->id }}">
+                        <div class="h-28 bg-gradient-to-br from-pink-400 via-fuchsia-500 to-indigo-500 flex items-center justify-center text-3xl overflow-hidden">
                             @if ($blog->cover_image)
                                 <img src="{{ $blog->cover_image }}" alt="{{ $blog->title }}" class="w-full h-full object-cover">
                             @else
                                 📝
                             @endif
                         </div>
-                        <div class="p-4 flex flex-col flex-1">
+                        <div class="p-3.5 flex flex-col flex-1">
                             @if ($blog->category)
-                                <div class="text-[11px] font-bold tracking-wide uppercase text-indigo-600 mb-1.5">{{ $blog->category }}</div>
+                                <div class="text-[10px] font-bold tracking-wide uppercase text-indigo-600 mb-1">{{ $blog->category }}</div>
                             @endif
-                            <h3 class="text-base font-semibold text-gray-900 leading-snug">{{ $blog->title }}</h3>
+                            <h3 class="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{{ $blog->title }}</h3>
                             @if ($blog->heading)
-                                <p class="text-sm font-medium text-gray-600 mt-1">{{ $blog->heading }}</p>
+                                <p class="text-xs font-medium text-gray-600 mt-1 line-clamp-1">{{ $blog->heading }}</p>
                             @endif
-                            <p class="text-sm text-gray-500 mt-2 leading-relaxed flex-1">{{ $blog->excerpt }}</p>
-                            <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                                <span class="text-xs text-gray-400">{{ $blog->created_at?->format('d M Y') }}</span>
+                            <p class="text-xs text-gray-500 mt-1.5 leading-relaxed flex-1 line-clamp-3">{{ $blog->excerpt }}</p>
+                            <div class="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-100">
+                                <span class="text-[11px] text-gray-400">{{ $blog->created_at?->format('d M Y') }}</span>
                                 <div class="flex items-center gap-1.5">
                                     <button wire:click="openEdit({{ $blog->id }})"
-                                        class="px-2.5 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">Edit</button>
+                                        class="px-2 py-1 text-[11px] font-medium text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors">Edit</button>
                                     <button wire:click="confirmDelete({{ $blog->id }})"
-                                        class="px-2.5 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">Delete</button>
+                                        class="px-2 py-1 text-[11px] font-medium text-red-600 border border-red-200 rounded-md hover:bg-red-50 transition-colors">Delete</button>
                                 </div>
                             </div>
                         </div>
