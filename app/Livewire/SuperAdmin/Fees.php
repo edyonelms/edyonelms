@@ -61,7 +61,10 @@ class Fees extends Component
     public bool   $showPayModal    = false;
     public        $payStudentId    = null;
     public        $payStructureId  = null;
-    public        $payAmount       = '';
+    public        $payAmount       = '';     // total collected so far (cumulative)
+    public        $payTotalFee     = 0;      // full fee due for this student
+    public        $payCollected    = 0;      // amount already collected before this edit
+    public string $payStudentName  = '';
     public string $payMode         = 'cash';
     public string $payDate         = '';
     public string $payRemark       = '';
@@ -97,7 +100,9 @@ class Fees extends Component
         }
 
         $this->totalFeeToCollect = $expected;
-        $this->totalFeeCollected = (float) SuperAdminFeePayment::forYear($this->academicYear)->paid()->sum('amount');
+        // Each payment row's `amount` is money actually received, so partial
+        // collections count toward the collected total too.
+        $this->totalFeeCollected = (float) SuperAdminFeePayment::forYear($this->academicYear)->sum('amount');
         $this->totalFeeRemaining = max(0, $this->totalFeeToCollect - $this->totalFeeCollected);
         $this->avgFeePerStudent  = $this->totalStudentsAll > 0
             ? round($this->totalFeeToCollect / $this->totalStudentsAll)
@@ -233,14 +238,12 @@ class Fees extends Component
 
         $collected = (float) SuperAdminFeePayment::forOrg($orgId)
             ->forYear($this->academicYear)
-            ->paid()
             ->sum('amount');
 
         $pct = $expected > 0 ? round(($collected / $expected) * 100) : 0;
 
         // FY April 2026 → March 2027
         $fyChart = SuperAdminFeePayment::forOrg($orgId)
-            ->paid()
             ->where(function ($q) {
                 $q->where(function ($q) {
                     $q->whereYear('payment_date', 2026)
@@ -423,34 +426,9 @@ class Fees extends Component
                 ->where('organization_id', $this->selectedSchool->id)
                 ->get();
 
-            $this->studentFeeList = $students->map(function ($s, $i) use ($structure) {
-                $feeAmount = $structure?->amount ?? 0;
-                $payment   = $structure
-                    ? SuperAdminFeePayment::where('student_detail_id', $s->id)
-                        ->where('super_admin_fee_structure_id', $structure->id)
-                        ->first()
-                    : null;
-                $collected = $payment?->is_paid ? (float) $payment->amount : 0;
-
-                return [
-                    'serial'        => $i + 1,
-                    'id'            => $s->id,
-                    'name'          => $s->full_name ?? $s->user?->name ?? '—',
-                    'admission_no'  => $s->admission_no ?? '—',
-                    'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
-                    'email'         => $s->user?->email ?? '—',
-                    'section'       => $s->section?->name ?? '—',
-                    'standard'      => $s->standard?->name ?? '—',
-                    'total_fee'     => $feeAmount,
-                    'collected'     => $collected,
-                    'remaining'     => max(0, $feeAmount - $collected),
-                    'is_paid'       => $payment?->is_paid ?? false,
-                    'payment_id'    => $payment?->id,
-                    'structure_id'  => $structure?->id,
-                    'payment_date'  => $payment?->payment_date?->format('d M Y') ?? '—',
-                    'payment_mode'  => $payment?->payment_mode ?? '—',
-                ];
-            })->toArray();
+            $this->studentFeeList = $students->map(
+                fn($s, $i) => $this->mapStudentFeeRow($s, $i, $structure, $s->standard?->name ?? '—')
+            )->toArray();
 
             return;
         }
@@ -473,47 +451,72 @@ class Fees extends Component
             ->when($this->updateSectionId, fn($q) => $q->where('section_id', $this->updateSectionId))
             ->get();
 
-        $this->studentFeeList = $students->map(function ($s, $i) use ($structure) {
-            $feeAmount = $structure?->amount ?? 0;
+        $this->studentFeeList = $students->map(
+            fn($s, $i) => $this->mapStudentFeeRow($s, $i, $structure, '—')
+        )->toArray();
+    }
 
-            $payment = $structure
-                ? SuperAdminFeePayment::where('student_detail_id', $s->id)
-                    ->where('super_admin_fee_structure_id', $structure->id)
-                    ->first()
-                : null;
+    /**
+     * Build one student's fee-status row. `collected` is the actual amount on
+     * the payment record (partial collections included); the status is derived
+     * from collected vs. the full fee — paid / partial / pending.
+     */
+    private function mapStudentFeeRow($s, int $i, ?SuperAdminFeeStructure $structure, string $standardLabel): array
+    {
+        $feeAmount = (float) ($structure?->amount ?? 0);
 
-            $collected = $payment?->is_paid ? (float) $payment->amount : 0;
+        $payment = $structure
+            ? SuperAdminFeePayment::where('student_detail_id', $s->id)
+                ->where('super_admin_fee_structure_id', $structure->id)
+                ->first()
+            : null;
 
-            return [
-                'serial'        => $i + 1,
-                'id'            => $s->id,
-                'name'          => $s->full_name ?? $s->user?->name ?? '—',
-                'admission_no'  => $s->admission_no ?? '—',
-                'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
-                'email'         => $s->user?->email ?? '—',
-                'section'       => $s->section?->name ?? '—',
-                'standard'      => '—',
-                'total_fee'     => $feeAmount,
-                'collected'     => $collected,
-                'remaining'     => max(0, $feeAmount - $collected),
-                'is_paid'       => $payment?->is_paid ?? false,
-                'payment_id'    => $payment?->id,
-                'structure_id'  => $structure?->id,
-                'payment_date'  => $payment?->payment_date?->format('d M Y') ?? '—',
-                'payment_mode'  => $payment?->payment_mode ?? '—',
-            ];
-        })->toArray();
+        $collected = $payment ? (float) $payment->amount : 0;
+        $remaining = max(0, $feeAmount - $collected);
+
+        if ($collected <= 0) {
+            $status = 'pending';
+        } elseif ($feeAmount > 0 && $collected + 0.01 >= $feeAmount) {
+            $status = 'paid';
+        } else {
+            $status = 'partial';
+        }
+
+        return [
+            'serial'        => $i + 1,
+            'id'            => $s->id,
+            'name'          => $s->full_name ?? $s->user?->name ?? '—',
+            'admission_no'  => $s->admission_no ?? '—',
+            'mobile'        => $s->mobile_number ?? $s->user?->mobile_number ?? '—',
+            'email'         => $s->user?->email ?? '—',
+            'section'       => $s->section?->name ?? '—',
+            'standard'      => $standardLabel,
+            'total_fee'     => $feeAmount,
+            'collected'     => $collected,
+            'remaining'     => $remaining,
+            'status'        => $status,
+            'is_paid'       => $status === 'paid',
+            'payment_id'    => $payment?->id,
+            'structure_id'  => $structure?->id,
+            'payment_date'  => $payment?->payment_date?->format('d M Y') ?? '—',
+            'payment_mode'  => $payment?->payment_mode ?? '—',
+        ];
     }
 
     // ─── Pay / Edit Payment Modal ─────────────────────────────────────────────
 
-    public function openPayModal($studentId, $structureId, $amount, $paymentId = null): void
+    public function openPayModal($studentId, $structureId, $totalFee, $collected = 0, $paymentId = null): void
     {
+        $student = StudentDetail::with('user')->find($studentId);
+
         $this->payStudentId    = $studentId;
         $this->payStructureId  = $structureId;
-        $this->payAmount       = $amount;
+        $this->payTotalFee     = (float) $totalFee;
+        $this->payCollected    = (float) $collected;
+        $this->payAmount       = $collected > 0 ? $collected : '';
+        $this->payStudentName  = $student?->full_name ?? $student?->user?->name ?? 'Student';
         $this->payExistingId   = $paymentId;
-        $this->isEditPayment   = false;
+        $this->isEditPayment   = $collected > 0;
         $this->payDate         = now()->format('Y-m-d');
         $this->payMode         = 'cash';
         $this->payRemark       = '';
@@ -522,12 +525,15 @@ class Fees extends Component
 
     public function openEditPayModal($paymentId): void
     {
-        $payment = SuperAdminFeePayment::find($paymentId);
+        $payment = SuperAdminFeePayment::with(['feeStructure', 'studentDetail.user'])->find($paymentId);
         if (!$payment) return;
 
         $this->payStudentId   = $payment->student_detail_id;
         $this->payStructureId = $payment->super_admin_fee_structure_id;
-        $this->payAmount      = $payment->amount;
+        $this->payTotalFee    = (float) ($payment->feeStructure?->amount ?? 0);
+        $this->payCollected   = (float) $payment->amount;
+        $this->payAmount      = (float) $payment->amount;
+        $this->payStudentName = $payment->studentDetail?->full_name ?? $payment->studentDetail?->user?->name ?? 'Student';
         $this->payExistingId  = $paymentId;
         $this->payMode        = $payment->payment_mode ?? 'cash';
         $this->payDate        = $payment->payment_date?->format('Y-m-d') ?? now()->format('Y-m-d');
@@ -539,10 +545,16 @@ class Fees extends Component
     public function closePayModal(): void
     {
         $this->showPayModal = false;
-        $this->reset(['payStudentId', 'payStructureId', 'payAmount', 'payMode', 'payRemark', 'payExistingId', 'isEditPayment']);
+        $this->reset(['payStudentId', 'payStructureId', 'payAmount', 'payTotalFee', 'payCollected', 'payStudentName', 'payMode', 'payRemark', 'payExistingId', 'isEditPayment']);
         $this->payDate = now()->format('Y-m-d');
     }
 
+    /**
+     * Record the total amount collected so far for a student. `payAmount` is the
+     * cumulative collected figure — when it reaches the full fee the record is
+     * flagged paid; a smaller value leaves it partial; zero clears it back to
+     * pending (the row is removed).
+     */
     public function savePayment(): void
     {
         $this->validate([
@@ -559,6 +571,21 @@ class Fees extends Component
             return;
         }
 
+        $collected = round((float) $this->payAmount, 2);
+
+        // Zero collected → clear any record back to "pending".
+        if ($collected <= 0) {
+            SuperAdminFeePayment::where('student_detail_id', $this->payStudentId)
+                ->where('super_admin_fee_structure_id', $this->payStructureId)
+                ->delete();
+
+            $this->afterPaymentChange('Payment cleared — marked as pending.');
+            return;
+        }
+
+        $feeAmount = (float) $structure->amount;
+        $isPaid    = $feeAmount > 0 && $collected + 0.01 >= $feeAmount;
+
         SuperAdminFeePayment::updateOrCreate(
             [
                 'student_detail_id'            => $this->payStudentId,
@@ -568,35 +595,54 @@ class Fees extends Component
                 'organization_id' => $this->selectedSchool->id,
                 'standard_id'     => $structure->standard_id, // null for one_time
                 'section_id'      => $student->section_id,
-                'amount'          => $this->payAmount,
+                'amount'          => $collected,
                 'academic_year'   => $this->academicYear,
                 'payment_mode'    => $this->payMode,
                 'payment_date'    => $this->payDate,
                 'remark'          => $this->payRemark,
+                'is_paid'         => $isPaid,
+            ]
+        );
+
+        $this->afterPaymentChange(
+            $isPaid ? 'Fee fully paid!' : 'Partial payment recorded — balance still due.'
+        );
+    }
+
+    /** Quick action: mark a student's fee as fully paid (collected = full fee). */
+    public function markFullyPaid($studentId, $structureId): void
+    {
+        $structure = SuperAdminFeeStructure::find($structureId);
+        $student   = StudentDetail::find($studentId);
+        if (!$structure || !$student) return;
+
+        SuperAdminFeePayment::updateOrCreate(
+            [
+                'student_detail_id'            => $studentId,
+                'super_admin_fee_structure_id' => $structureId,
+            ],
+            [
+                'organization_id' => $this->selectedSchool->id,
+                'standard_id'     => $structure->standard_id,
+                'section_id'      => $student->section_id,
+                'amount'          => $structure->amount,
+                'academic_year'   => $this->academicYear,
+                'payment_mode'    => 'cash',
+                'payment_date'    => now()->format('Y-m-d'),
                 'is_paid'         => true,
             ]
         );
 
+        $this->afterPaymentChange('Marked as fully paid!');
+    }
+
+    private function afterPaymentChange(string $message): void
+    {
         $this->closePayModal();
         $this->loadStudentFeeList();
         $this->loadSchoolStats();
         $this->loadGlobalStats();
-        $this->notification()->success($this->isEditPayment ? 'Payment updated!' : 'Payment recorded!');
-    }
-
-    public function togglePaid($studentId, $structureId): void
-    {
-        $payment = SuperAdminFeePayment::where('student_detail_id', $studentId)
-            ->where('super_admin_fee_structure_id', $structureId)
-            ->first();
-
-        if ($payment) {
-            $payment->update(['is_paid' => !$payment->is_paid]);
-        }
-
-        $this->loadStudentFeeList();
-        $this->loadSchoolStats();
-        $this->loadGlobalStats();
+        $this->notification()->success($message);
     }
 
     public function render()

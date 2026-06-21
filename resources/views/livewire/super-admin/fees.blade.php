@@ -3,38 +3,36 @@
     {{-- ══════════ LIST VIEW ══════════ --}}
     @if ($activeView === 'list')
 
-        {{-- HEADER --}}
+        {{-- HEADER (clean — analytics moved out into cards below) --}}
         <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center justify-between gap-3">
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Fees</h1>
                     <p class="text-sm text-gray-500 mt-0.5">Manage license fees charged to schools</p>
                 </div>
-                <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 divide-x divide-gray-200">
-                    <span class="pr-4">Students: <strong class="text-gray-800">{{ $totalStudentsAll }}</strong></span>
-                    <span class="px-4">To Collect: <strong
-                            class="text-blue-600">₹{{ number_format($totalFeeToCollect, 0) }}</strong></span>
-                    <span class="px-4">Collected: <strong
-                            class="text-emerald-600">₹{{ number_format($totalFeeCollected, 0) }}</strong></span>
-                    <span class="px-4">Remaining: <strong
-                            class="text-red-500">₹{{ number_format($totalFeeRemaining, 0) }}</strong></span>
-                    <span class="pl-4">Avg/Student: <strong
-                            class="text-gray-800">₹{{ number_format($avgFeePerStudent, 0) }}</strong></span>
-                </div>
-            </div>
-            {{-- Mobile stats --}}
-            <div class="flex lg:hidden flex-wrap gap-3 text-xs text-gray-500 mt-3">
-                <span>Students: <strong class="text-gray-800">{{ $totalStudentsAll }}</strong></span>
-                <span>To Collect: <strong
-                        class="text-blue-600">₹{{ number_format($totalFeeToCollect, 0) }}</strong></span>
-                <span>Collected: <strong
-                        class="text-emerald-600">₹{{ number_format($totalFeeCollected, 0) }}</strong></span>
-                <span>Remaining: <strong
-                        class="text-red-500">₹{{ number_format($totalFeeRemaining, 0) }}</strong></span>
             </div>
         </div>
 
         <div class="p-4 sm:p-6 space-y-5">
+
+            {{-- OVERVIEW CARDS --}}
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                @php
+                    $overview = [
+                        ['label' => 'Students',    'value' => number_format($totalStudentsAll),          'accent' => 'text-gray-900', 'icon' => 'bg-gray-100'],
+                        ['label' => 'To Collect',  'value' => '₹' . number_format($totalFeeToCollect, 0),'accent' => 'text-blue-600', 'icon' => 'bg-blue-50'],
+                        ['label' => 'Collected',   'value' => '₹' . number_format($totalFeeCollected, 0),'accent' => 'text-emerald-600', 'icon' => 'bg-emerald-50'],
+                        ['label' => 'Remaining',   'value' => '₹' . number_format($totalFeeRemaining, 0),'accent' => 'text-red-500', 'icon' => 'bg-red-50'],
+                        ['label' => 'Avg/Student', 'value' => '₹' . number_format($avgFeePerStudent, 0), 'accent' => 'text-gray-700', 'icon' => 'bg-gray-100'],
+                    ];
+                @endphp
+                @foreach ($overview as $card)
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                        <p class="text-xs font-medium text-gray-400">{{ $card['label'] }}</p>
+                        <p class="text-lg sm:text-xl font-bold mt-1 {{ $card['accent'] }}">{{ $card['value'] }}</p>
+                    </div>
+                @endforeach
+            </div>
 
             {{-- SEARCH --}}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -76,7 +74,6 @@
                             }
                             $orgCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::forOrg($school->id)
                                 ->forYear($academicYear)
-                                ->paid()
                                 ->sum('amount');
                             $orgPct = $orgExpected > 0 ? round(($orgCollected / $orgExpected) * 100) : 0;
                         @endphp
@@ -179,41 +176,33 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            {{-- Analytics strip inside header --}}
+        <div class="p-4 sm:p-6 space-y-5">
+
+            {{-- SCHOOL OVERVIEW CARDS (moved out of the header) --}}
             @if (!empty($schoolStats))
-                <div class="flex flex-wrap items-center gap-1 text-sm text-gray-500 divide-x divide-gray-300">
-                    <span class="pr-4">
-                        Students: <strong class="text-gray-800">{{ $schoolStats['total_students'] }}</strong>
-                    </span>
-                    <span class="px-4">
-                        To Collect: <strong
-                            class="text-blue-600">₹{{ number_format($schoolStats['total_to_collect'], 0) }}</strong>
-                    </span>
-                    <span class="px-4">
-                        Collected: <strong
-                            class="text-emerald-600">₹{{ number_format($schoolStats['collected'], 0) }}</strong>
-                    </span>
-                    <span class="px-4">
-                        Remaining: <strong
-                            class="text-red-500">₹{{ number_format($schoolStats['remaining'], 0) }}</strong>
-                    </span>
-                    <span class="px-4">
-                        Avg/Student: <strong
-                            class="text-gray-700">₹{{ number_format($schoolStats['avg_per_student'], 0) }}</strong>
-                    </span>
-                    @if ($schoolStats['total_to_collect'] > 0)
-                        <span class="pl-4">
-                            Progress: <strong
-                                class="{{ $schoolStats['collection_pct'] >= 100 ? 'text-emerald-600' : 'text-gray-800' }}">{{ $schoolStats['collection_pct'] }}%</strong>
-                        </span>
-                    @endif
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    @php
+                        $sStats = [
+                            ['label' => 'Students',    'value' => number_format($schoolStats['total_students']),        'accent' => 'text-gray-900'],
+                            ['label' => 'To Collect',  'value' => '₹' . number_format($schoolStats['total_to_collect'], 0), 'accent' => 'text-blue-600'],
+                            ['label' => 'Collected',   'value' => '₹' . number_format($schoolStats['collected'], 0),    'accent' => 'text-emerald-600'],
+                            ['label' => 'Remaining',   'value' => '₹' . number_format($schoolStats['remaining'], 0),    'accent' => 'text-red-500'],
+                            ['label' => 'Avg/Student', 'value' => '₹' . number_format($schoolStats['avg_per_student'], 0), 'accent' => 'text-gray-700'],
+                        ];
+                    @endphp
+                    @foreach ($sStats as $card)
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                            <p class="text-xs font-medium text-gray-400">{{ $card['label'] }}</p>
+                            <p class="text-lg font-bold mt-1 {{ $card['accent'] }}">{{ $card['value'] }}</p>
+                        </div>
+                    @endforeach
                 </div>
 
-                {{-- Progress bar --}}
                 @if ($schoolStats['total_to_collect'] > 0)
-                    <div class="mt-2.5">
-                        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                        <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
                             <span>₹{{ number_format($schoolStats['collected'], 0) }} collected of
                                 ₹{{ number_format($schoolStats['total_to_collect'], 0) }}</span>
                             <span
@@ -221,7 +210,7 @@
                                 {{ $schoolStats['collection_pct'] }}%
                             </span>
                         </div>
-                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div class="h-full rounded-full transition-all
                                 {{ $schoolStats['collection_pct'] >= 100 ? 'bg-emerald-500' : 'bg-blue-500' }}"
                                 style="width: {{ min(100, $schoolStats['collection_pct']) }}%"></div>
@@ -229,9 +218,6 @@
                     </div>
                 @endif
             @endif
-        </div>
-
-        <div class="p-4 sm:p-6 space-y-5">
 
             {{-- TABS --}}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -593,7 +579,7 @@
                                                     ->where('standard_id', $fs->standard_id)->count();
                                             }
                                             $classExpected  = $fs->amount * $classStudents;
-                                            $classCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::where('super_admin_fee_structure_id', $fs->id)->paid()->sum('amount');
+                                            $classCollected = (float) \App\Models\SuperAdmin\SuperAdminFeePayment::where('super_admin_fee_structure_id', $fs->id)->sum('amount');
                                             $classPct       = $classExpected > 0 ? round(($classCollected / $classExpected) * 100) : 0;
                                         @endphp
                                         <div class="px-4 py-3 hover:bg-gray-50/50 transition-colors">
@@ -697,13 +683,21 @@
                                                 <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Fee</th>
                                                 <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Collected</th>
                                                 <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Remaining</th>
+                                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
                                                 <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">Date</th>
                                                 <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100">
                                             @foreach ($studentFeeList as $row)
-                                                <tr class="hover:bg-gray-50/50 {{ $row['is_paid'] ? 'bg-emerald-50/30' : '' }}">
+                                                @php
+                                                    $statusMeta = [
+                                                        'paid'    => ['label' => 'Paid',    'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'rowBg' => 'bg-emerald-50/30'],
+                                                        'partial' => ['label' => 'Partial', 'badge' => 'bg-amber-50 text-amber-700 border-amber-200',       'rowBg' => 'bg-amber-50/30'],
+                                                        'pending' => ['label' => 'Pending', 'badge' => 'bg-gray-100 text-gray-500 border-gray-200',          'rowBg' => ''],
+                                                    ][$row['status']] ?? ['label' => 'Pending', 'badge' => 'bg-gray-100 text-gray-500 border-gray-200', 'rowBg' => ''];
+                                                @endphp
+                                                <tr class="hover:bg-gray-50/50 {{ $statusMeta['rowBg'] }}">
                                                     <td class="px-3 py-3 text-xs text-gray-400">{{ $row['serial'] }}</td>
                                                     <td class="px-3 py-3">
                                                         <p class="text-sm font-medium text-gray-800">{{ $row['name'] }}</p>
@@ -725,49 +719,64 @@
                                                         {{ $row['remaining'] > 0 ? 'text-red-500' : 'text-gray-400' }}">
                                                         ₹{{ number_format($row['remaining'], 0) }}
                                                     </td>
+                                                    <td class="px-3 py-3">
+                                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border {{ $statusMeta['badge'] }}">
+                                                            {{ $statusMeta['label'] }}
+                                                            @if ($row['status'] === 'partial')
+                                                                <span class="font-semibold">· ₹{{ number_format($row['remaining'], 0) }} left</span>
+                                                            @endif
+                                                        </span>
+                                                    </td>
                                                     <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
                                                         {{ $row['payment_date'] }}
-                                                        @if ($row['is_paid'] && $row['payment_mode'] !== '—')
+                                                        @if ($row['status'] !== 'pending' && $row['payment_mode'] !== '—')
                                                             <span class="block text-gray-400 capitalize">{{ $row['payment_mode'] }}</span>
                                                         @endif
                                                     </td>
-                                                    <td class="px-3 py-3 text-center">
-                                                        @if ($row['is_paid'])
+                                                    <td class="px-3 py-3">
+                                                        @if ($row['structure_id'])
                                                             <div class="flex items-center justify-center gap-1">
-                                                                <button wire:click="openEditPayModal({{ $row['payment_id'] }})"
-                                                                    title="Edit payment"
-                                                                    class="inline-flex items-center justify-center w-7 h-7 bg-amber-50
-                                                                           text-amber-600 border border-amber-200 rounded-full
-                                                                           hover:bg-amber-100 transition-colors">
-                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                    </svg>
+                                                                {{-- Record / update payment (handles partial + full) --}}
+                                                                <button
+                                                                    wire:click="openPayModal({{ $row['id'] }}, {{ $row['structure_id'] }}, {{ $row['total_fee'] }}, {{ $row['collected'] }}, {{ $row['payment_id'] ?? 'null' }})"
+                                                                    title="{{ $row['status'] === 'pending' ? 'Record payment' : 'Update payment' }}"
+                                                                    class="inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors
+                                                                        {{ $row['status'] === 'pending'
+                                                                            ? 'bg-gray-200 text-gray-500 hover:bg-blue-100 hover:text-blue-600'
+                                                                            : 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100' }}">
+                                                                    @if ($row['status'] === 'pending')
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                                        </svg>
+                                                                    @else
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                        </svg>
+                                                                    @endif
                                                                 </button>
-                                                                <button title="Paid"
-                                                                    class="inline-flex items-center justify-center w-7 h-7 bg-emerald-500
-                                                                           text-white rounded-full hover:bg-emerald-600 transition-colors">
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                                                            d="M5 13l4 4L19 7" />
-                                                                    </svg>
-                                                                </button>
+
+                                                                {{-- Quick "mark fully paid" when not already paid --}}
+                                                                @if ($row['status'] !== 'paid')
+                                                                    <button wire:click="markFullyPaid({{ $row['id'] }}, {{ $row['structure_id'] }})"
+                                                                        title="Mark fully paid"
+                                                                        class="inline-flex items-center justify-center w-7 h-7 bg-emerald-50 text-emerald-600
+                                                                               border border-emerald-200 rounded-full hover:bg-emerald-500 hover:text-white transition-colors">
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    </button>
+                                                                @else
+                                                                    <span title="Fully paid"
+                                                                        class="inline-flex items-center justify-center w-7 h-7 bg-emerald-500 text-white rounded-full">
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    </span>
+                                                                @endif
                                                             </div>
                                                         @else
-                                                            @if ($row['structure_id'])
-                                                                <button
-                                                                    wire:click="openPayModal({{ $row['id'] }}, {{ $row['structure_id'] }}, {{ $row['total_fee'] }}, {{ $row['payment_id'] ?? 'null' }})"
-                                                                    title="Record payment"
-                                                                    class="inline-flex items-center justify-center w-7 h-7 bg-gray-200
-                                                                           text-gray-500 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors">
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                            d="M12 4v16m8-8H4" />
-                                                                    </svg>
-                                                                </button>
-                                                            @else
-                                                                <span class="text-xs text-gray-300">No fee set</span>
-                                                            @endif
+                                                            <span class="block text-center text-xs text-gray-300">No fee set</span>
                                                         @endif
                                                     </td>
                                                 </tr>
@@ -788,10 +797,21 @@
                                                 <td class="px-3 py-2.5 text-sm font-bold text-red-500">
                                                     ₹{{ number_format(collect($studentFeeList)->sum('remaining'), 0) }}
                                                 </td>
-                                                <td class="px-3 py-2.5 text-xs text-gray-500">—</td>
-                                                <td class="px-3 py-2.5 text-center text-xs text-gray-500">
-                                                    {{ collect($studentFeeList)->where('is_paid', true)->count() }}/{{ count($studentFeeList) }} paid
+                                                @php
+                                                    $cnt = collect($studentFeeList);
+                                                    $paidCnt    = $cnt->where('status', 'paid')->count();
+                                                    $partialCnt = $cnt->where('status', 'partial')->count();
+                                                    $pendingCnt = $cnt->where('status', 'pending')->count();
+                                                @endphp
+                                                <td class="px-3 py-2.5 text-xs whitespace-nowrap">
+                                                    <span class="text-emerald-600 font-semibold">{{ $paidCnt }} paid</span>
+                                                    <span class="text-gray-300">·</span>
+                                                    <span class="text-amber-600 font-semibold">{{ $partialCnt }} partial</span>
+                                                    <span class="text-gray-300">·</span>
+                                                    <span class="text-gray-500 font-semibold">{{ $pendingCnt }} pending</span>
                                                 </td>
+                                                <td class="px-3 py-2.5 text-xs text-gray-500">—</td>
+                                                <td class="px-3 py-2.5"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -850,20 +870,64 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-semibold text-gray-900">
-                            {{ $isEditPayment ? 'Edit Payment' : 'Record Payment' }}
+                            {{ $isEditPayment ? 'Update Payment' : 'Record Payment' }}
                         </h3>
-                        <p class="text-xs text-gray-400">
-                            {{ $isEditPayment ? 'Update payment details' : 'Mark fee as collected' }}
-                        </p>
+                        <p class="text-xs text-gray-400">{{ $payStudentName }}</p>
                     </div>
                 </div>
 
-                <div class="space-y-3">
+                <div x-data="{
+                        amt: @js((float) ($payAmount ?: 0)),
+                        total: @js((float) $payTotalFee),
+                        fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); },
+                        get remaining() { return Math.max(0, this.total - (parseFloat(this.amt) || 0)); },
+                     }"
+                     class="space-y-3">
+
+                    {{-- Fee context --}}
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                            <p class="text-[11px] text-gray-400">Total fee</p>
+                            <p class="text-sm font-bold text-gray-800">₹{{ number_format($payTotalFee, 0) }}</p>
+                        </div>
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                            <p class="text-[11px] text-gray-400">Already collected</p>
+                            <p class="text-sm font-bold text-emerald-700">₹{{ number_format($payCollected, 0) }}</p>
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
-                        <input wire:model.defer="payAmount" type="number" min="0"
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-medium text-gray-600">Total collected (₹)</label>
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                    x-on:click="amt = total; $refs.amtInput.value = total; $wire.set('payAmount', total, false)"
+                                    class="text-[11px] font-semibold text-emerald-600 hover:underline">Pay full</button>
+                                <button type="button"
+                                    x-on:click="amt = 0; $refs.amtInput.value = ''; $wire.set('payAmount', 0, false)"
+                                    class="text-[11px] font-semibold text-gray-400 hover:underline">Clear</button>
+                            </div>
+                        </div>
+                        <input wire:model.defer="payAmount" type="number" min="0" step="0.01" x-ref="amtInput"
+                            x-on:input="amt = parseFloat($event.target.value) || 0"
+                            placeholder="0"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
                                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+
+                        {{-- Live status hint --}}
+                        <div class="mt-1.5 text-xs">
+                            <template x-if="(parseFloat(amt) || 0) <= 0">
+                                <span class="text-gray-400">No amount entered — will be marked <strong>Pending</strong>.</span>
+                            </template>
+                            <template x-if="(parseFloat(amt) || 0) > 0 && total > 0 && (parseFloat(amt) || 0) + 0.01 >= total">
+                                <span class="text-emerald-600 font-medium">Fee fully paid ✓</span>
+                            </template>
+                            <template x-if="(parseFloat(amt) || 0) > 0 && (total <= 0 || (parseFloat(amt) || 0) + 0.01 < total)">
+                                <span class="text-amber-600 font-medium">
+                                    Partial — <span x-text="fmt(remaining)"></span> will remain due.
+                                </span>
+                            </template>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Payment Mode</label>
