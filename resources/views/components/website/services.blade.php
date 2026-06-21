@@ -20,10 +20,14 @@
 
 <style>
   /* ── Quick nav chips ── */
-  .svc-nav { max-width:1100px; margin:0 auto 8px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
-  .svc-nav a { font-size:13px; font-weight:600; padding:8px 16px; border-radius:50px; border:1px solid var(--border);
-    background:#fff; color:var(--text2); text-decoration:none; transition:all .2s; }
+  .svc-nav { max-width:1100px; margin:0 auto 8px; display:flex; flex-wrap:nowrap; gap:8px; justify-content:center;
+    overflow-x:auto; padding-bottom:4px; -ms-overflow-style:none; scrollbar-width:none; }
+  .svc-nav::-webkit-scrollbar { display:none; }
+  .svc-nav a { flex:0 0 auto; white-space:nowrap; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:50px;
+    border:1px solid var(--border); background:#fff; color:var(--text2); text-decoration:none; transition:all .2s; }
   .svc-nav a:hover { border-color:var(--violet); color:var(--violet); transform:translateY(-2px); }
+
+  @media (max-width:760px) { .svc-nav { justify-content:flex-start; } }
 
   /* ── Service section ── */
   .svc-band { scroll-margin-top:90px; }

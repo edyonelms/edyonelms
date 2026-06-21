@@ -63,6 +63,7 @@
   .file-drop-icon { font-size:24px; }
   .file-drop-text { font-size:13px; color:var(--text3); margin-top:6px; }
   .file-drop-name { font-size:13px; font-weight:600; color:var(--violet); margin-top:6px; }
+  .file-err { font-size:12px; color:#dc2626; margin-top:6px; }
 
   /* ── Toast ── */
   .toast { position:fixed; bottom:28px; right:28px; background:#fff; border:1px solid rgba(34,197,94,.3);
@@ -262,28 +263,29 @@
         <div class="apply-grid">
           <div class="field">
             <label>Full Name <span class="req">*</span></label>
-            <input type="text" name="full_name" required placeholder="Your full name">
+            <input type="text" name="full_name" required maxlength="80" placeholder="Your full name">
           </div>
           <div class="field">
             <label>Email <span class="req">*</span></label>
-            <input type="email" name="email" required placeholder="you@example.com">
+            <input type="email" name="email" required maxlength="120" placeholder="you@example.com">
           </div>
           <div class="field">
             <label>Mobile Number <span class="req">*</span></label>
             <input type="tel" name="mobile" required maxlength="10" pattern="[6-9][0-9]{9}"
+              inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
               placeholder="10-digit mobile number">
           </div>
           <div class="field">
             <label>Qualification <span class="req">*</span></label>
-            <input type="text" name="qualification" required placeholder="e.g. B.Com, MBA, Graduate">
+            <input type="text" name="qualification" required maxlength="120" placeholder="e.g. B.Com, MBA, Graduate">
           </div>
           <div class="field full">
             <label>Address <span class="req">*</span></label>
-            <textarea name="address" required placeholder="Your city, area and state"></textarea>
+            <textarea name="address" required maxlength="500" placeholder="Your city, area and state"></textarea>
           </div>
           <div class="field full">
             <label>About You / Why you want to join</label>
-            <textarea name="description" placeholder="Tell us a little about your experience and why you'd be a great fit (optional)"></textarea>
+            <textarea name="description" maxlength="1000" placeholder="Tell us a little about your experience and why you'd be a great fit (optional)"></textarea>
           </div>
           <div class="field full">
             <label>Attach Document <span style="font-weight:400;color:var(--text3)">(Resume / ID — PDF, DOC or image, max 5 MB)</span></label>
@@ -292,8 +294,9 @@
               <div class="file-drop-text">Click to upload your document</div>
               <div class="file-drop-name" id="fileName"></div>
               <input type="file" name="document" id="executiveDoc" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                onchange="document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : ''">
+                onchange="checkExecutiveFile(this)">
             </label>
+            <div class="file-err" id="fileErr"></div>
           </div>
           <div class="field full">
             <button type="submit" class="btn btn-primary btn-submit" style="width:100%;justify-content:center;">
@@ -314,9 +317,49 @@
   </div>
 
   <script>
+    var EXEC_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+    var EXEC_ALLOWED = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+
+    function checkExecutiveFile(input) {
+      var nameEl = document.getElementById('fileName');
+      var errEl  = document.getElementById('fileErr');
+      errEl.textContent = '';
+      var f = input.files[0];
+      if (!f) { nameEl.textContent = ''; return; }
+
+      var ext = (f.name.split('.').pop() || '').toLowerCase();
+      if (EXEC_ALLOWED.indexOf(ext) === -1) {
+        errEl.textContent = 'Only PDF, DOC, DOCX, JPG or PNG files are allowed.';
+        input.value = '';
+        nameEl.textContent = '';
+        return;
+      }
+      if (f.size > EXEC_MAX_BYTES) {
+        errEl.textContent = 'This file is larger than 5 MB. Please upload a smaller file.';
+        input.value = '';
+        nameEl.textContent = '';
+        return;
+      }
+      nameEl.textContent = f.name;
+    }
+
     async function handleExecutiveSubmit(e) {
       e.preventDefault();
       var form = e.target;
+
+      var fileInput = document.getElementById('executiveDoc');
+      if (fileInput.files[0]) {
+        var ext = (fileInput.files[0].name.split('.').pop() || '').toLowerCase();
+        if (EXEC_ALLOWED.indexOf(ext) === -1) {
+          showToast('Only PDF, DOC, DOCX, JPG or PNG files are allowed.', false);
+          return;
+        }
+        if (fileInput.files[0].size > EXEC_MAX_BYTES) {
+          showToast('Document must be 5 MB or smaller.', false);
+          return;
+        }
+      }
+
       var btn = form.querySelector('.btn-submit');
       var orig = btn.textContent;
       btn.textContent = 'Submitting…';
@@ -332,6 +375,7 @@
         if (json.success) {
           form.reset();
           document.getElementById('fileName').textContent = '';
+          document.getElementById('fileErr').textContent = '';
           showToast(json.message || 'Application sent!', true);
         } else {
           showToast(Object.values(json.errors || {}).flat()[0] || 'Something went wrong.', false);

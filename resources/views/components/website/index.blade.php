@@ -3152,7 +3152,7 @@
             <div class="section-center reveal">
                 <div class="section-tag tag-violet">Built for Everyone</div>
                 <h2 class="section-title">One Platform, <span class="gradient-text">Every Role</span></h2>
-                <p class="section-subtitle">EDYONE LMS is built to serve the unique needs of every stakeholder in your
+                <p class="section-subtitle" style="max-width:780px;">EDYONE LMS is built to serve the unique needs of every stakeholder in your
                     school ecosystem — from administrators and teachers to students, parents and the accounts &amp;
                     examination teams. Each role gets a dedicated, role-based dashboard with exactly the tools they need,
                     so everyone works from a single source of truth without juggling spreadsheets, paperwork or
@@ -3248,28 +3248,48 @@
                         <div class="role-point-check">✓</div>Receive school announcements instantly
                     </div>
                 </div>
-                <!-- Accounts & Exams Management -->
-                <div class="role-card" style="grid-column:1/-1;background:var(--secondary-faint);border:1px solid var(--border);">
-                    <div class="role-card-title">🧾 For Accounts &amp; Exams Management</div>
-                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0 32px;">
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Automated fee invoicing, dues tracking &amp; online collection
-                        </div>
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Payroll, expense &amp; income ledgers with financial reports
-                        </div>
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Build exam schedules, datesheets &amp; seating arrangements
-                        </div>
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Configure grading schemes, marks entry &amp; result processing
-                        </div>
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Auto-generate admit cards, marksheets &amp; report cards in bulk
-                        </div>
-                        <div class="role-point">
-                            <div class="role-point-check">✓</div>Reconcile transactions &amp; export GST-ready accounting data
-                        </div>
+                <!-- Accounts -->
+                <div class="role-card" style="background:var(--secondary-faint);border:1px solid var(--border);">
+                    <div class="role-card-title">🧾 For Accounts</div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Automated fee invoicing, dues tracking &amp; online collection
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Payroll, salary slips &amp; staff expense management
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Income, expense &amp; fee ledgers with financial reports
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Online payment reconciliation &amp; instant receipts
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Export GST-ready accounting &amp; audit data
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Real-time dues, defaulter &amp; collection dashboards
+                    </div>
+                </div>
+                <!-- Exams Management -->
+                <div class="role-card" style="background:var(--primary-faint);border:1px solid var(--border-pink);">
+                    <div class="role-card-title">📝 For Exams Management</div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Build exam schedules, datesheets &amp; seating arrangements
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Configure grading schemes &amp; marks entry workflows
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Automated result processing &amp; rank calculation
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Auto-generate admit cards, marksheets &amp; report cards in bulk
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Subject &amp; class-wise performance analysis
+                    </div>
+                    <div class="role-point">
+                        <div class="role-point-check">✓</div>Publish results instantly to students &amp; parents
                     </div>
                 </div>
             </div>
@@ -3417,7 +3437,7 @@
             <div class="section-center reveal">
                 <div class="section-tag tag-pink">Testimonials</div>
                 <h2 class="section-title">Why Schools <span class="gradient-text">Love</span> EDYONE</h2>
-                <p class="section-subtitle">From small private schools to large multi-campus institutions, principals,
+                <p class="section-subtitle" style="max-width:780px;">From small private schools to large multi-campus institutions, principals,
                     teachers and parents trust EDYONE to run their day-to-day work. Here's what they have to say about
                     saving hours of paperwork, faster fee collection and happier classrooms.</p>
             </div>

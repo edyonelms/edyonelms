@@ -53,13 +53,12 @@
   .step-title { font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px; }
   .step-desc { font-size:13px; color:var(--text3); line-height:1.6; }
 
-  /* ── Apply modal ── */
-  .apply-overlay { position:fixed; inset:0; background:rgba(26,15,46,.55); backdrop-filter:blur(4px);
-    display:none; align-items:flex-start; justify-content:center; z-index:9998; padding:40px 16px; overflow-y:auto; }
-  .apply-overlay.open { display:flex; }
-  .apply-modal { background:#fff; border-radius:24px; width:100%; max-width:600px; box-shadow:var(--shadow);
-    position:relative; padding:34px 34px 30px; animation:applyPop .3s cubic-bezier(.16,1,.3,1); }
-  @keyframes applyPop { from { opacity:0; transform:translateY(24px) scale(.98); } to { opacity:1; transform:none; } }
+  /* ── Apply form (inline, slides open below) ── */
+  .apply-reveal { max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .55s cubic-bezier(.4,0,.2,1), opacity .45s ease; }
+  .apply-reveal.open { max-height:2000px; opacity:1; }
+  .apply-wrap { max-width:680px; margin:0 auto; background:#fff; border:1px solid var(--border2);
+    border-radius:24px; padding:34px 34px 30px; box-shadow:var(--shadow2); position:relative; }
   .apply-modal-close { position:absolute; top:18px; right:18px; width:34px; height:34px; border:none;
     background:var(--bg3); color:var(--text3); border-radius:50%; font-size:20px; line-height:1; cursor:pointer;
     display:flex; align-items:center; justify-content:center; transition:all .2s; }
@@ -100,7 +99,7 @@
   @media (max-width:760px) {
     .steps-grid { grid-template-columns:1fr 1fr; }
     .apply-grid { grid-template-columns:1fr; }
-    .apply-modal { padding:28px 22px; }
+    .apply-wrap { padding:28px 22px; }
   }
   @media (max-width:480px) {
     .steps-grid { grid-template-columns:1fr; }
@@ -196,12 +195,14 @@
     </div>
   </section>
 
-  {{-- ══════════════════ APPLY MODAL ══════════════════ --}}
-  <div class="apply-overlay" id="applyModal" aria-hidden="true">
-    <div class="apply-modal" role="dialog" aria-modal="true" aria-labelledby="applyTitle">
+  {{-- ══════════════════ APPLY FORM (slides open below) ══════════════════ --}}
+  <section id="applySection" style="padding:0 6%;">
+    <div class="apply-reveal" id="applyReveal">
+     <div style="padding:72px 0;">
+      <div class="apply-wrap">
       <button type="button" class="apply-modal-close" onclick="closeApply()" aria-label="Close">&times;</button>
       <div class="apply-head">
-        <h3 id="applyTitle">Apply <span id="applyRoleLabel"></span></h3>
+        <h3 id="applyTitle">Apply <span id="applyRoleLabel">to EDYONE</span></h3>
         <p>Fill in your details and attach your resume. Fields marked <span style="color:var(--pink-dark)">*</span> are required.</p>
       </div>
 
@@ -251,8 +252,10 @@
           </div>
         </div>
       </form>
+      </div>
+     </div>
     </div>
-  </div>
+  </section>
 
   {{-- Toast --}}
   <div class="toast hidden" id="toast">
@@ -269,26 +272,17 @@
     function openApply(role) {
       document.getElementById('jobRole').value = role || '';
       document.getElementById('applyRoleLabel').textContent = role ? ('for ' + role) : 'to EDYONE';
-      var m = document.getElementById('applyModal');
-      m.classList.add('open');
-      m.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
+      document.getElementById('applyReveal').classList.add('open');
+      document.getElementById('applySection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function () {
+        var fn = document.querySelector('#careerForm input[name="full_name"]');
+        if (fn) fn.focus({ preventScroll: true });
+      }, 450);
     }
 
     function closeApply() {
-      var m = document.getElementById('applyModal');
-      m.classList.remove('open');
-      m.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
+      document.getElementById('applyReveal').classList.remove('open');
     }
-
-    // Close on backdrop click and Escape.
-    document.getElementById('applyModal').addEventListener('click', function (e) {
-      if (e.target === this) closeApply();
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeApply();
-    });
 
     function checkFile(input) {
       var nameEl = document.getElementById('fileName');

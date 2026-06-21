@@ -59,7 +59,7 @@ return [
 
     'become-executive' => [
         'tag'      => 'Partner Program',
-        'title'    => 'Become an EDYONE Executive & earn ₹1 Lakh+ a month',
+        'title'    => 'Become an Executive with Edyone LMS',
         'subtitle' => 'Partner with EDYONE to bring affordable school technology to institutions in your region. Work remotely, on your own schedule, with a simple joining process and fast payouts — and earn attractive recurring income for every school you bring on board.',
     ],
 

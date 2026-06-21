@@ -832,6 +832,165 @@
             box-shadow: var(--shadow2);
         }
 
+        /* ── Founder Spotlight (matches homepage) ── */
+        .founder-spotlight {
+            position: relative;
+            margin: 0 auto;
+            max-width: 920px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 44px;
+            align-items: center;
+            background: linear-gradient(135deg, var(--secondary-faint), var(--primary-faint));
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 48px 52px;
+            overflow: hidden;
+        }
+
+        .founder-spotlight-blob {
+            position: absolute;
+            top: -90px;
+            right: -90px;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(111, 86, 254, 0.18), transparent 70%);
+            pointer-events: none;
+        }
+
+        .founder-photo-link {
+            display: block;
+            justify-self: center;
+            text-decoration: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .founder-photo-ring {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            padding: 6px;
+            background: var(--grad1);
+            box-shadow: 0 18px 44px rgba(111, 86, 254, 0.28);
+            transition: transform .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .founder-photo-link:hover .founder-photo-ring {
+            transform: translateY(-6px) scale(1.02);
+        }
+
+        .founder-photo-ring img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+            border: 4px solid #fff;
+        }
+
+        .founder-photo-fallback {
+            display: none;
+            position: absolute;
+            inset: 6px;
+            background: linear-gradient(135deg, #6F56FE, #5540D4);
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            border: 4px solid #fff;
+        }
+
+        .founder-content {
+            position: relative;
+            z-index: 1;
+            text-align: left;
+        }
+
+        .founder-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #fff;
+            background: var(--grad1);
+            padding: 5px 14px;
+            border-radius: 50px;
+            margin-bottom: 14px;
+        }
+
+        .founder-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(30px, 3.5vw, 42px);
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.1;
+            margin-bottom: 14px;
+        }
+
+        .founder-bio {
+            font-size: 15px;
+            color: var(--text2);
+            line-height: 1.8;
+            margin-bottom: 18px;
+        }
+
+        .founder-quote {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 19px;
+            font-style: italic;
+            color: var(--violet);
+            line-height: 1.5;
+            border-left: 3px solid var(--violet);
+            padding-left: 16px;
+            margin-bottom: 22px;
+        }
+
+        .founder-profile-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--grad1);
+            border-radius: 50px;
+            padding: 11px 24px;
+            text-decoration: none;
+            box-shadow: 0 8px 22px rgba(111, 86, 254, 0.28);
+            transition: transform .25s, box-shadow .25s;
+        }
+
+        .founder-profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(111, 86, 254, 0.38);
+        }
+
+        @media (max-width: 760px) {
+            .founder-spotlight {
+                grid-template-columns: 1fr;
+                gap: 28px;
+                padding: 36px 26px;
+                text-align: center;
+            }
+
+            .founder-content {
+                text-align: center;
+            }
+
+            .founder-photo-ring {
+                width: 170px;
+                height: 170px;
+            }
+
+            .founder-quote {
+                text-align: left;
+            }
+        }
+
         /* Join Team CTA */
         .join-team-box {
             margin-top: 56px;
@@ -1830,129 +1989,39 @@
                     principals, and real school challenges.</p>
             </div>
 
-            <div class="team-grid-about stagger">
-
-                <!-- Annant Dagur -->
+            <!-- Founder Spotlight (single, wide feature card — matches homepage) -->
+            <div class="founder-spotlight reveal">
+                <div class="founder-spotlight-blob"></div>
                 <a href="https://www.instagram.com/annantdagur?igsh=OTMyZnIzaGR2aDVs" target="_blank"
-                    rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card" style="position:relative;overflow:hidden;"
-                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
-                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
-                        <div
-                            style="width:72px;height:72px;border-radius:50%;margin:0 auto 14px;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
-                            <img src="https://forthcoming-scarlet-dgkqbdzkp7.edgeone.app/annant%20image.jpg"
-                                alt="Annant Dagur"
-                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
-                                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div
-                                style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#6F56FE,#5540D4);border-radius:50%;align-items:center;justify-content:center;font-size:28px;">
-                                👨‍💼</div>
-                        </div>
-                        <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">Annant Dagur
-                        </div>
-                        <div
-                            style="font-size:12px;background:var(--grad-violet);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;">
-                            Founder &amp; CEO</div>
-                        <div
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--violet);background:var(--primary-faint);border:1px solid rgba(111,86,254,0.20);border-radius:20px;padding:4px 13px;">
-                            View Profile <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12h14M13 6l6 6-6 6" stroke="#6F56FE" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg></div>
+                    rel="noopener noreferrer" class="founder-photo-link">
+                    <div class="founder-photo-ring">
+                        <img src="https://forthcoming-scarlet-dgkqbdzkp7.edgeone.app/annant%20image.jpg"
+                            alt="Annant Dagur"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                        <div class="founder-photo-fallback">👨‍💼</div>
                     </div>
                 </a>
-
-                <!-- Shivam Gautam -->
-                <a href="https://www.instagram.com/whoshivix?igsh=MTJyMjhpN3gyYmJpcw==" target="_blank"
-                    rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card" style="position:relative;overflow:hidden;"
-                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
-                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
-                        <div
-                            style="width:72px;height:72px;border-radius:50%;margin:0 auto 14px;overflow:hidden;box-shadow:0 4px 18px rgba(219,87,178,0.18);position:relative;border:3px solid rgba(219,87,178,0.25);">
-                            <img src="https://intense-apricot-kqrcf7troc.edgeone.app/shivam%20img.jpeg"
-                                alt="Shivam Gautam"
-                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
-                                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div
-                                style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#DB57B2,#B83D92);border-radius:50%;align-items:center;justify-content:center;font-size:28px;">
-                                👩‍💻</div>
-                        </div>
-                        <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">Shivam Gautam
-                        </div>
-                        <div
-                            style="font-size:12px;background:var(--grad-pink);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;">
-                            Co-Founder &amp; CTO</div>
-                        <div
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--violet);background:var(--primary-faint);border:1px solid rgba(111,86,254,0.20);border-radius:20px;padding:4px 13px;">
-                            View Profile <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12h14M13 6l6 6-6 6" stroke="#6F56FE" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg></div>
-                    </div>
-                </a>
-
-                <!-- Satyam Kumar -->
-                <a href="https://www.instagram.com/satyamsingh8755?igsh=MXh5Nnd1dTJoY3VudQ==" target="_blank"
-                    rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card" style="position:relative;overflow:hidden;"
-                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
-                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
-                        <div
-                            style="width:72px;height:72px;border-radius:50%;margin:0 auto 14px;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
-                            <img src="https://identical-emerald-pq3i0deeab.edgeone.app/satyam%20img.jpeg"
-                                alt="Satyam Kumar"
-                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
-                                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div
-                                style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#DB57B2,#6F56FE);border-radius:50%;align-items:center;justify-content:center;font-size:28px;">
-                                👨‍🔧</div>
-                        </div>
-                        <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">Satyam Kumar
-                        </div>
-                        <div
-                            style="font-size:12px;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;">
-                            CFO &amp; Head of Operations</div>
-                        <div
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--violet);background:var(--primary-faint);border:1px solid rgba(111,86,254,0.20);border-radius:20px;padding:4px 13px;">
-                            View Profile <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12h14M13 6l6 6-6 6" stroke="#6F56FE" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg></div>
-                    </div>
-                </a>
-
-                <!-- Rekha Devi -->
-                <a href="https://www.instagram.com/edyonelms?utm_source=ig_web_button_share_sheet&igsh=ZzlkamE5ZTR5MDB6"
-                    target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="team-card" style="position:relative;overflow:hidden;"
-                        onmouseenter="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(111,86,254,0.15)';"
-                        onmouseleave="this.style.transform='';this.style.boxShadow='';">
-                        <div
-                            style="width:72px;height:72px;border-radius:50%;margin:0 auto 14px;overflow:hidden;box-shadow:0 4px 18px rgba(111,86,254,0.18);position:relative;border:3px solid rgba(111,86,254,0.25);">
-                            <img src="https://identical-emerald-pq3i0deeab.edgeone.app/satyam%20img.jpeg"
-                                alt="Rekha Devi"
-                                style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
-                                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div
-                                style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,#6F56FE,#5540D4);border-radius:50%;align-items:center;justify-content:center;font-size:28px;">
-                                👩‍🏫</div>
-                        </div>
-                        <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">Rekha Devi
-                        </div>
-                        <div
-                            style="font-size:12px;background:var(--grad-violet);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:14px;">
-                            Managing Director</div>
-                        <div
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--violet);background:var(--primary-faint);border:1px solid rgba(111,86,254,0.20);border-radius:20px;padding:4px 13px;">
-                            View Profile <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12h14M13 6l6 6-6 6" stroke="#6F56FE" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg></div>
-                    </div>
-                </a>
-
-            </div><!-- end team grid -->
+                <div class="founder-content">
+                    <span class="founder-badge">Founder &amp; CEO</span>
+                    <h3 class="founder-name">Annant Dagur</h3>
+                    <p class="founder-bio">The visionary behind EDYONE LMS. Annant started EDYONE with one mission — to
+                        make quality, affordable school-management technology accessible to every institution in India,
+                        from large city schools to small towns. He works closely with educators on the ground, turning
+                        their everyday challenges into simple, powerful features that thousands of students, teachers and
+                        parents now rely on.</p>
+                    <div class="founder-quote">“Great technology should empower every teacher and reach every child —
+                        not just the privileged few.”</div>
+                    <a href="https://www.instagram.com/annantdagur?igsh=OTMyZnIzaGR2aDVs" target="_blank"
+                        rel="noopener noreferrer" class="founder-profile-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="2" />
+                            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                        </svg>
+                        View Profile
+                    </a>
+                </div>
+            </div>
 
             <!-- Join Our Team CTA -->
             <div class="join-team-box reveal">
