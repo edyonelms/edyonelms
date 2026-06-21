@@ -3,11 +3,15 @@
 namespace App\Livewire\SuperAdmin;
 
 use App\Helpers\CityGetHelper;
+use App\Models\Admin\ExamCopy;
+use App\Models\Admin\Fee\FeePayment;
+use App\Models\Admin\Fee\FeeStructure;
 use App\Models\Admin\SchoolInfo;
 use App\Models\Admin\Transportation;
 use App\Models\Organization;
 use App\Models\Student\Section;
 use App\Models\Student\Standard;
+use App\Models\Student\StudentAttendance;
 use App\Models\Student\StudentDetail;
 use App\Models\User;
 use App\Services\ZeptoMailService;
@@ -458,9 +462,42 @@ class Student extends Component
     {
         if (!$this->filterOrganization) return;
 
-        $students = $this->baseQuery()->get();
+        $students = $this->baseQuery()->with('transportations')->get();
+        $ids      = $students->pluck('id')->all();
 
-        return response()->streamDownload(function () use ($students) {
+        // ── Attendance: present (status = 1) out of total marked days ──
+        $attendance = StudentAttendance::whereIn('student_detail_id', $ids)
+            ->selectRaw('student_detail_id, COUNT(*) as total, SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as present')
+            ->groupBy('student_detail_id')->get()->keyBy('student_detail_id');
+
+        // ── Performance: marks obtained out of max across all exam copies ──
+        $marks = ExamCopy::whereIn('student_detail_id', $ids)
+            ->selectRaw('student_detail_id, SUM(marks_obtained) as obtained, SUM(max_marks) as max_total')
+            ->groupBy('student_detail_id')->get()->keyBy('student_detail_id');
+
+        // ── Fees paid (academic / transport) ──
+        $academicPaid = FeePayment::whereIn('student_detail_id', $ids)->where('fee_type', 'academic')
+            ->selectRaw('student_detail_id, SUM(amount) as paid')->groupBy('student_detail_id')->get()->keyBy('student_detail_id');
+        $transportPaid = FeePayment::whereIn('student_detail_id', $ids)->where('fee_type', 'transport')
+            ->selectRaw('student_detail_id, SUM(amount) as paid')->groupBy('student_detail_id')->get()->keyBy('student_detail_id');
+
+        // ── Fee totals per class (memoised so we hit the DB once per class) ──
+        $academicTotals = [];
+        $transportTotals = [];
+        $academicTotalFor = function ($stdId, $secId) use (&$academicTotals) {
+            if (!$stdId) return 0.0;
+            $key = $stdId . '-' . ($secId ?: '0');
+            return $academicTotals[$key] ??= (float) FeeStructure::forClass((int) $stdId, $secId ? (int) $secId : null)
+                ->academic()->active()->sum('amount');
+        };
+        $transportTotalFor = function ($stdId, $secId) use (&$transportTotals) {
+            if (!$stdId) return 0.0;
+            $key = $stdId . '-' . ($secId ?: '0');
+            return $transportTotals[$key] ??= (float) FeeStructure::forClass((int) $stdId, $secId ? (int) $secId : null)
+                ->transport()->active()->sum('amount');
+        };
+
+        return response()->streamDownload(function () use ($students, $attendance, $marks, $academicPaid, $transportPaid, $academicTotalFor, $transportTotalFor) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
                 'S.No',
@@ -487,11 +524,35 @@ class Student extends Component
                 'State',
                 'Pincode',
                 'Transportation Required',
+                'Transport Route',
                 'School',
                 'Status',
+                'Attendance (Present/Total)',
+                'Attendance %',
+                'Performance (Marks/Max)',
+                'Performance %',
+                'Academic Fee (Paid/Total)',
+                'Academic Fee Pending',
+                'Transport Fee (Paid/Total)',
+                'Transport Fee Pending',
             ]);
 
             foreach ($students as $index => $s) {
+                $att        = $attendance[$s->id] ?? null;
+                $attTotal   = (int) ($att->total ?? 0);
+                $attPresent = (int) ($att->present ?? 0);
+                $attPct     = $attTotal > 0 ? round($attPresent / $attTotal * 100, 1) . '%' : '—';
+
+                $mk      = $marks[$s->id] ?? null;
+                $obt     = (float) ($mk->obtained ?? 0);
+                $maxT    = (float) ($mk->max_total ?? 0);
+                $perfPct = $maxT > 0 ? round($obt / $maxT * 100, 1) . '%' : '—';
+
+                $acPaid  = (float) ($academicPaid[$s->id]->paid ?? 0);
+                $acTotal = (float) $academicTotalFor($s->standard_id, $s->section_id);
+                $trPaid  = (float) ($transportPaid[$s->id]->paid ?? 0);
+                $trTotal = $s->transportation_required ? (float) $transportTotalFor($s->standard_id, $s->section_id) : 0.0;
+
                 fputcsv($handle, [
                     $index + 1,
                     $s->full_name ?? '',
@@ -517,8 +578,17 @@ class Student extends Component
                     $s->state ?? '',
                     $s->pincode ?? '',
                     $s->transportation_required ? 'Yes' : 'No',
+                    $s->transportations->first()?->route_name ?? '',
                     $s->user?->organization?->name ?? '',
                     ($s->user?->is_active) ? 'Active' : 'Inactive',
+                    $attPresent . '/' . $attTotal,
+                    $attPct,
+                    rtrim(rtrim(number_format($obt, 2, '.', ''), '0'), '.') . '/' . rtrim(rtrim(number_format($maxT, 2, '.', ''), '0'), '.'),
+                    $perfPct,
+                    number_format($acPaid, 2) . ' / ' . number_format($acTotal, 2),
+                    number_format(max($acTotal - $acPaid, 0), 2),
+                    number_format($trPaid, 2) . ' / ' . number_format($trTotal, 2),
+                    number_format(max($trTotal - $trPaid, 0), 2),
                 ]);
             }
             fclose($handle);

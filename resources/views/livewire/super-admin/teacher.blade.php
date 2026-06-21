@@ -1,120 +1,103 @@
 <div class="min-h-screen bg-gray-50">
 
-    {{-- ══════════ HEADER ══════════ --}}
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5 sticky top-0 z-50">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Teachers</h1>
-                <p class="text-sm text-gray-500 mt-0.5">Manage all teacher records across schools</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="hidden lg:flex items-center gap-4 text-sm text-gray-500 mr-3 divide-x divide-gray-200">
-                    <span class="pr-4">Schools: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
-                    <span class="px-4">Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
-                    <span class="px-4">Active: <strong class="text-emerald-600">{{ $activeTeachers }}</strong></span>
-                    <span class="pl-4">Inactive: <strong class="text-red-500">{{ $inactiveTeachers }}</strong></span>
+    {{-- ══════════ HEADER (analytics + filter) ══════════ --}}
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="px-4 sm:px-6 py-4 sm:py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Teachers</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Manage all teacher records across schools</p>
                 </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    {{-- Export Button (first) --}}
+                    <button wire:click="exportTeachers" @disabled(!$filterOrganization)
+                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
+                               rounded-lg transition-colors
+                               {{ $filterOrganization
+                                   ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
+                                   : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span class="hidden sm:inline">{{ $filterOrganization ? 'Export' : 'Select School to Export' }}</span>
+                        <span class="sm:hidden">Export</span>
+                    </button>
 
-                {{-- Add Teacher Button --}}
-                <button wire:click="openAddPanel"
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
-                           bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span class="hidden sm:inline">Add Teacher</span>
-                    <span class="sm:hidden">Add</span>
-                </button>
+                    {{-- Add Teacher Button (after Export) --}}
+                    <button wire:click="openAddPanel"
+                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
+                               bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span class="hidden sm:inline">Add Teacher</span>
+                        <span class="sm:hidden">Add</span>
+                    </button>
+                </div>
+            </div>
 
-                {{-- Export Button --}}
-                <button wire:click="exportTeachers" @disabled(!$filterOrganization)
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold
-                           rounded-lg transition-colors
-                           {{ $filterOrganization
-                               ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
-                               : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200' }}">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span class="hidden sm:inline">
-                        {{ $filterOrganization ? 'Export' : 'Select School to Export' }}
-                    </span>
-                    <span class="sm:hidden">Export</span>
-                </button>
+            {{-- Analytics chips — wrap so the header never overflows --}}
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Schools <strong class="text-gray-900">{{ $totalSchools }}</strong></span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">Total <strong class="text-gray-900">{{ $totalTeachers }}</strong></span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-600">Active <strong class="text-emerald-700">{{ $activeTeachers }}</strong></span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 border border-red-100 text-xs text-red-600">Inactive <strong class="text-red-700">{{ $inactiveTeachers }}</strong></span>
             </div>
         </div>
 
-        {{-- Mobile stats --}}
-        <div class="flex lg:hidden items-center gap-3 sm:gap-4 text-xs text-gray-500 mt-3 flex-wrap">
-            <span>Schools: <strong class="text-gray-800">{{ $totalSchools }}</strong></span>
-            <span>Total: <strong class="text-gray-800">{{ $totalTeachers }}</strong></span>
-            <span>Active: <strong class="text-emerald-600">{{ $activeTeachers }}</strong></span>
-            <span>Inactive: <strong class="text-red-500">{{ $inactiveTeachers }}</strong></span>
-        </div>
-    </div>
-
-    <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
-
-        {{-- ══════════ FILTERS ══════════ --}}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-
-                {{-- Search --}}
-                <div class="sm:col-span-2 relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {{-- Filter bar (enquiry-style sub-header) --}}
+        <div class="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Search name, email, mobile, employee ID..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    Filter by:
                 </div>
 
-                {{-- Organization --}}
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search name, email, mobile, employee ID…"
+                        class="text-xs bg-white border border-gray-200 rounded-md pl-8 pr-3 py-1.5 text-gray-700 w-56 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
                 <select wire:model.live="filterOrganization"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Schools</option>
                     @foreach ($organizations as $org)
                         <option value="{{ $org->id }}">{{ $org->name }}</option>
                     @endforeach
                 </select>
 
-                {{-- Gender --}}
                 <select wire:model.live="filterGender"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-blue-500 bg-white">
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Genders</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
 
-                {{-- Status + Clear --}}
-                <div class="flex gap-2">
-                    <select wire:model.live="filterStatus"
-                        class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 bg-white">
-                        <option value="">All Status</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                    @if ($search || $filterOrganization || $filterGender || $filterStatus !== '')
-                        <button wire:click="clearFilters" title="Clear filters"
-                            class="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg
-                                   hover:bg-gray-50 transition-colors flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    @endif
-                </div>
+                <select wire:model.live="filterStatus"
+                    class="text-xs bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Status</option>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+
+                @if ($search || $filterOrganization || $filterGender || $filterStatus !== '')
+                    <button wire:click="clearFilters"
+                        class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        Clear
+                    </button>
+                @endif
             </div>
         </div>
+    </div>
+
+    <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
 
         {{-- ══════════ DESKTOP TABLE ══════════ --}}
         <div class="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
