@@ -42,6 +42,17 @@ class Organization extends Model
 
     protected $table = 'organizations';
 
+    /**
+     * When a school is deleted, its LMS ratings/reviews go with it — no
+     * matter which code path triggered the delete.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (self $organization) {
+            \App\Models\Admin\RateLms::where('organization_id', $organization->id)->delete();
+        });
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

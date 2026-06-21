@@ -167,6 +167,35 @@ class WebsiteController extends Controller
         ]);
     }
 
+    /**
+     * Spam guard for the public lead forms.
+     *
+     * Two cheap, high-signal checks:
+     *   1. Honeypot — a hidden "company" field that real users never see or
+     *      fill. Bots that auto-fill every field trip it.
+     *   2. Reserved / test email domains (RFC 2606 example.*, plus common
+     *      throwaway domains) can never be a genuine lead, so we drop them.
+     *
+     * Returns true when the submission should be silently discarded (we still
+     * answer 200 so bots/scripts get no signal that they were blocked).
+     */
+    protected function isSpamSubmission(Request $request): bool
+    {
+        if (filled($request->input('company'))) {
+            return true;
+        }
+
+        $email  = strtolower(trim((string) $request->input('email')));
+        $domain = substr((string) strrchr($email, '@'), 1);
+
+        $blockedDomains = [
+            'example.com', 'example.org', 'example.net',
+            'test.com', 'test.test', 'mailinator.com', 'localhost', 'invalid',
+        ];
+
+        return $domain !== '' && in_array($domain, $blockedDomains, true);
+    }
+
     /** POST /api/website/school-contact — enquiry from a school's own website */
     public function schoolContact(Request $request)
     {
@@ -178,6 +207,13 @@ class WebsiteController extends Controller
             'subject'         => 'nullable|string|max:255',
             'message'         => 'nullable|string|max:5000',
         ]);
+
+        if ($this->isSpamSubmission($request)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Thank you! Your message has been sent. We will get back to you soon.',
+            ]);
+        }
 
         SchoolWebsiteEnquiry::create($validated);
 
@@ -199,6 +235,13 @@ class WebsiteController extends Controller
             'description'  => 'required|string|max:5000',
         ]);
 
+        if ($this->isSpamSubmission($request)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Message sent successfully! We will get back to you within 3 business days.',
+            ]);
+        }
+
         WebsiteContact::create($validated);
 
         return response()->json([
@@ -219,6 +262,13 @@ class WebsiteController extends Controller
             'no_of_students' => 'required|string|max:50',
             'role'           => 'required|string|max:100',
         ]);
+
+        if ($this->isSpamSubmission($request)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Demo request received! Our team will contact you within 3 business days.',
+            ]);
+        }
 
         WebsiteDemo::create($validated);
 
