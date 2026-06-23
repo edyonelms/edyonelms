@@ -29,6 +29,37 @@
         body.drawer-open {
             overflow: hidden;
         }
+
+        /* ─── Scroll-aware collapsing page header (admin) ───
+           On scroll-down the title/stats/tabs collapse away and only the
+           sticky filter bar stays pinned at the top, giving the content the
+           full screen. Scroll-up brings the header back. Driven by JS that
+           toggles `.lms-header-collapsed` on the page header. */
+        #main-scroll .lms-collapsible {
+            overflow: hidden;
+            max-height: 50rem;
+            opacity: 1;
+            transition: max-height .3s ease, opacity .2s ease, margin .3s ease, padding .3s ease;
+        }
+
+        #main-scroll .lms-header-collapsed {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        #main-scroll .lms-header-collapsed .lms-collapsible {
+            max-height: 0 !important;
+            opacity: 0;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            pointer-events: none;
+        }
+
+        #main-scroll .lms-header-collapsed .lms-filterbar {
+            margin-top: 0 !important;
+        }
     </style>
 </head>
 
@@ -66,7 +97,7 @@
     {{-- ─── MAIN CONTENT WRAPPER ─── --}}
     {{-- Offset left by sidebar width, offset top by navbar height --}}
     {{-- Only THIS div scrolls --}}
-    <div class="fixed inset-0 md:left-64 top-16 overflow-y-auto overflow-x-hidden">
+    <div id="main-scroll" class="fixed inset-0 md:left-64 top-16 overflow-y-auto overflow-x-hidden">
 
         {{-- Background decorative blobs (contained inside this wrapper) --}}
         <div class="relative min-h-full w-full">
@@ -95,6 +126,80 @@
 
     @livewireScripts
     @livewireCalendarScripts
+
+    {{-- ─── Scroll-aware collapsing page header (admin & accounts) ───
+         Hides the title/stats/tabs while scrolling down (keeping only the
+         sticky filter bar pinned), and restores them on scroll up. Works
+         generically across every admin page that uses the shared
+         `sticky top-0` header + gray (`bg-gray-50`) filter bar pattern. --}}
+    @if (Auth::user() && in_array(Auth::user()->role, ['admin', 'sub-admin', 'accounts']))
+        <script>
+            (function () {
+                if (window.__lmsHdr) return;
+                window.__lmsHdr = 1;
+
+                function getHeader(container) {
+                    return container.querySelector('.sticky.top-0');
+                }
+
+                // Tag the rows above the filter bar as collapsible, and the
+                // filter bar itself so it can stay pinned. Recomputed only when
+                // the header's child structure changes (e.g. tab switches).
+                function mark(header) {
+                    var kids = Array.prototype.slice.call(header.children);
+                    var filterIdx = -1;
+                    for (var i = kids.length - 1; i >= 0; i--) {
+                        if (kids[i].classList.contains('bg-gray-50')) { filterIdx = i; break; }
+                    }
+                    var sig = kids.length + ':' + filterIdx;
+                    if (header.dataset.lmsSig === sig) return;
+                    header.dataset.lmsSig = sig;
+
+                    kids.forEach(function (k) { k.classList.remove('lms-collapsible', 'lms-filterbar'); });
+
+                    // No filter bar (or it's the first child) → collapse the whole header.
+                    var collapseEnd = filterIdx <= 0 ? kids.length : filterIdx;
+                    for (var j = 0; j < collapseEnd; j++) { kids[j].classList.add('lms-collapsible'); }
+                    if (filterIdx > 0) { kids[filterIdx].classList.add('lms-filterbar'); }
+                }
+
+                function init() {
+                    var container = document.getElementById('main-scroll');
+                    if (!container || container.dataset.lmsScroll === '1') return;
+                    container.dataset.lmsScroll = '1';
+
+                    var lastY = container.scrollTop;
+                    container.addEventListener('scroll', function () {
+                        var header = getHeader(container);
+                        var y = container.scrollTop;
+                        if (!header) { lastY = y; return; }
+                        mark(header);
+
+                        var collapsed = header.classList.contains('lms-header-collapsed');
+                        if (y <= 8) {
+                            if (collapsed) header.classList.remove('lms-header-collapsed');
+                        } else if (y > lastY + 3 && y > 90 && !collapsed) {
+                            header.classList.add('lms-header-collapsed');
+                        } else if (y < lastY - 3 && collapsed) {
+                            header.classList.remove('lms-header-collapsed');
+                        }
+                        lastY = y;
+                    }, { passive: true });
+                }
+
+                document.addEventListener('DOMContentLoaded', init);
+                document.addEventListener('livewire:navigated', function () {
+                    var c = document.getElementById('main-scroll');
+                    if (c) {
+                        var h = getHeader(c);
+                        if (h) { h.classList.remove('lms-header-collapsed'); h.removeAttribute('data-lms-sig'); }
+                    }
+                    init();
+                });
+                if (document.readyState !== 'loading') init();
+            })();
+        </script>
+    @endif
 
     {{-- ─── Web Push (FCM) registration — super-admin only ─── --}}
     @if (Auth::user() && in_array(Auth::user()->role, ['super-admin', 'sub-super-admin']))
