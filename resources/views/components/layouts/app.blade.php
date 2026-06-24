@@ -169,6 +169,15 @@
                     container.dataset.lmsScroll = '1';
 
                     var lastY = container.scrollTop;
+                    // While a collapse/expand is animating, the content height
+                    // changes and the browser nudges scrollTop. Without a lock
+                    // that nudge reads as a direction change and the header
+                    // flickers. We ignore scroll for a short window after each
+                    // toggle so it can settle.
+                    var lockUntil = 0;
+                    function now() {
+                        return (window.performance && performance.now) ? performance.now() : Date.now();
+                    }
                     container.addEventListener('scroll', function () {
                         var header = getHeader(container);
                         var y = container.scrollTop;
@@ -176,12 +185,24 @@
                         mark(header);
 
                         var collapsed = header.classList.contains('lms-header-collapsed');
+
+                        // At the very top, always show the full header.
                         if (y <= 8) {
-                            if (collapsed) header.classList.remove('lms-header-collapsed');
-                        } else if (y > lastY + 3 && y > 90 && !collapsed) {
+                            if (collapsed) { header.classList.remove('lms-header-collapsed'); lockUntil = now() + 400; }
+                            lastY = y;
+                            return;
+                        }
+
+                        // Ignore reflow-induced scrolls during the animation.
+                        if (now() < lockUntil) { lastY = y; return; }
+
+                        var dy = y - lastY;
+                        if (dy > 6 && y > 90 && !collapsed) {
                             header.classList.add('lms-header-collapsed');
-                        } else if (y < lastY - 3 && collapsed) {
+                            lockUntil = now() + 400;
+                        } else if (dy < -6 && collapsed) {
                             header.classList.remove('lms-header-collapsed');
+                            lockUntil = now() + 400;
                         }
                         lastY = y;
                     }, { passive: true });
