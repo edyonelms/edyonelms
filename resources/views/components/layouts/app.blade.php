@@ -132,7 +132,7 @@
          sticky filter bar pinned), and restores them on scroll up. Works
          generically across every admin page that uses the shared
          `sticky top-0` header + gray (`bg-gray-50`) filter bar pattern. --}}
-    @if (Auth::user() && in_array(Auth::user()->role, ['admin', 'sub-admin', 'accounts']))
+    @if (Auth::user() && in_array(Auth::user()->role, ['admin', 'sub-admin', 'accounts', 'super-admin', 'sub-super-admin']))
         <script>
             (function () {
                 if (window.__lmsHdr) return;
